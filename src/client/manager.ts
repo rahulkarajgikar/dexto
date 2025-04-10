@@ -1,4 +1,4 @@
-import { MCPClient } from './mcp-client.js';
+import { MCPConnection } from './mcp-connection.js';
 import { ServerConfigs } from '../config/types.js';
 import { logger } from '../utils/logger.js';
 import { ToolProvider } from './types.js';
@@ -88,7 +88,7 @@ export class ClientManager {
         const successfulConnections: string[] = [];
 
         for (const [name, config] of Object.entries(serverConfigs)) {
-            const client = new MCPClient();
+            const client = new MCPConnection();
             try {
                 await client.connect(config, name);
                 this.registerClient(name, client);

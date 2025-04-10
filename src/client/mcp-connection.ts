@@ -20,7 +20,7 @@ const ToolsListSchema = z.object({
 /**
  * Wrapper on top of Client class provided in model context protocol SDK, to add additional metadata about the server
  */
-export class MCPClient implements ToolProvider {
+export class MCPConnection implements ToolProvider {
     private client: Client | null = null;
     private transport: any = null;
     private isConnected = false;
