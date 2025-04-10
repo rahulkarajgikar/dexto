@@ -24,12 +24,8 @@ export class MCPConnection implements ToolProvider {
     private client: Client | null = null;
     private transport: any = null;
     private isConnected = false;
-    private serverCommand: string | null = null;
-    private serverArgs: string[] | null = null;
-    private serverEnv: Record<string, string> | null = null;
-    private serverSpawned = false;
-    private serverPid: number | null = null;
-    private serverAlias: string | null = null;
+    private serverSpawned = false; // Kept as separate property
+    private serverInfo: Record<string, any> | null = null; // Flexible metadata store (excluding spawned)
 
     constructor() {}
 
@@ -65,15 +61,19 @@ export class MCPConnection implements ToolProvider {
         env?: Record<string, string>,
         serverAlias?: string
     ): Promise<Client> {
-        // Store server details
-        this.serverCommand = command;
-        this.serverArgs = args;
-        this.serverEnv = env || null;
-        this.serverAlias = serverAlias || null;
+        // Store server details in the flexible serverInfo object (excluding spawned)
+        this.serverInfo = {
+            type: 'stdio',
+            command: command,
+            args: args,
+            env: env || null,
+            alias: serverAlias || null,
+            pid: null, // StdioClientTransport doesn't expose PID directly
+        };
 
         logger.info('');
         logger.info('=======================================');
-        logger.info(`MCP SERVER: ${command} ${args.join(' ')}`, null, 'magenta');
+        logger.info(`MCP SERVER (stdio): ${command} ${args.join(' ')}`, null, 'magenta');
         if (env) {
             logger.info('Environment:');
             Object.entries(env).forEach(([key, _]) => {
@@ -114,7 +114,7 @@ export class MCPConnection implements ToolProvider {
             logger.info('Establishing connection...');
             await this.client.connect(this.transport);
 
-            // If connection is successful, we know the server was spawned
+            // If connection is successful, mark as spawned
             this.serverSpawned = true;
             logger.info(`✅ Stdio SERVER ${serverName} SPAWNED`);
             logger.info('Connection established!\n\n');
@@ -129,6 +129,13 @@ export class MCPConnection implements ToolProvider {
 
     async connectViaSSE(url: string, headers: Record<string, string>): Promise<Client> {
         logger.info(`Connecting to SSE MCP server at url: ${url}`);
+
+        // Store server details in the flexible serverInfo object (excluding spawned)
+        this.serverInfo = {
+            type: 'sse',
+            url: url,
+            headers: headers,
+        };
 
         this.transport = new SSEClientTransport(new URL(url), {
             // For regular HTTP requests
@@ -152,7 +159,8 @@ export class MCPConnection implements ToolProvider {
         try {
             logger.info('Establishing connection...');
             await this.client.connect(this.transport);
-            // If connection is successful, we know the server was spawned
+
+            // If connection is successful, mark as spawned
             this.serverSpawned = true;
             logger.info(`✅ SSE SERVER ${url} SPAWNED`);
             logger.info('Connection established!\n\n');
@@ -173,7 +181,8 @@ export class MCPConnection implements ToolProvider {
             try {
                 await this.transport.close();
                 this.isConnected = false;
-                this.serverSpawned = false;
+                this.serverSpawned = false; // Reset spawned status
+                this.serverInfo = null; // Reset server info
                 logger.info('Disconnected from MCP server');
             } catch (error: any) {
                 logger.error('Error disconnecting from MCP server:', error.message);
@@ -258,43 +267,22 @@ export class MCPConnection implements ToolProvider {
     /**
      * Get server status information
      */
-    getServerInfo(): {
-        spawned: boolean;
-        pid: number | null;
-        command: string | null;
-        args: string[] | null;
-        env: Record<string, string> | null;
-        alias: string | null;
-    } {
-        return {
-            spawned: this.serverSpawned,
-            pid: this.serverPid,
-            command: this.serverCommand,
-            args: this.serverArgs,
-            env: this.serverEnv,
-            alias: this.serverAlias,
-        };
+    getServerInfo(): Record<string, any> | null {
+        return this.serverInfo;
     }
 
     /**
      * Get the client instance once connected
      * @returns Promise with the MCP client
+     * @throws Error if the client is not connected
      */
     async getConnectedClient(): Promise<Client> {
         if (this.client && this.isConnected) {
             return this.client;
         }
 
-        if (!this.serverCommand) {
-            throw new Error('Cannot get client: Connection has not been initialized');
-        }
-
-        // If connection is in progress, wait for it to complete
-        return this.connectViaStdio(
-            this.serverCommand,
-            this.serverArgs || [],
-            this.serverEnv || undefined,
-            this.serverAlias || undefined
-        );
+        // Removed automatic reconnection logic for simplicity and correctness.
+        // If connection is lost, it needs to be re-established explicitly.
+        throw new Error('MCP Client is not connected.');
     }
 }
