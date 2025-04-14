@@ -1,23 +1,24 @@
 import { MCPConnection } from './mcp-connection.js';
 import { ServerConfigs } from '../config/types.js';
 import { logger } from '../utils/logger.js';
-import { ToolProvider } from './types.js';
+import { IMCPClient, MCPPromptMetadata, MCPPrompt } from './types.js';
 
 export class ClientManager {
-    private clients: Map<string, ToolProvider> = new Map();
+    private mcpClients: Map<string, IMCPClient> = new Map();
     private connectionErrors: { [key: string]: string } = {};
-    private toolToClientMap: Map<string, ToolProvider> = new Map();
+    private toolToClientMap: Map<string, IMCPClient> = new Map();
+    private promptToClientMap: Map<string, IMCPClient> = new Map();
 
     /**
      * Register a client that provides tools
      * @param name Unique name for the client
      * @param client The tool provider client
      */
-    registerClient(name: string, client: ToolProvider): void {
-        if (this.clients.has(name)) {
+    registerClient(name: string, client: IMCPClient): void {
+        if (this.mcpClients.has(name)) {
             logger.warn(`Client '${name}' already registered. Overwriting.`);
         }
-        this.clients.set(name, client);
+        this.mcpClients.set(name, client);
         logger.info(`Registered client: ${name}`);
     }
 
@@ -30,7 +31,7 @@ export class ClientManager {
         // Clear existing map to avoid stale entries
         this.toolToClientMap.clear();
 
-        for (const [serverName, client] of this.clients.entries()) {
+        for (const [serverName, client] of this.mcpClients.entries()) {
             try {
                 logger.debug(`Getting tools from ${serverName}`);
                 const toolList = await client.getTools();
@@ -56,7 +57,7 @@ export class ClientManager {
      * @param toolName Name of the tool
      * @returns The client that provides the tool, or undefined if not found
      */
-    getToolClient(toolName: string): ToolProvider | undefined {
+    getToolClient(toolName: string): IMCPClient | undefined {
         return this.toolToClientMap.get(toolName);
     }
 
@@ -119,8 +120,8 @@ export class ClientManager {
      * Get all registered clients
      * @returns Map of client names to client instances
      */
-    getClients(): Map<string, ToolProvider> {
-        return this.clients;
+    getClients(): Map<string, IMCPClient> {
+        return this.mcpClients;
     }
 
     /**
@@ -135,7 +136,7 @@ export class ClientManager {
      * Disconnect all clients
      */
     disconnectAll(): void {
-        for (const [name, client] of this.clients.entries()) {
+        for (const [name, client] of this.mcpClients.entries()) {
             if (client.disconnect) {
                 try {
                     client.disconnect();
@@ -145,7 +146,32 @@ export class ClientManager {
                 }
             }
         }
-        this.clients.clear();
+        this.mcpClients.clear();
+        this.toolToClientMap.clear();
+        this.promptToClientMap.clear();
         this.connectionErrors = {};
+    }
+
+    async getAllPrompts(): Promise<Record<string, MCPPromptMetadata>> {
+        let allPrompts: Record<string, MCPPromptMetadata> = {};
+        this.promptToClientMap.clear();
+        for (const [_, client] of this.mcpClients.entries()) {
+            const promptsArray = await client.listPrompts();
+            for (const prompt of promptsArray) {
+                if (prompt.name) {
+                    allPrompts[prompt.name] = prompt;
+                    this.promptToClientMap.set(prompt.name, client);
+                }
+            }
+        }
+        return allPrompts;
+    }
+
+    async getPrompt(promptName: string, args?: any): Promise<MCPPrompt> {
+        const client = this.promptToClientMap.get(promptName);
+        if (!client) {
+            throw new Error(`No client found for prompt: ${promptName}`);
+        }
+        return client.getPrompt(promptName, args);
     }
 }

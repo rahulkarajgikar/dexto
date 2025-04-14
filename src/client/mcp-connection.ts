@@ -3,29 +3,23 @@ import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
 import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js';
 import { z } from 'zod';
 import { logger } from '../utils/logger.js';
+import { GetPromptResultSchema, ListPromptsResultSchema, ListToolsResultSchema } from '@modelcontextprotocol/sdk/types.js';
 import { McpServerConfig, StdioServerConfig, SSEServerConfig } from '../config/types.js';
 import { ToolSet } from '../ai/types.js';
-import { ToolProvider } from './types.js';
-const ToolsListSchema = z.object({
-    tools: z.array(
-        z.object({
-            name: z.string(),
-            description: z.string().optional(),
-            inputSchema: z.any().optional(),
-        })
-    ),
-    nextCursor: z.string().optional(),
-});
+import { IMCPClient, MCPTool, MCPPromptMetadata, MCPPrompt } from './types.js';
 
 /**
  * Wrapper on top of Client class provided in model context protocol SDK, to add additional metadata about the server
  */
-export class MCPConnection implements ToolProvider {
+export class MCPConnection implements IMCPClient {
     private client: Client | null = null;
     private transport: any = null;
     private isConnected = false;
     private serverSpawned = false; // Kept as separate property
     private serverInfo: Record<string, any> | null = null; // Flexible metadata store (excluding spawned)
+
+    private tools: ToolSet = {};
+    private prompts: MCPPromptMetadata[] = [];
 
     constructor() {}
 
@@ -232,24 +226,51 @@ export class MCPConnection implements ToolProvider {
      * @returns Array of available tools
      */
     async getTools(): Promise<ToolSet> {
+        // Return cached tools if available
+        if (Object.keys(this.tools).length > 0) {
+            return this.tools;
+        }
+        
         try {
-            const response = await this.client.request(
-                { method: 'tools/list', params: {} },
-                ToolsListSchema
-            );
-            return response.tools.reduce<ToolSet>((acc, tool) => {
+            const response = await this.client.listTools();
+            this.tools = response.tools.reduce<ToolSet>((acc, tool) => {
                 acc[tool.name] = {
                     description: tool.description,
                     parameters: tool.inputSchema,
                 };
                 return acc;
             }, {});
+            return this.tools;
         } catch (error) {
             logger.error('Failed to list tools:', error);
             return {};
         }
     }
 
+    async getPrompt(name: string): Promise<MCPPrompt> {
+        const prompt = await this.client.getPrompt({name});
+        return prompt;
+    }
+
+    /**
+     * Get the list of prompts provided by the server
+     * @returns Array of available prompts
+     */
+    async listPrompts(): Promise<MCPPromptMetadata[]> {
+        // Return cached prompts if available
+        if (this.prompts.length > 0) {
+            return this.prompts;
+        }
+
+        try {
+            const { prompts } = await this.client.listPrompts();
+            this.prompts = prompts
+            return this.prompts;
+        } catch (error) {
+            logger.error('Failed to list prompts:', error);
+            return [];
+        }
+    }
     /**
      * Check if the client is connected
      */
