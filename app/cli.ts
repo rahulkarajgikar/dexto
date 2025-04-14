@@ -5,7 +5,7 @@ import { logger } from '../src/utils/logger.js';
 import { ILLMService } from '../src/ai/llm/services/types.js';
 import { AgentConfig } from '../src/config/types.js';
 import { initializeServices } from '../src/utils/service-initializer.js';
-import { AgentEventManager } from '../src/ai/llm/events/event-manager.js';
+import { LLMServiceEventManager } from '../src/ai/llm/events/event-manager.js';
 import { CLISubscriber } from './cli-subscriber.js';
 
 /**
@@ -56,7 +56,7 @@ export async function runAiCli(
     try {
         // Set up event management
         logger.info('Setting up event manager and cli logging...');
-        const eventManager = new AgentEventManager(llmService);
+        const eventManager = new LLMServiceEventManager(llmService);
         const cliSubscriber = new CLISubscriber();
         eventManager.registerSubscriber(cliSubscriber);
 

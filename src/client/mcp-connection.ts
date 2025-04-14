@@ -247,8 +247,15 @@ export class MCPConnection implements IMCPClient {
         }
     }
 
-    async getPrompt(name: string): Promise<MCPPrompt> {
-        const prompt = await this.client.getPrompt({name});
+    /**
+     * Get a specific prompt after populating the template with the given name and arguments
+     * @param name Name of the prompt
+     * @param args Arguments for the prompt
+     * @param options Options for the prompt
+     * @returns The prompt
+     */
+    async getPrompt(name: string, args?: any, options?: any): Promise<MCPPrompt> {
+        const prompt = await this.client.getPrompt({name, arguments: args}, options);
         return prompt;
     }
 
