@@ -2,8 +2,9 @@
 # This is a simple example of a computer use assistant that can be used to answer questions about the computer.
 ## Pre-requisites
 # - You are running on Mac OS
-# - You have OpenAI and Anthropic API key
-# - You have followed setup steps for CUA
+# - You have configured OpenAI and Anthropic API keys in .env
+# - You have followed setup steps for setting up CUA locally (Computer Use Agent)
+# TODO: Add README.md instructions for setting up CUA locally
 
 mcpServers:
   cua:
@@ -16,7 +17,7 @@ mcpServers:
       CUA_MODEL_PROVIDER: "ANTHROPIC"
       CUA_MODEL_NAME: "claude-3-7-sonnet-20250219"
       ANTHROPIC_API_KEY: $ANTHROPIC_API_KEY
-    timeout: 240000
+    timeout: 300000
 
 llm:
   provider: openai
