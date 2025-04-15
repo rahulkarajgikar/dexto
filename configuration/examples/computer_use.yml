@@ -1,0 +1,26 @@
+## Computer Use Assistant
+# This is a simple example of a computer use assistant that can be used to answer questions about the computer.
+## Pre-requisites
+# - You are running on Mac OS
+# - You have OpenAI and Anthropic API key
+# - You have followed setup steps for CUA
+
+mcpServers:
+  cua:
+    type: stdio
+    command: "/bin/bash"
+    args:
+      - $HOME/.cua/start_mcp_server.sh
+    env:
+      CUA_AGENT_LOOP: "ANTHROPIC"
+      CUA_MODEL_PROVIDER: "ANTHROPIC"
+      CUA_MODEL_NAME: "claude-3-7-sonnet-20250219"
+      ANTHROPIC_API_KEY: $ANTHROPIC_API_KEY
+    timeout: 240000
+
+llm:
+  provider: openai
+  model: gpt-4o
+  apiKey: $OPENAI_API_KEY
+  systemPrompt: |
+    You are Saiki, a helpful AI assistant with access to the computer. U
