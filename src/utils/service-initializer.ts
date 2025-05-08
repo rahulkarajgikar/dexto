@@ -32,22 +32,27 @@ import { createLLMService } from '../ai/llm/services/factory.js';
 import { logger } from './logger.js';
 import { EventEmitter } from 'events';
 import { LLMRouter } from '../ai/llm/types.js';
-import { MessageManager } from '../ai/llm/messages/manager.js';
-import { createMessageManager } from '../ai/llm/messages/factory.js';
+import { createMessageFormatter } from '../ai/llm/messages/formatters/factory.js';
+import { ITokenizer } from '../ai/llm/tokenizer/types.js';
+import { ISessionStore } from '../session/types.js';
+import { InMemorySessionStore } from '../session/in-memory-store.js';
+import { SessionManager } from '../session/SessionManager.js';
 import { createToolConfirmationProvider } from '../client/tool-confirmation/factory.js';
 import { loadContributors } from '../ai/systemPrompt/loader.js';
 import { loadConfigFile } from '../config/loader.js';
 import { ConfigManager } from '../config/manager.js';
 import type { CLIConfigOverrides } from '../config/types.js';
+import { createMessageManager } from '../ai/llm/messages/factory.js';
+import { createTokenizer } from '../ai/llm/tokenizer/factory.js';
 
 /**
- * Type for the core agent services returned by initializeServices
+ * Core services returned by createAgentServices.
  */
 export type AgentServices = {
     clientManager: MCPClientManager;
-    llmService: ILLMService;
     agentEventBus: EventEmitter;
-    messageManager: MessageManager;
+    /** New session-based orchestration for LLM calls */
+    sessionManager: SessionManager;
     configManager: ConfigManager;
 };
 
@@ -71,11 +76,9 @@ export type InitializeServicesOptions = {
     runMode?: 'cli' | 'web'; // Context/mode override
     connectionMode?: 'strict' | 'lenient'; // Connection mode override
     clientManager?: MCPClientManager; // Inject a custom or mock MCPClientManager
-    llmService?: ILLMService; // Inject a custom or mock LLMService
     agentEventBus?: EventEmitter; // Inject a custom or mock EventEmitter
-    messageManager?: MessageManager; // Inject a custom or mock MessageManager
+    sessionStore?: ISessionStore; // Inject a custom or mock session store
     // Add more overrides as needed
-    // configOverride?: Partial<AgentConfig>; // (optional) for field-level config overrides
 };
 
 // High-level factory to load, validate, and wire up all agent services in one call
@@ -115,22 +118,31 @@ export async function createAgentServices(
             : 'Client manager and MCP servers initialized'
     );
 
-    // 5. Initialize message manager
+    // 5. Determine router and system-prompt contributors
     const router: LLMRouter = config.llm.router ?? 'vercel';
     const contributors = loadContributors(config.llm.systemPrompt);
-    const messageManager =
-        overrides?.messageManager ?? createMessageManager(config.llm, router, contributors);
 
-    // 6. Initialize LLM service
-    const llmService =
-        overrides?.llmService ??
-        createLLMService(config.llm, router, clientManager, agentEventBus, messageManager);
-    logger.debug(
-        overrides?.llmService
-            ? 'LLM service provided via override'
-            : `LLM service initialized using router: ${router}`
+    // 6. Prepare LLM factory: instantiate a fresh MessageManager per call
+    const llmFactory = () => {
+        const mm = createMessageManager(config.llm, router, contributors);
+        return createLLMService(config.llm, router, clientManager, agentEventBus, mm);
+    };
+    logger.debug(`LLM service factory prepared using router: ${router}`);
+
+    // 7. Prepare session manager using factories
+    const sessionStore = overrides?.sessionStore ?? new InMemorySessionStore();
+    const tokenizer: ITokenizer = createTokenizer(
+        config.llm.provider.toLowerCase(),
+        config.llm.model.toLowerCase()
+    );
+    const formatterFactory = (_: ITokenizer) => createMessageFormatter(config.llm.provider, router);
+    const sessionManager = new SessionManager(
+        sessionStore,
+        llmFactory,
+        formatterFactory,
+        tokenizer
     );
 
-    // 7. Return the full service graph, including the ConfigManager
-    return { clientManager, llmService, agentEventBus, messageManager, configManager };
+    // 8. Return core services, centered on sessionManager
+    return { clientManager, agentEventBus, sessionManager, configManager };
 }
