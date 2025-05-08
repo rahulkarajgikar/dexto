@@ -1,7 +1,8 @@
-import { ILLMService } from '../ai/llm/services/types';
-import { MessageManager } from '../ai/llm/messages/manager';
-import { ISessionStore, BranchMetadata } from './types';
-import { IFormatter, ITokenizer } from '../ai/llm/messages/formatters/types';
+import { ILLMService } from '../ai/llm/services/types.js';
+import { MessageManager } from '../ai/llm/messages/manager.js';
+import { ISessionStore, BranchMetadata } from './types.js';
+import { IMessageFormatter } from '../ai/llm/messages/formatters/types.js';
+import { ITokenizer } from '../ai/llm/tokenizer/types.js';
 
 /**
  * Orchestrates session lifecycle, history replay, branching, and delta persistence.
@@ -10,7 +11,7 @@ export class SessionManager {
     constructor(
         private store: ISessionStore,
         private createLLMService: () => ILLMService,
-        private formatterFactory: (tokenizer: ITokenizer) => IFormatter,
+        private formatterFactory: (tokenizer: ITokenizer) => IMessageFormatter,
         private tokenizer: ITokenizer
     ) {}
 

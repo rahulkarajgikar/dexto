@@ -1,4 +1,4 @@
-import { InternalMessage } from '../ai/llm/messages/types';
+import { InternalMessage } from '../ai/llm/messages/types.js';
 
 export interface BranchMetadata {
     branchId: string;

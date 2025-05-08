@@ -1,6 +1,6 @@
 import { v4 as uuidv4 } from 'uuid';
-import { ISessionStore, BranchMetadata } from './types';
-import { InternalMessage } from '../ai/llm/messages/types';
+import { ISessionStore, BranchMetadata } from './types.js';
+import { InternalMessage } from '../ai/llm/messages/types.js';
 
 export class InMemorySessionStore implements ISessionStore {
     private data = new Map<string, Map<string, InternalMessage[]>>();
