@@ -3,14 +3,35 @@
   "version": "0.1.0",
   "private": true,
   "description": "CLI interface for Saiki.",
+  "type": "module",
   "main": "dist/index.js",
-  "types": "dist/index.d.ts",
-  "scripts": {
-    "build": "tsc -b",
-    "clean": "rm -rf dist",
-    "dev": "tsc -b --watch"
+  "bin": {
+    "saiki-cli": "dist/index.js"
   },
-  "dependencies": {},
-  "devDependencies": {},
-  "license": "UNLICENSED"
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist",
+    "dev": "tsc --watch",
+    "start": "node dist/index.js",
+    "lint": "eslint .",
+    "format": "prettier --write ."
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@saiki/core": "workspace:*",
+    "@saiki/logger": "workspace:*",
+    "boxen": "^7.1.1",
+    "chalk": "^5.3.0",
+    "commander": "^12.1.0",
+    "inquirer": "^9.3.5"
+  },
+  "devDependencies": {
+    "@types/inquirer": "^9.0.7",
+    "@types/node": "^20.14.10",
+    "eslint": "^9.7.0",
+    "prettier": "^3.3.2",
+    "typescript": "^5.5.3"
+  }
 } 

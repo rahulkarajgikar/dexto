@@ -1,0 +1,719 @@
+/* Reset and Base Styles */
+* {
+    box-sizing: border-box;
+}
+
+html {
+    font-size: 16px;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+    margin: 0;
+    /* Warm Dark Mode Gradient Background */
+    background: linear-gradient(135deg, #3a302b 0%, #2c2521 100%); /* Warm brown gradient */
+    color: #f0e6dd; /* Warm off-white text */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    line-height: 1.6;
+}
+
+/* Chat Container - Full Height with Nav */
+#chat-container {
+    width: 100%;
+    max-width: 100%;
+    height: 100vh;
+    max-height: 100vh;
+    background-color: rgba(68, 58, 53, 0.75);
+    backdrop-filter: blur(18px) saturate(140%);
+    -webkit-backdrop-filter: blur(18px) saturate(140%);
+    border-radius: 0px;
+    border: none;
+    /* box-shadow: 0 6px 25px rgba(0, 0, 0, 0.25); REMOVED/Adjusted if needed */
+    display: flex; /* Changed to flex row */
+    /* flex-direction: column; REMOVED */
+    overflow: hidden;
+}
+
+/* Left Navigation Panel */
+#left-nav-panel {
+    width: 70px; /* Initial width for icons */
+    background-color: rgba(44, 37, 33, 0.85); /* Darker warm nav */
+    padding: 20px 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex-shrink: 0;
+    transition: width 0.3s ease;
+    overflow: hidden; /* Hide text initially */
+    border-right: 1px solid rgba(255, 230, 200, 0.05); /* Subtle separator */
+}
+
+#left-nav-panel ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    width: 100%;
+}
+
+#left-nav-panel li {
+    width: 100%;
+}
+
+#left-nav-panel a {
+    display: flex;
+    align-items: center;
+    padding: 15px 20px;
+    color: #c8bdaf; /* Muted nav text */
+    text-decoration: none;
+    white-space: nowrap;
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+#left-nav-panel a:hover {
+    background-color: rgba(90, 80, 75, 0.7); /* Match reset button hover base */
+    color: #f0e6dd; /* Brighter on hover */
+}
+
+#left-nav-panel a .icon {
+    font-size: 1.4rem;
+    margin-right: 15px; /* Space between icon and text */
+    min-width: 25px; /* Ensure icon alignment */
+    text-align: center;
+}
+
+#left-nav-panel a .text {
+    opacity: 0; /* Hide text initially */
+    transition: opacity 0.2s ease;
+}
+
+/* Optional: Expand Nav on Hover */
+#left-nav-panel:hover {
+    width: 200px; /* Expanded width */
+}
+
+#left-nav-panel:hover a .text {
+    opacity: 1; /* Show text on hover */
+}
+
+/* Main Content Area */
+#main-content {
+    flex-grow: 1; /* Take remaining space */
+    display: flex;
+    flex-direction: column; /* Stack header, messages, input */
+    overflow: hidden; /* Prevent internal content overflow */
+    height: 100vh; /* Ensure it fills height */
+}
+
+/* Header */
+header {
+    background-color: rgba(78, 68, 63, 0.8); /* Slightly less transparent */
+    color: #f5eadd;
+    padding: 10px 20px; /* Adjusted padding */
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(255, 230, 200, 0.08); /* Warm subtle border */
+    flex-shrink: 0;
+    gap: 15px; /* Add gap between header items */
+}
+
+header h1 {
+    margin: 0;
+    font-size: 1.15rem; /* Slightly smaller */
+    font-weight: 600;
+    white-space: nowrap; /* Prevent title wrapping */
+}
+
+/* Group title and status indicator */
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-grow: 1; /* Allow this group to grow */
+    min-width: 0; /* Prevent overflow issues */
+}
+
+/* Group reset button */
+.header-right {
+    display: flex;
+    align-items: center;
+}
+
+#reset-button {
+    background-color: rgba(90, 80, 75, 0.7); /* Warm button base */
+    color: #d8ccc3; /* Lighter warm text */
+    border: 1px solid rgba(255, 230, 200, 0.12);
+    padding: 7px 12px; /* Slightly smaller */
+    border-radius: 8px; /* Consistent radius */
+    cursor: pointer;
+    font-size: 0.8rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+#reset-button:hover {
+    background-color: rgba(105, 95, 90, 0.8); /* Warmer hover */
+    border-color: rgba(255, 230, 200, 0.2);
+    color: #f0e6dd;
+}
+
+/* Message List */
+#message-list-wrapper {
+    flex-grow: 1;
+    padding: 25px; /* Adjusted padding */
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(125, 100, 90, 0.6) transparent; /* Warm scrollbar */
+}
+
+#message-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px; /* Adjusted gap */
+}
+
+.message {
+    padding: 12px 18px; /* Adjusted padding */
+    border-radius: 18px; /* Softer radius */
+    max-width: 75%; /* Slightly narrower */
+    /* Ensure long words break correctly */
+    word-wrap: break-word; /* Legacy */
+    overflow-wrap: break-word; /* Standard */
+    line-height: 1.5;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15); /* Softer shadow */
+    border: none;
+}
+
+/* Message Types - Warm Tones */
+.message.user {
+    background-color: #7d5a4f; /* Muted terracotta */
+    color: #f5eadd;
+    align-self: flex-end;
+    border-bottom-right-radius: 6px; /* Consistent corner radius */
+}
+
+.message.ai {
+    background-color: #5a504b; /* Warm grey for AI */
+    color: #f0e6dd;
+    align-self: flex-start;
+    border-bottom-left-radius: 6px; /* Consistent corner radius */
+}
+
+/* Status-like messages - Warm Tones */
+.message.tool-call,
+.message.tool-result,
+.message.error,
+.message.status {
+    font-size: 0.83rem; /* Slightly smaller */
+    max-width: 80%;
+    border-radius: 10px;
+    padding: 8px 16px;
+    margin: 10px 0;
+    position: relative;
+    box-shadow: none;
+    border: none;
+}
+
+.message.tool-call,
+.message.tool-result {
+    align-self: flex-start;
+    text-align: left;
+    padding: 8px 40px 8px 32px; /* Increased right padding (was 16px) */
+    background-color: rgba(80, 70, 65, 0.9); /* Warm grey */
+    color: #d8ccc3;
+    font-style: normal;
+    font-family: SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
+    cursor: pointer;
+}
+
+.message.error,
+.message.status {
+    align-self: center;
+    text-align: center;
+    padding-left: 32px;
+}
+
+.message.tool-call::before,
+.message.tool-result::before {
+    content: "⚙️";
+    position: absolute;
+    left: 12px; /* Adjusted position */
+    top: 8px; /* Align with top padding/first line */
+    font-size: 1rem; /* Adjusted size */
+    opacity: 0.8;
+}
+
+.message.error {
+    background-color: rgba(180, 80, 60, 0.9); /* Warm red/orange base */
+    color: #f5eadd;
+}
+
+.message.error::before {
+    content: "❌";
+    position: absolute;
+    left: 12px; /* Adjusted position */
+    top: 8px; /* Align with top padding/first line */
+    font-size: 1rem; /* Adjusted size */
+}
+
+.message.status {
+    background-color: rgba(70, 90, 110, 0.9); /* Muted blue base */
+    color: #e0e8f0;
+}
+
+.message.status::before {
+    content: "ℹ️";
+    position: absolute;
+    left: 12px; /* Adjusted position */
+    top: 8px; /* Align with top padding/first line */
+    font-size: 1rem; /* Adjusted size */
+}
+
+/* Styling for code within tool calls/results */
+.message.tool-call pre,
+.message.tool-result pre {
+    margin-top: 6px;
+    margin-bottom: 0;
+    padding: 8px 12px;
+    background-color: rgba(0, 0, 0, 0.3);
+    border-radius: 6px;
+    max-height: 200px;
+    overflow-y: auto;
+    white-space: pre-wrap; /* Allow wrapping within pre */
+    word-wrap: break-word; /* Break long lines */
+    display: none; /* Hidden by default */
+}
+
+.message.tool-call.expanded pre,
+.message.tool-result.expanded pre {
+    display: block;
+}
+
+.message.tool-call::after, 
+.message.tool-result::after {
+    content: '▶ Show Details';
+    position: absolute;
+    right: 12px;
+    top: 8px;
+    font-size: 0.7rem;
+    color: #a09080;
+    font-style: italic;
+    transition: transform 0.2s ease;
+}
+
+.message.tool-call.expanded::after,
+.message.tool-result.expanded::after {
+    content: '▼ Hide Details';
+    transform: rotate(0deg); /* Ensure it points down when expanded */
+}
+
+.message.tool-call code,
+.message.tool-result code {
+    font-family: SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
+    font-size: 0.8rem; /* Smaller code font */
+}
+
+/* Thinking Indicator */
+.message.ai.thinking {
+    background-color: transparent; /* No background */
+    box-shadow: none;
+    padding: 6px 12px;
+    margin-bottom: 10px;
+    align-self: flex-start;
+    position: relative;
+}
+
+.message.ai.thinking::before {
+    content: '🤖'; /* Robot emoji */
+    margin-right: 8px;
+    font-size: 1rem;
+    display: inline-block; /* Make it inline */
+    vertical-align: middle;
+    /* Removed animation from robot directly */
+}
+
+/* Add dots using ::after on an inner span */
+.message.ai.thinking span {
+    display: inline-block;
+    vertical-align: middle;
+    font-weight: bold;
+    color: #b0a090; /* Warm grey dots */
+}
+
+.message.ai.thinking span::after {
+    content: '.';
+    animation: thinking-dot 1.4s infinite step-start;
+    display: inline-block;
+    width: 1.5em; /* Adjust width to fit 3 dots */
+    text-align: left;
+}
+
+@keyframes thinking-dot {
+    0%, 20% { content: '.'; }
+    40% { content: '..'; }
+    60%, 80% { content: '...'; }
+    100% { content: '.'; }
+}
+
+/* Input Area */
+#input-area {
+    display: flex;
+    padding: 15px; /* Reduced padding */
+    border-top: 1px solid rgba(255, 230, 200, 0.08); /* Warm subtle border */
+    background-color: rgba(60, 50, 45, 0.9); /* Slightly different base */
+    align-items: flex-end; /* Align items to bottom */
+    flex-shrink: 0;
+    gap: 10px;
+}
+
+#message-input {
+    flex-grow: 1;
+    padding: 10px 15px;
+    border: 1px solid rgba(255, 230, 200, 0.15);
+    border-radius: 20px;
+    background-color: rgba(55, 45, 40, 0.95); /* Darker input field */
+    color: #f0e6dd;
+    font-size: 0.95rem;
+    resize: none;
+    overflow-y: auto; /* Add scroll for very long input */
+    min-height: 40px; /* Match button height */
+    max-height: 150px; /* Limit expansion */
+    line-height: 1.5;
+}
+
+#message-input::placeholder {
+    color: #908075; /* Muted placeholder text */
+}
+
+#message-input:focus {
+    outline: none;
+    border-color: rgba(255, 200, 150, 0.5); /* Warm accent focus */
+    box-shadow: 0 0 0 2px rgba(255, 200, 150, 0.15);
+}
+
+#send-button {
+    background-color: #a87a69; /* Warm accent color */
+    color: white;
+    border: none;
+    border-radius: 50%; /* Make it circular */
+    width: 40px;
+    height: 40px;
+    cursor: pointer;
+    font-size: 1.5rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+    flex-shrink: 0;
+    padding: 0;
+}
+
+#send-button::before {
+    content: '➤'; /* Send icon (unicode arrow) */
+    transform: translateX(1px); /* Slight adjustment for centering */
+}
+
+#send-button:hover {
+    background-color: #c08f7d; /* Lighter warm accent */
+}
+
+/* Status Indicator */
+#status-indicator {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background-color: #ffcc00; /* Default: Connecting (Yellow) */
+    transition: background-color 0.3s ease;
+    position: relative;
+    cursor: default;
+    flex-shrink: 0;
+}
+
+/* Tooltip - Simple CSS Tooltip */
+#status-indicator::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 150%; /* Position above the indicator */
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 5px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    white-space: nowrap;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease, visibility 0.2s ease;
+    z-index: 10;
+}
+
+#status-indicator:hover::after {
+    opacity: 1;
+    visibility: visible;
+}
+
+#status-indicator.connected {
+    background-color: #4caf50; /* Green */
+}
+#status-indicator.error {
+    background-color: #f44336; /* Red */
+}
+#status-indicator.connecting {
+    background-color: #ffcc00; /* Yellow */
+}
+
+/* Thinking state with subtle animation */
+#status-indicator.thinking {
+    background-color: #80aaff; /* Light Blue */
+    animation: thinking-pulse 1.5s infinite ease-in-out;
+}
+
+@keyframes thinking-pulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.2); opacity: 0.7; }
+}
+
+/* Markdown Specific Styling */
+.message.ai code {
+    background-color: rgba(0, 0, 0, 0.2);
+    padding: 0.1em 0.4em;
+    border-radius: 4px;
+    font-size: 0.85em;
+    font-family: SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
+    color: #f5d6b8; /* Lighter code color for contrast */
+}
+
+.message.ai pre {
+    background-color: rgba(0, 0, 0, 0.3);
+    padding: 1em;
+    border-radius: 8px;
+    overflow-x: auto;
+    margin: 0.8em 0;
+    font-family: SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
+    line-height: 1.4;
+}
+
+.message.ai pre code {
+    background-color: transparent;
+    padding: 0;
+    border-radius: 0;
+    font-size: 0.85rem;
+    color: #f0e6dd; /* Match body text */
+    /* Reset specific code styles if needed inside pre */
+    white-space: pre; /* Important for code formatting */
+    border: none;
+}
+
+/* Lists */
+.message.ai ul,
+.message.ai ol {
+    padding-left: 25px; /* Adjust indentation */
+    margin: 0.5em 0;
+}
+
+.message.ai li {
+    margin-bottom: 0.3em;
+}
+
+/* Blockquotes */
+.message.ai blockquote {
+    border-left: 3px solid rgba(255, 230, 200, 0.3); /* Warm border */
+    padding-left: 15px;
+    margin-left: 0;
+    margin-right: 0;
+    color: #d8ccc3; /* Slightly muted blockquote text */
+    font-style: italic;
+}
+
+/* Connect Server Button Styling */
+#connect-server-button {
+    background-color: rgba(90, 80, 75, 0.7);
+    color: #d8ccc3;
+    border: 1px solid rgba(255, 230, 200, 0.12);
+    padding: 7px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    margin-left: 10px; /* Add margin */
+}
+
+#connect-server-button:hover {
+    background-color: rgba(105, 95, 90, 0.8);
+    border-color: rgba(255, 230, 200, 0.2);
+    color: #f0e6dd;
+}
+
+/* Modal Styling */
+.modal {
+    display: none; /* Hidden by default */
+    position: fixed; /* Stay in place */
+    z-index: 100; /* Sit on top */
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto; /* Enable scroll if needed */
+    background-color: rgba(0,0,0,0.6); /* Black w/ opacity */
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+}
+
+.modal-content {
+    background-color: #3a302b; /* Match body background */
+    margin: 10% auto; /* Centered */
+    padding: 25px 35px;
+    border: 1px solid rgba(255, 230, 200, 0.15);
+    width: 80%;
+    max-width: 500px;
+    border-radius: 12px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    color: #f0e6dd;
+}
+
+.modal-content h2 {
+    margin-top: 0;
+    color: #e0c8b0; /* Lighter heading */
+    font-weight: 600;
+    text-align: center;
+    margin-bottom: 25px;
+}
+
+.close-button {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.close-button:hover,
+.close-button:focus {
+    color: #f0e6dd;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+#connect-server-form label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: #d8ccc3;
+}
+
+#connect-server-form input[type="text"],
+#connect-server-form input[type="url"],
+#connect-server-form select {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 15px;
+    display: inline-block;
+    border: 1px solid rgba(255, 230, 200, 0.2);
+    border-radius: 6px;
+    box-sizing: border-box;
+    background-color: rgba(55, 45, 40, 0.9);
+    color: #f0e6dd;
+}
+
+#connect-server-form input[type="text"]:focus,
+#connect-server-form input[type="url"]:focus,
+#connect-server-form select:focus {
+    outline: none;
+    border-color: rgba(255, 200, 150, 0.6);
+    box-shadow: 0 0 0 2px rgba(255, 200, 150, 0.2);
+}
+
+#connect-server-form button[type="submit"] {
+    background-color: #a87a69; /* Warm accent color */
+    color: white;
+    padding: 12px 20px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    width: 100%;
+    font-size: 1rem;
+    font-weight: 600;
+    transition: background-color 0.2s ease;
+}
+
+#connect-server-form button[type="submit"]:hover {
+    background-color: #c08f7d;
+}
+
+/* Clear floats */
+#connect-server-form::after {
+    content: "";
+    clear: both;
+    display: table;
+}
+
+/* Image Upload Button */
+.upload-btn {
+    background-color: transparent;
+    border: none;
+    color: #b0a090; /* Match placeholder color */
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 5px;
+    margin-right: 5px;
+    transition: color 0.2s ease;
+}
+
+.upload-btn:hover {
+    color: #d8ccc3;
+}
+
+#image-preview-container {
+    display: flex;
+    align-items: center;
+    padding: 10px 15px 0 15px; /* Padding top only */
+    margin-bottom: -10px; /* Adjust spacing relative to input-area border */
+    position: relative; /* For close button positioning */
+    border-top: 1px dashed rgba(255, 230, 200, 0.1);
+    margin-top: -15px; /* Overlap slightly with input-area padding */
+}
+
+#image-preview {
+    max-height: 50px;
+    max-width: 100px;
+    border-radius: 4px;
+    margin-right: 10px;
+    object-fit: cover;
+    border: 1px solid rgba(255, 230, 200, 0.2);
+}
+
+#remove-image-btn {
+    background: rgba(0, 0, 0, 0.6);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    font-size: 12px;
+    line-height: 18px;
+    text-align: center;
+    cursor: pointer;
+    position: absolute;
+    top: 12px; /* Adjust relative to container padding */
+    left: 95px; /* Adjust relative to image size/margin */
+    transition: background-color 0.2s ease;
+}
+
+#remove-image-btn:hover {
+    background: rgba(255, 0, 0, 0.7);
+}
+
+.message-image {
+    max-width: 100%;
+    max-height: 300px; /* Limit image height in messages */
+    margin-top: 10px; /* Space between text and image */
+    border-radius: 8px;
+    object-fit: contain;
+    display: block; /* Ensure it takes its own line */
+} 

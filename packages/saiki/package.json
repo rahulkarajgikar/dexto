@@ -1,5 +1,5 @@
 {
-  "name": "truffle-ai/saiki",
+  "name": "@truffle-ai/saiki",
   "version": "0.1.0",
   "private": false,
   "description": "Saiki AI Coding Assistant - CLI and Web UI.",

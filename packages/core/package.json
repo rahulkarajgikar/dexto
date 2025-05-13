@@ -2,6 +2,7 @@
   "name": "@saiki/core",
   "version": "0.1.0",
   "private": false,
+  "type": "module",
   "description": "Core logic for Saiki agent, LLM services, config management, and client utilities.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -10,7 +11,15 @@
     "clean": "rm -rf dist",
     "dev": "tsc -b --watch"
   },
-  "dependencies": {},
-  "devDependencies": {},
+  "dependencies": {
+    "@google/generative-ai": "^0.14.1",
+    "@saiki/logger": "workspace:*",
+    "@anthropic-ai/sdk": "^0.24.2",
+    "openai": "^4.52.7",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.10"
+  },
   "license": "MIT"
 } 
