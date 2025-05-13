@@ -2,16 +2,21 @@
 import { existsSync } from 'fs';
 import { Command } from 'commander';
 import dotenv from 'dotenv';
-import { logger } from '../src/utils/logger.js';
-import { DEFAULT_CONFIG_PATH, resolvePackagePath } from '../src/utils/path.js';
-import { createAgentServices, AgentServices } from '../src/utils/service-initializer.js';
-import { startAiCli, startHeadlessCli } from './cli/cli.js';
-import { startWebUI } from './web/server.js';
-// import { startDiscordBot } from './discord/bot.js'; // Removed Discord import
-// import { startTelegramBot } from './telegram/bot.js'; // Removed Telegram import
-import { validateCliOptions, handleCliOptionsError } from '../src/utils/options.js';
-import { getProviderFromModel, getAllSupportedModels } from '../src/ai/llm/registry.js';
-import { SaikiAgent } from '../src/ai/agent/SaikiAgent.js';
+import { logger } from '@saiki/logger';
+import {
+    DEFAULT_CONFIG_PATH,
+    resolvePackagePath,
+    createAgentServices,
+    AgentServices,
+    getProviderFromModel,
+    getAllSupportedModels,
+    SaikiAgent,
+} from '@saiki/core';
+import { startAiCli, startHeadlessCli } from './cli/index.js';
+import { startWebUI } from './web/server/index.js';
+import { startDiscordBot } from './discord/index.js';
+import { startTelegramBot } from './telegram/index.js';
+import { validateCliOptions, handleCliOptionsError } from './options.js';
 
 // Load environment variables
 dotenv.config();
@@ -179,24 +184,20 @@ async function startApp() {
         logger.info(`WebUI available at http://localhost:${webPort}`, null, 'magenta');
     } else if (runMode === 'discord') {
         logger.info('Starting Discord bot...', null, 'cyanBright');
-        // TODO: Re-implement Discord bot start using the @saiki/discord package
-        logger.warn('Discord bot integration is currently disabled pending migration.');
-        // try {
-        //     startDiscordBot(services);
-        // } catch (error) {
-        //     logger.error('Failed to start Discord bot:', error);
-        //     process.exit(1);
-        // }
+        try {
+            startDiscordBot(agent);
+        } catch (error) {
+            logger.error('Failed to start Discord bot:', error);
+            process.exit(1);
+        }
     } else if (runMode === 'telegram') {
         logger.info('Starting Telegram bot...', null, 'cyanBright');
-        // TODO: Re-implement Telegram bot start using the @saiki/telegram package
-        logger.warn('Telegram bot integration is currently disabled pending migration.');
-        // try {
-        //     startTelegramBot(services);
-        // } catch (error) {
-        //     logger.error('Failed to start Telegram bot:', error);
-        //     process.exit(1);
-        // }
+        try {
+            startTelegramBot(agent);
+        } catch (error) {
+            logger.error('Failed to start Telegram bot:', error);
+            process.exit(1);
+        }
     }
 }
 

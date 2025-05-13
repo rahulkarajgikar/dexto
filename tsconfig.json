@@ -4,14 +4,22 @@
         "module": "NodeNext",
         "moduleResolution": "NodeNext",
         "esModuleInterop": true,
-        "outDir": "./dist",
-        "rootDir": ".",
         "strict": false,
         "skipLibCheck": true,
         "forceConsistentCasingInFileNames": true,
         "types": ["node", "vitest/globals"],
         "lib": ["ES2022", "DOM"]
     },
-    "include": ["src/**/*", "app/**/*", "**/*.test.ts", "**/*.spec.ts", "vitest.config.ts"],
-    "exclude": ["node_modules"]
+    "files": [],
+    "include": [],
+    "exclude": ["node_modules"],
+    "references": [
+        { "path": "./packages/logger" },
+        { "path": "./packages/core" },
+        { "path": "./packages/cli" },
+        { "path": "./packages/discord" },
+        { "path": "./packages/telegram" },
+        { "path": "./packages/web" },
+        { "path": "./packages/saiki" }
+    ]
 }

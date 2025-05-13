@@ -265,7 +265,39 @@ importers:
         specifier: ^2.4.4
         version: 2.4.4
 
-  packages/saiki: {}
+  packages/saiki:
+    dependencies:
+      '@saiki/cli':
+        specifier: workspace:*
+        version: link:../cli
+      '@saiki/core':
+        specifier: workspace:*
+        version: link:../core
+      '@saiki/discord':
+        specifier: workspace:*
+        version: link:../discord
+      '@saiki/logger':
+        specifier: workspace:*
+        version: link:../logger
+      '@saiki/telegram':
+        specifier: workspace:*
+        version: link:../telegram
+      '@saiki/web':
+        specifier: workspace:*
+        version: link:../web
+      commander:
+        specifier: ^12.0.0
+        version: 12.1.0
+      dotenv:
+        specifier: ^16.4.7
+        version: 16.4.7
+    devDependencies:
+      '@types/node':
+        specifier: ^20.11.17
+        version: 20.17.36
+      typescript:
+        specifier: ^5.3.3
+        version: 5.8.2
 
   packages/telegram:
     dependencies:

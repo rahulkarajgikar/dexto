@@ -1,7 +1,7 @@
-import { logger } from '../../src/utils/logger.js';
+import { logger } from '@saiki/logger';
 import boxen from 'boxen';
 import chalk from 'chalk';
-import { EventSubscriber } from '../../src/api/types.js';
+import { EventSubscriber } from '@saiki/core';
 import { EventEmitter } from 'events';
 
 /**

@@ -1,6 +1,7 @@
 // Export core classes and functions
 export { SaikiAgent } from './ai/agent/SaikiAgent.js'; // Adjusted path
 export { createAgentServices } from './utils/service-initializer.js';
+export type { AgentServices } from './utils/service-initializer.js';
 
 // Export configuration schemas and types
 export * from './config/schemas.js';

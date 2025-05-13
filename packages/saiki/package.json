@@ -1,25 +1,27 @@
 {
   "name": "@truffle-ai/saiki",
   "version": "0.1.0",
-  "private": false,
-  "description": "Saiki AI Coding Assistant - CLI and Web UI.",
+  "private": true,
+  "description": "Application layer for saiki",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "bin": {
-    "saiki": "dist/cli.js"
+    "saiki": "dist/main.js"
   },
-  "files": [
-    "dist",
-    "public",
-    "configuration"
-  ],
   "scripts": {
-    "build": "tsc -b && pnpm run bundle:web",
-    "clean": "rm -rf dist public",
-    "dev": "tsc -b --watch",
-    "bundle:web": "echo \"Bundling web assets (placeholder)...\""
+    "build": "tsc -b",
+    "dev": "tsc -b -w",
+    "clean": "rm -rf dist tsconfig.tsbuildinfo"
   },
-  "dependencies": {},
-  "devDependencies": {},
-  "license": "MIT"
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "discord.js": "^14.15.3",
+    "node-telegram-bot-api": "^0.66.0",
+    "commander": "^12.1.0",
+    "@saiki/core": "workspace:*",
+    "@saiki/logger": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3"
+  }
 } 

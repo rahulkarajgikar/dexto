@@ -5,7 +5,7 @@
     "rootDir": "./src",      // Root directory of source files
     "composite": true,
     "tsBuildInfoFile": "./dist/.tsbuildinfo",
-    "moduleResolution": "NodeNext", // Change from "node" to "NodeNext"
+    "moduleResolution": "NodeNext",
     "esModuleInterop": true,    // Allows default imports from commonjs modules
     "skipLibCheck": true,       // Optional: Speeds up compilation slightly
     "forceConsistentCasingInFileNames": true,
@@ -14,7 +14,7 @@
     "sourceMap": true               // Add source map generation
   },
   "include": ["src/server/**/*.ts"], // Only compile server-side TS initially
-  "exclude": ["node_modules", "dist", "src/client"],
+  "exclude": ["node_modules", "dist", "src/client", "src/**/*.test.ts", "src/**/*.spec.ts"],
   "references": [
     { "path": "../core" },       // Reference the core package
     { "path": "../logger" }      // Reference the logger package

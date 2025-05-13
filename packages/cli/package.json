@@ -5,14 +5,11 @@
   "description": "CLI interface for Saiki.",
   "type": "module",
   "main": "dist/index.js",
-  "bin": {
-    "saiki-cli": "dist/index.js"
-  },
+  "exports": { "import": "./dist/index.js", "require": "./dist/index.js" },
   "scripts": {
-    "build": "tsc",
+    "build": "tsc -b",
     "clean": "rm -rf dist",
     "dev": "tsc --watch",
-    "start": "node dist/index.js",
     "lint": "eslint .",
     "format": "prettier --write ."
   },

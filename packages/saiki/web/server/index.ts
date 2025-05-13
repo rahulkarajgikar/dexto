@@ -1,10 +1,8 @@
 import express from 'express';
 import { logger } from '@saiki/logger';
-import { resolvePackagePath, initializeApi, SaikiAgent } from '@saiki/core'; // Assuming these moved to core
-import type { AgentCard } from '@saiki/core'; // Assuming type moved to core
+import { resolvePackagePath, initializeApi, SaikiAgent } from '@saiki/core';
+import type { AgentCard } from '@saiki/core';
 import os from 'os';
-
-// TODO: Update placeholders with actual package paths once core/api migration is done
 
 export async function startWebUI(
     agent: SaikiAgent,

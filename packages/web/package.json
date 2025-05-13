@@ -6,12 +6,12 @@
   "type": "module",
   "main": "dist/server/index.js",
   "scripts": {
-    "build": "tsc && npm run copy-client-assets",
+    "build": "tsc -b && npm run copy-client-assets",
     "clean": "rm -rf dist public",
     "dev": "tsc --watch",
     "copy-client-assets": "copyfiles -u 1 -f src/client/* dist/public/",
     "start": "node dist/server/index.js",
-    "lint": "eslint .",
+    "lint": "eslint . --ext .ts,.tsx",
     "format": "prettier --write ."
   },
   "keywords": [],

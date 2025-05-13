@@ -1,5 +1,7 @@
 import express from 'express';
+import type { Express } from 'express';
 import http from 'http';
+import type { Server as HttpServer } from 'http';
 import { WebSocketServer } from 'ws';
 import type { WebSocket } from 'ws';
 import { WebSocketEventSubscriber } from './websocket-subscriber.js';
@@ -12,8 +14,19 @@ import { initializeMcpServerEndpoints } from './mcp_handler.js';
 import { createAgentCard } from '../config/agentCard.js'; // Updated path relative to core
 import { SaikiAgent } from '../ai/agent/SaikiAgent.js'; // Updated path relative to core
 
+// Define the return type structure
+interface InitializeApiResult {
+    app: Express;
+    server: HttpServer;
+    wss: WebSocketServer;
+    webSubscriber: WebSocketEventSubscriber;
+}
+
 // TODO: API endpoint names are work in progress and might be refactored/renamed in future versions
-export async function initializeApi(agent: SaikiAgent, agentCardOverride?: Partial<AgentCard>) {
+export async function initializeApi(
+    agent: SaikiAgent,
+    agentCardOverride?: Partial<AgentCard>
+): Promise<InitializeApiResult> {
     const app = express();
     const server = http.createServer(app);
     const wss = new WebSocketServer({ server });
@@ -30,7 +43,7 @@ export async function initializeApi(agent: SaikiAgent, agentCardOverride?: Parti
             return res.status(400).send({ error: 'Missing message content' });
         }
         try {
-            agent.run(req.body.message);
+            agent.run(req.body.message, undefined);
             res.status(202).send({ status: 'processing' });
         } catch (error) {
             logger.error(`Error handling POST /api/message: ${error.message}`);

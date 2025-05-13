@@ -4,17 +4,18 @@
   "description": "Your command center for controlling computers and services with natural language - connect once, command everything",
   "type": "module",
   "private": true,
-  "main": "dist/app/index.js",
+  "main": "./packages/saiki/dist/main.js",
   "bin": {
-    "saiki": "./dist/app/index.js"
+    "saiki": "./packages/saiki/dist/main.js"
   },
   "scripts": {
     "clean": "pnpm -r --parallel clean",
     "prebuild": "",
-    "build": "pnpm -r build",
+    "build": "tsc -b",
+    "build:clean": "pnpm run clean && pnpm run build",
     "prepare": "husky install",
-    "copy-client": "npx rimraf public && mkdir public && npx copyfiles -f \"app/web/client/*\" public",
-    "start": "node dist/app/index.js",
+    "copy-client": "npx rimraf public && mkdir public && npx copyfiles -f \"packages/saiki/web/client/*\" public",
+    "start": "node packages/saiki/dist/main.js",
     "dev": "tsc --watch",
     "lint": "pnpm -r --parallel lint",
     "lint:fix": "pnpm -r --parallel lint:fix",
