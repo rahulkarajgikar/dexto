@@ -1,0 +1,16 @@
+{
+  "name": "@saiki/core",
+  "version": "0.1.0",
+  "private": false,
+  "description": "Core logic for Saiki agent, LLM services, config management, and client utilities.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -b",
+    "clean": "rm -rf dist",
+    "dev": "tsc -b --watch"
+  },
+  "dependencies": {},
+  "devDependencies": {},
+  "license": "MIT"
+} 

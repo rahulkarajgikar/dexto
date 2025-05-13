@@ -1,0 +1,25 @@
+{
+  "name": "@saiki/logger",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Shared logger utility for Saiki packages.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -b",
+    "clean": "rm -rf dist",
+    "dev": "tsc -b --watch"
+  },
+  "dependencies": {
+    "boxen": "^7.1.1",
+    "chalk": "^5.3.0",
+    "winston": "^3.13.0"
+  },
+  "devDependencies": {
+    "@types/boxen": "^3.0.1",
+    "@types/node": "^20.14.10",
+    "@types/winston": "^2.4.4"
+  },
+  "license": "UNLICENSED"
+} 

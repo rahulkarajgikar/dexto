@@ -1,0 +1,25 @@
+{
+  "name": "truffle-ai/saiki",
+  "version": "0.1.0",
+  "private": false,
+  "description": "Saiki AI Coding Assistant - CLI and Web UI.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "saiki": "dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "public",
+    "configuration"
+  ],
+  "scripts": {
+    "build": "tsc -b && pnpm run bundle:web",
+    "clean": "rm -rf dist public",
+    "dev": "tsc -b --watch",
+    "bundle:web": "echo \"Bundling web assets (placeholder)...\""
+  },
+  "dependencies": {},
+  "devDependencies": {},
+  "license": "MIT"
+} 

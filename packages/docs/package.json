@@ -1,0 +1,14 @@
+{
+  "name": "@saiki/docs",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Documentation for Saiki.",
+  "scripts": {
+    "build": "echo \"Building docs (placeholder)...\"",
+    "clean": "echo \"Cleaning docs (placeholder)...\"",
+    "dev": "echo \"Serving docs (placeholder)...\""
+  },
+  "dependencies": {},
+  "devDependencies": {},
+  "license": "UNLICENSED"
+} 

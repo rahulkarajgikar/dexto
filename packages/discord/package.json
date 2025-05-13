@@ -1,0 +1,16 @@
+{
+  "name": "@saiki/discord",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Discord bot for Saiki.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -b",
+    "clean": "rm -rf dist",
+    "dev": "tsc -b --watch"
+  },
+  "dependencies": {},
+  "devDependencies": {},
+  "license": "UNLICENSED"
+} 

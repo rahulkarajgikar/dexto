@@ -1,0 +1,17 @@
+{
+  "name": "@saiki/web",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Web UI (server and client) for Saiki.",
+  "main": "dist/server/index.js",
+  "types": "dist/server/index.d.ts",
+  "scripts": {
+    "build": "tsc -b && vite build",
+    "clean": "rm -rf dist",
+    "dev:server": "tsc -b --watch",
+    "dev:client": "vite dev"
+  },
+  "dependencies": {},
+  "devDependencies": {},
+  "license": "UNLICENSED"
+} 

@@ -65,7 +65,7 @@ const consoleFormat = winston.format.printf(({ level, message, timestamp, color 
 const SHOULD_REDACT = process.env.REDACT_SECRETS !== 'false';
 const SENSITIVE_KEYS = ['apiKey', 'password', 'secret', 'token'];
 const MASK_REGEX = new RegExp(
-    `(${SENSITIVE_KEYS.join('|')})(["']?\\s*[:=]\\s*)(["'])?.*?\\3`,
+    `(${SENSITIVE_KEYS.join('|')})([\"']?\\s*[:=]\\s*)([\"'])?.*?\\3`,
     'gi'
 );
 const maskFormat = winston.format((info) => {
