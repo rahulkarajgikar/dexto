@@ -2,11 +2,11 @@ import type { Express } from 'express';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { ReadResourceCallback } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
-import type { AgentCard } from '../config/types.js'; // Adjusted path relative to core
-import { logger } from '@saiki/logger'; // Adjusted path assuming logger is a dependency
+import type { AgentCard } from '@saiki/core';
+import { logger } from '@saiki/logger';
 import { z } from 'zod';
 import express from 'express';
-import { SaikiAgent } from '../ai/agent/SaikiAgent.js'; // Adjusted path relative to core
+import { SaikiAgent } from '@saiki/core';
 
 /**
  * Initializes and sets up the MCP server, its tools, resources, and HTTP endpoints.

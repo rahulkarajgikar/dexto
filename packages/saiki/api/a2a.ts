@@ -1,6 +1,6 @@
 import type { Express } from 'express';
-import type { AgentCard } from '../config/types.js'; // Adjusted path relative to core
-import { logger } from '@saiki/logger'; // Adjusted path assuming logger is a dependency
+import type { AgentCard } from '@saiki/core';
+import { logger } from '@saiki/logger';
 
 /**
  * Sets up the A2A Agent Card endpoint.

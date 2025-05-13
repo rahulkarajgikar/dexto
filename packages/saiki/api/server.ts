@@ -8,11 +8,11 @@ import { WebSocketEventSubscriber } from './websocket-subscriber.js';
 import { logger } from '@saiki/logger'; // Updated path assuming logger is a dependency
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { randomUUID } from 'crypto';
-import type { AgentCard } from '../config/types.js'; // Updated path relative to core
+import type { AgentCard } from '@saiki/core';
 import { setupA2ARoutes } from './a2a.js';
 import { initializeMcpServerEndpoints } from './mcp_handler.js';
-import { createAgentCard } from '../config/agentCard.js'; // Updated path relative to core
-import { SaikiAgent } from '../ai/agent/SaikiAgent.js'; // Updated path relative to core
+import { createAgentCard } from '@saiki/core';
+import { SaikiAgent } from '@saiki/core';
 
 // Define the return type structure
 interface InitializeApiResult {
