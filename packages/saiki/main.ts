@@ -107,13 +107,27 @@ if (options.model) {
     }
 }
 
-const configFile = options.configFile;
+let determinedConfigFile = options.configFile;
+
+// If the CLI option wasn't used (i.e., it's still the default value from commander)
+// AND the environment variable is set, then use the environment variable.
+if (options.configFile === DEFAULT_CONFIG_PATH && process.env.SAIKI_CONFIG_PATH) {
+    determinedConfigFile = process.env.SAIKI_CONFIG_PATH;
+    logger.debug(
+        `Using config path from SAIKI_CONFIG_PATH environment variable: ${determinedConfigFile}`
+    );
+} else if (options.configFile !== DEFAULT_CONFIG_PATH) {
+    logger.debug(`Using config path from --config-file CLI argument: ${determinedConfigFile}`);
+} else {
+    logger.debug(`Using default config path: ${determinedConfigFile}`);
+}
+
 const connectionMode = options.strict ? 'strict' : ('lenient' as 'strict' | 'lenient');
 const runMode = options.mode.toLowerCase();
 const webPort = parseInt(options.webPort, 10);
-const resolveFromPackageRoot = configFile === DEFAULT_CONFIG_PATH; // Check if should resolve from package root
+const resolveFromPackageRootLogic = determinedConfigFile === DEFAULT_CONFIG_PATH;
 // Platform-independent path handling
-const normalizedConfigPath = resolvePackagePath(configFile, resolveFromPackageRoot);
+const normalizedConfigPath = resolvePackagePath(determinedConfigFile, resolveFromPackageRootLogic);
 
 // basic validation of options here
 try {

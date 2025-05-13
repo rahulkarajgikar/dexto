@@ -1,10 +1,11 @@
 {
   "name": "@truffle-ai/saiki",
-  "version": "0.1.0",
-  "private": true,
-  "description": "Application layer for saiki",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "version": "0.2.1",
+  "private": false,
+  "description": "Your command center for controlling computers and services with natural language - connect once, command everything",
+  "type": "module",
+  "main": "dist/main.js",
+  "types": "dist/main.d.ts",
   "bin": {
     "saiki": "dist/main.js"
   },
@@ -12,15 +13,62 @@
     "build": "tsc -b",
     "dev": "tsc -b -w",
     "clean": "rm -rf dist tsconfig.tsbuildinfo",
-    "test": "vitest run"
+    "test": "vitest run",
+    "start": "node dist/main.js"
   },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "ai",
+    "cli",
+    "natural-language",
+    "openai",
+    "truffle-ai"
+  ],
+  "author": "",
+  "license": "Elastic-2.0",
+  "files": [
+    "dist/",
+    "default_configuration/"
+  ],
   "dependencies": {
-    "dotenv": "^16.4.5",
-    "discord.js": "^14.15.3",
+    "dotenv": "^16.4.7",
+    "discord.js": "^14.19.3",
     "node-telegram-bot-api": "^0.66.0",
     "commander": "^12.1.0",
     "@saiki/core": "workspace:*",
-    "@saiki/logger": "workspace:*"
+    "@saiki/logger": "workspace:*",
+    "@ai-sdk/anthropic": "^1.2.2",
+    "@ai-sdk/google": "^1.2.8",
+    "@ai-sdk/openai": "^1.3.3",
+    "@anthropic-ai/sdk": "^0.39.0",
+    "@modelcontextprotocol/sdk": "^1.11.0",
+    "ai": "^4.2.6",
+    "boxen": "^7.1.1",
+    "chalk": "^5.4.1",
+    "copyfiles": "^2.4.1",
+    "express": "^4.21.2",
+    "marked": "^15.0.8",
+    "openai": "^4.89.0",
+    "ora": "^7.0.1",
+    "puppeteer-core": "^24.4.0",
+    "readline-sync": "^1.4.10",
+    "rimraf": "^6.0.1",
+    "tiktoken": "^1.0.21",
+    "winston": "^3.17.0",
+    "ws": "^8.18.1",
+    "yaml": "^2.7.1",
+    "zod": "^3.24.3",
+    "cli-table3": "^0.6.5",
+    "cors": "^2.8.5",
+    "fastmcp": "^1.20.5",
+    "figlet": "^1.8.0",
+    "fuse.js": "^7.0.0",
+    "gradient-string": "^3.0.0",
+    "helmet": "^8.1.0",
+    "inquirer": "^12.5.0",
+    "jsonwebtoken": "^9.0.2",
+    "lru-cache": "^10.2.0"
   },
   "devDependencies": {
     "typescript": "^5.3.3"

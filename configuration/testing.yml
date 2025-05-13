@@ -11,7 +11,7 @@ mcpServers:
     type: stdio
     command: node
     args:
-      - packages/saiki/dist/servers/puppeteerServer.js
+      - dist/src/servers/puppeteerServer.js
 
 # # describes the llm configuration
 llm:
@@ -47,6 +47,11 @@ llm:
         priority: 10
         source: dateTime
         enabled: true
+      - id: toolListing
+        type: dynamic
+        priority: 20
+        source: toolListing
+        enabled: false
   apiKey: $OPENAI_API_KEY
 
 ## To use Google Gemini, replace the OpenAI configuration with Google Gemini configuration below

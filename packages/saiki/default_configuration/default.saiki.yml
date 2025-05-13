@@ -11,7 +11,7 @@ mcpServers:
     type: stdio
     command: node
     args:
-      - packages/saiki/dist/servers/puppeteerServer.js
+      - dist/servers/puppeteerServer.js
 
 # # describes the llm configuration
 llm:
@@ -60,4 +60,4 @@ llm:
 #     Use these tools when appropriate to answer user queries.
 #     You can use multiple tools in sequence to solve complex problems.
 #     After each tool result, determine if you need more information or can provide a final answer.
-#   apiKey: $GOOGLE_GENERATIVE_AI_API_KEY
+#   apiKey: $GOOGLE_GENERATIVE_AI_API_KEY 

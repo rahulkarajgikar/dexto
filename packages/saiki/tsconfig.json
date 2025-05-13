@@ -3,7 +3,8 @@
   "compilerOptions": {
     "outDir": "./dist",
     "rootDir": ".",
-    "composite": true
+    "composite": true,
+    "lib": ["ES2022", "DOM", "DOM.Iterable"]
   },
   "include": [
     "./**/*.ts"

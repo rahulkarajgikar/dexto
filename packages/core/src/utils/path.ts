@@ -17,24 +17,8 @@ export function resolvePackagePath(targetPath: string, resolveFromPackageRoot: b
     if (path.isAbsolute(targetPath)) {
         return targetPath;
     }
-    if (resolveFromPackageRoot) {
-        // Resolve relative to the package root by locating package.json upwards
-        const scriptPath = fileURLToPath(import.meta.url);
-        let dir = path.dirname(scriptPath);
-        while (true) {
-            const pkgPath = path.join(dir, 'package.json');
-            if (fs.existsSync(pkgPath)) {
-                return path.resolve(dir, targetPath);
-            }
-            const parent = path.dirname(dir);
-            if (parent === dir) {
-                throw new Error(
-                    `Cannot find package root when resolving default path: ${targetPath}`
-                );
-            }
-            dir = parent;
-        }
-    }
-    // User-specified relative path
+    // If resolving from package root (typically for the default config path)
+    // or if it's a user-specified relative path, resolve from CWD.
+    // This assumes CWD is the project root when loading the default config.
     return path.resolve(process.cwd(), targetPath);
 }
