@@ -7,8 +7,8 @@ import { DEFAULT_CONFIG_PATH, resolvePackagePath } from '../src/utils/path.js';
 import { createAgentServices, AgentServices } from '../src/utils/service-initializer.js';
 import { startAiCli, startHeadlessCli } from './cli/cli.js';
 import { startWebUI } from './web/server.js';
-import { startDiscordBot } from './discord/bot.js';
-import { startTelegramBot } from './telegram/bot.js';
+// import { startDiscordBot } from './discord/bot.js'; // Removed Discord import
+// import { startTelegramBot } from './telegram/bot.js'; // Removed Telegram import
 import { validateCliOptions, handleCliOptionsError } from '../src/utils/options.js';
 import { getProviderFromModel, getAllSupportedModels } from '../src/ai/llm/registry.js';
 import { SaikiAgent } from '../src/ai/agent/SaikiAgent.js';
@@ -179,20 +179,24 @@ async function startApp() {
         logger.info(`WebUI available at http://localhost:${webPort}`, null, 'magenta');
     } else if (runMode === 'discord') {
         logger.info('Starting Discord bot...', null, 'cyanBright');
-        try {
-            startDiscordBot(services);
-        } catch (error) {
-            logger.error('Failed to start Discord bot:', error);
-            process.exit(1);
-        }
+        // TODO: Re-implement Discord bot start using the @saiki/discord package
+        logger.warn('Discord bot integration is currently disabled pending migration.');
+        // try {
+        //     startDiscordBot(services);
+        // } catch (error) {
+        //     logger.error('Failed to start Discord bot:', error);
+        //     process.exit(1);
+        // }
     } else if (runMode === 'telegram') {
         logger.info('Starting Telegram bot...', null, 'cyanBright');
-        try {
-            startTelegramBot(services);
-        } catch (error) {
-            logger.error('Failed to start Telegram bot:', error);
-            process.exit(1);
-        }
+        // TODO: Re-implement Telegram bot start using the @saiki/telegram package
+        logger.warn('Telegram bot integration is currently disabled pending migration.');
+        // try {
+        //     startTelegramBot(services);
+        // } catch (error) {
+        //     logger.error('Failed to start Telegram bot:', error);
+        //     process.exit(1);
+        // }
     }
 }
 

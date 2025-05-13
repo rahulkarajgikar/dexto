@@ -248,195 +248,305 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 break;
             }
-            case 'toolCall':
-                appendExpandableMessage(
-                    `<p class="tool-call-header">🛠️ <strong>Tool Call:</strong> ${escapeHtml(message.data.toolName)}</p>`,
-                    `<pre class="tool-call-args">${escapeHtml(JSON.stringify(message.data.args, null, 2))}</pre>`,
-                    'tool-call'
-                );
-                break;
-            case 'toolResult':
-                // Check for image data in the tool result
-                let resultHtml = '';
-                if (message.data.result && message.data.result.image && message.data.result.image.base64) {
-                    const { base64, mimeType } = message.data.result.image;
-                    lastToolImageSrc = `data:${mimeType};base64,${base64}`;
-                    resultHtml = `<p class="tool-result-text">✅ <strong>Tool Result:</strong> ${escapeHtml(message.data.toolName)} (Image displayed with next AI response)</p>`;
-                } else if (message.data.result && typeof message.data.result === 'string') {
-                    resultHtml = `<p class="tool-result-header">✅ <strong>Tool Result:</strong> ${escapeHtml(message.data.toolName)}</p><pre class="tool-result-output">${escapeHtml(message.data.result)}</pre>`;
-                } else {
-                    resultHtml = `<p class="tool-result-header">✅ <strong>Tool Result:</strong> ${escapeHtml(message.data.toolName)}</p><pre class="tool-result-output">${escapeHtml(JSON.stringify(message.data.result, null, 2))}</pre>`;
-                }
-                appendExpandableMessage(resultHtml, '', 'tool-result');
-                break;
-            case 'error':
-                displaySystemMessage(`Server error: ${message.data.message}`, 'error');
-                break;
-            case 'conversationReset':
-                chatLog.innerHTML = ''; // Clear all messages
+            case 'toolCall': {
+                const argsString = JSON.stringify(message.data.args, null, 2);
+                const headerHtml = `<strong>Tool Call:</strong> ${escapeHtml(message.data.toolName)}`;
+                const contentHtml = `<pre><code>${escapeHtml(argsString)}</code></pre>`;
+                appendExpandableMessage(headerHtml, contentHtml, 'tool-call');
                 currentAiMessageElement = null;
-                thinkingIndicatorElement = null;
-                lastToolImageSrc = null;
-                removeImage(); // Also clear any user-selected image
-                displaySystemMessage('Conversation history has been reset.', 'info');
                 break;
-            default:
-                console.warn('Received unknown WebSocket event:', message);
+            }
+            case 'toolResult': {
+                let resultString;
+                const result = message.data.result; // Store result for easier access
+                try {
+                    resultString = JSON.stringify(result, null, 2);
+                } catch {
+                    resultString = String(result);
+                }
+                const headerHtml = `<strong>Tool Result:</strong> ${escapeHtml(message.data.toolName)}`;
+                const contentHtml = `<pre><code>${escapeHtml(resultString)}</code></pre>`;
+                appendExpandableMessage(headerHtml, contentHtml, 'tool-result');
+
+                // --- Check for image data and store it ---
+                // Clear previous image source first
+                lastToolImageSrc = null;
+
+                if (result && Array.isArray(result.content)) {
+                    // Prioritize structured image data with mimeType
+                    const imagePartWithData = result.content.find(item => item.type === 'image' && item.data && item.mimeType);
+                    if (imagePartWithData) {
+                        lastToolImageSrc = `data:${imagePartWithData.mimeType};base64,${imagePartWithData.data}`;
+                    } else {
+                        // Fallback: Check for image part with direct url/image source
+                        const imagePartWithSrc = result.content.find(item => item.type === 'image' && (item.url || item.image));
+                        if (imagePartWithSrc) {
+                            lastToolImageSrc = imagePartWithSrc.url || imagePartWithSrc.image;
+                        }
+                    }
+                } 
+                // Fallback 1: Direct data URI string?
+                else if (typeof result === 'string' && result.startsWith('data:image')) {
+                    lastToolImageSrc = result;
+                } 
+                // Fallback 2: Object with known image properties?
+                else if (result && typeof result === 'object') {
+                    if (result.screenshot) { // Prioritize screenshot as it's often specific
+                        lastToolImageSrc = result.screenshot;
+                    } else if (result.image) {
+                        lastToolImageSrc = result.image;
+                    } else if (result.url && typeof result.url === 'string' && (result.url.startsWith('data:image') || result.url.startsWith('http'))) { 
+                        // Ensure URL is likely an image source
+                        lastToolImageSrc = result.url;
+                    } else if (Array.isArray(result.images) && result.images.length > 0 && typeof result.images[0] === 'string') {
+                         // Handle HF-style { images: [...] }
+                        lastToolImageSrc = result.images[0];
+                    }
+                }
+                // --- End image check ---
+
+                currentAiMessageElement = null;
+                break;
+            }
+            case 'error': {
+                displaySystemMessage(`Error: ${message.data.message}`, 'error');
+                currentAiMessageElement = null;
+                break;
+            }
+            case 'conversationReset': {
+                chatLog.innerHTML = '';
+                displaySystemMessage('Conversation history cleared.', 'status');
+                currentAiMessageElement = null;
+                shouldScroll = true;
+                break;
+            }
+            default: {
+                console.warn('Received unknown event type:', message.event);
+                break;
+            }
         }
         if (shouldScroll) {
             scrollToBottom();
         }
     }
 
-    // --- Modal Handling ---
-    connectServerButton.onclick = () => {
-        modal.style.display = "block";
-    }
-    closeModalButton.onclick = () => {
-        modal.style.display = "none";
-    }
-    window.onclick = (event) => {
-        if (event.target == modal) {
-            modal.style.display = "none";
-        }
-    }
-    serverTypeSelect.onchange = () => {
-        if (serverTypeSelect.value === 'stdio') {
-            stdioOptionsDiv.style.display = 'block';
-            sseOptionsDiv.style.display = 'none';
-        } else {
-            stdioOptionsDiv.style.display = 'none';
-            sseOptionsDiv.style.display = 'block';
-        }
-    };
-
-    connectServerForm.onsubmit = async (event) => {
-        event.preventDefault();
-        const serverName = document.getElementById('server-name').value;
-        const serverType = serverTypeSelect.value;
-        let config = {};
-
-        if (serverType === 'stdio') {
-            const command = document.getElementById('server-command').value;
-            const argsString = document.getElementById('server-args').value;
-            const args = argsString ? argsString.split(',').map(arg => arg.trim()) : [];
-            config = { type: 'stdio', command, args };
-        } else {
-            const url = document.getElementById('server-url').value;
-            config = { type: 'sse', url };
-        }
-
-        try {
-            const response = await fetch('/api/connect-server', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name: serverName, config }),
-            });
-            const result = await response.json();
-            if (response.ok) {
-                displaySystemMessage(`Successfully initiated connection to server '${serverName}'.`, 'success');
-            } else {
-                displaySystemMessage(`Failed to connect to server '${serverName}': ${result.error || 'Unknown error'}`, 'error');
-            }
-        } catch (error) {
-            displaySystemMessage(`Error connecting to server '${serverName}': ${error.message}`, 'error');
-        }
-        modal.style.display = "none";
-    };
-
     function connectWebSocket() {
-        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        ws = new WebSocket(`${protocol}//${window.location.host}`);
+        const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const wsUrl = `${wsProtocol}//${window.location.host}`;
+
+        console.log(`Attempting to connect WebSocket to: ${wsUrl}`);
+        statusIndicator.classList.add('connecting');
+        statusIndicator.setAttribute('data-tooltip', 'Connecting...');
+
+        ws = new WebSocket(wsUrl);
 
         ws.onopen = () => {
-            displaySystemMessage('Connected to server.', 'success');
-            statusIndicator.classList.remove('disconnected');
+            console.log('WebSocket connection established');
+            // Connection status indicator
+            statusIndicator.classList.remove('error', 'connecting');
             statusIndicator.classList.add('connected');
-            statusIndicator.dataset.tooltip = "Connected";
+            statusIndicator.setAttribute('data-tooltip', 'Connected');
+            messageInput.disabled = false;
+            sendButton.disabled = false;
+            resetButton.disabled = false;
         };
 
         ws.onmessage = (event) => {
+            console.log('WebSocket message received:', event.data);
             try {
                 const message = JSON.parse(event.data);
-                handleWebSocketMessage(message);
-            } catch (e) {
-                console.error("Error parsing WebSocket message:", e);
-                displaySystemMessage('Received malformed message from server.', 'error');
+                handleWebSocketMessage(message); // Call helper defined above
+            } catch (error) {
+                console.error('Failed to parse WebSocket message:', error);
+                displaySystemMessage('Received invalid data from server.', 'error');
             }
-        };
-
-        ws.onclose = () => {
-            displaySystemMessage('Disconnected from server. Attempting to reconnect...', 'warn');
-            statusIndicator.classList.remove('connected');
-            statusIndicator.classList.add('disconnected');
-            statusIndicator.dataset.tooltip = "Disconnected. Retrying...";
-            currentAiMessageElement = null;
-            removeThinkingIndicator();
-            // Attempt to reconnect after a delay
-            setTimeout(connectWebSocket, 3000);
         };
 
         ws.onerror = (error) => {
             console.error('WebSocket error:', error);
-            displaySystemMessage('WebSocket connection error.', 'error');
-            // ws.onclose will likely be called next, triggering reconnection logic
+            statusIndicator.classList.remove('connected');
+            statusIndicator.classList.add('error');
+            statusIndicator.setAttribute('data-tooltip', 'Connection Error');
+            displaySystemMessage('WebSocket connection error. Please try refreshing.', 'error');
+            messageInput.disabled = true;
+            sendButton.disabled = true;
+            resetButton.disabled = true;
+        };
+
+        ws.onclose = (event) => {
+            console.log(`WebSocket connection closed. Code: ${event.code}, Reason: ${event.reason}`);
+            statusIndicator.classList.remove('connected');
+            statusIndicator.classList.add('error');
+            statusIndicator.setAttribute('data-tooltip', `Disconnected: ${event.reason || 'Connection closed'}`);
+            messageInput.disabled = true;
+            sendButton.disabled = true;
+            resetButton.disabled = true;
+            setTimeout(connectWebSocket, 5000);
         };
     }
 
-    // --- Initialize Event Listeners ---
-    messageInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
+    // --- Attach Event Listeners ---
+    sendButton.addEventListener('click', sendMessage);
+    resetButton.addEventListener('click', resetConversation);
+
+    messageInput.addEventListener('keypress', (event) => {
+        if (event.key === 'Enter' && !event.shiftKey) {
+            event.preventDefault();
             sendMessage();
         }
     });
     messageInput.addEventListener('input', adjustTextareaHeight);
-    sendButton.addEventListener('click', sendMessage);
-    resetButton.addEventListener('click', resetConversation);
-    
+
+    // Connect Server Modal Listeners
+    connectServerButton.addEventListener('click', () => {
+        modal.style.display = 'block';
+    });
+
+    if (closeModalButton) {
+        closeModalButton.addEventListener('click', () => {
+            modal.style.display = 'none';
+        });
+    }
+
+    window.addEventListener('click', (event) => {
+        if (event.target === modal) {
+            modal.style.display = 'none';
+        }
+    });
+
+    serverTypeSelect.addEventListener('change', (event) => {
+        const selectedType = event.target.value;
+        stdioOptionsDiv.style.display = selectedType === 'stdio' ? 'block' : 'none';
+        sseOptionsDiv.style.display = selectedType === 'sse' ? 'block' : 'none';
+    });
+    // eslint-disable-next-line no-undef
+    serverTypeSelect.dispatchEvent(new Event('change')); // Set initial visibility
+
+    connectServerForm.addEventListener('submit', async (event) => {
+        event.preventDefault(); // Prevent default form submission behavior
+
+        const serverNameInput = document.getElementById('server-name');
+        const serverCommandInput = document.getElementById('server-command');
+        const serverArgsInput = document.getElementById('server-args');
+        const serverUrlInput = document.getElementById('server-url');
+
+        const serverName = serverNameInput ? serverNameInput.value.trim() : '';
+        const serverType = serverTypeSelect.value;
+
+        if (!serverName) {
+            displaySystemMessage('Server Name is required.', 'error');
+            return;
+        }
+
+        let config = { type: serverType };
+        let isValid = true;
+
+        if (serverType === 'stdio') {
+            const command = serverCommandInput ? serverCommandInput.value.trim() : '';
+            const argsString = serverArgsInput ? serverArgsInput.value.trim() : '';
+            if (!command) {
+                displaySystemMessage('Command is required for stdio server type.', 'error');
+                isValid = false;
+            }
+            config.command = command;
+            config.args = argsString ? argsString.split(',').map(arg => arg.trim()) : [];
+        } else if (serverType === 'sse') {
+            const url = serverUrlInput ? serverUrlInput.value.trim() : '';
+            if (!url) {
+                displaySystemMessage('URL is required for sse server type.', 'error');
+                isValid = false;
+            }
+            try {
+                new URL(url); // eslint-disable-line no-undef
+            } catch (_) { // eslint-disable-line no-unused-vars
+                displaySystemMessage('Invalid URL format.', 'error');
+                isValid = false;
+            }
+            config.url = url;
+        }
+
+        if (!isValid) return;
+
+        displaySystemMessage(`Attempting to connect to server '${serverName}'...`, 'info');
+        modal.style.display = 'none';
+
+        try {
+            const response = await fetch('/api/connect-server', { // eslint-disable-line no-undef
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ name: serverName, config: config }),
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                displaySystemMessage(`Successfully connected to server '${result.name}'.`, 'success');
+                connectServerForm.reset();
+            } else {
+                const errorData = await response.json();
+                displaySystemMessage(`Error connecting to server: ${errorData.error || response.statusText}`, 'error');
+            }
+        } catch (error) {
+            console.error('Failed to send connect server request:', error);
+            displaySystemMessage(`Failed to send connection request: ${error.message}`, 'error');
+        }
+    });
+
+    // --- Image Handling --- 
     imageUpload.addEventListener('change', handleImageUpload);
     removeImageBtn.addEventListener('click', removeImage);
 
-    // --- Initial Setup ---
-    adjustTextareaHeight(); // Initial height adjustment
-    connectWebSocket(); // Initial WebSocket connection
-    displaySystemMessage('Welcome to Saiki! Type your message below.');
-});
+    function handleImageUpload(event) {
+        const file = event.target.files[0];
+        if (file && file.type.startsWith('image/')) {
+            const reader = new FileReader();
 
-function handleImageUpload(event) {
-    const file = event.target.files[0];
-    if (file) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            const mimeType = file.type;
-            currentImageData = { base64: e.target.result.split(',')[1], mimeType }; // Store base64 and mimeType
-            document.getElementById('image-preview').src = e.target.result;
-            document.getElementById('image-preview-container').style.display = 'flex';
+            reader.onload = function(e) {
+                currentImageData = {
+                    base64: e.target.result, // base64 data URL
+                    mimeType: file.type
+                };
+                imagePreview.src = e.target.result;
+                imagePreviewContainer.style.display = 'flex'; // Show preview
+                adjustTextareaHeight(); // Adjust height after preview shown
+            }
+            reader.onerror = function(e) {
+                console.error("FileReader error: ", e);
+                displaySystemMessage('Error reading image file.', 'error');
+                removeImage();
+            }
+            reader.readAsDataURL(file);
+        } else if (file) {
+            displaySystemMessage('Please select a valid image file.', 'error');
+            removeImage(); // Clear any previous selection
         }
-        reader.readAsDataURL(file);
     }
-    // Clear the input value to allow selecting the same file again if removed then re-added
-    event.target.value = null;
-}
 
-function removeImage() {
-    currentImageData = null;
-    document.getElementById('image-preview').src = '#';
-    document.getElementById('image-preview-container').style.display = 'none';
-    // Clear the file input if needed by resetting the form it's in, or by replacing the input element.
-    // For simplicity, we just clear the data. If re-uploading the exact same file without change is needed,
-    // the input field value for 'image-upload' might need explicit clearing.
-    const imageUploadInput = document.getElementById('image-upload');
-    if(imageUploadInput) imageUploadInput.value = ''; // Attempt to clear the file input
-}
+    function removeImage() {
+        imagePreview.src = '#';
+        imagePreviewContainer.style.display = 'none';
+        imageUpload.value = ''; // Reset file input
+        currentImageData = null;
+        adjustTextareaHeight(); // Adjust height after preview hidden
+    }
 
-// Utility to escape HTML (basic version)
+    // --- Initial UI State Setup ---
+    messageInput.disabled = true;
+    sendButton.disabled = true;
+    resetButton.disabled = true;
+    adjustTextareaHeight(); // Adjust initial height
+    connectWebSocket(); // Start WebSocket connection
+
+}); // End of DOMContentLoaded
+
+// --- Non-DOM Helper functions (Can stay global) ---
 function escapeHtml(unsafe) {
-    if (typeof unsafe !== 'string') return '';
+    if (!unsafe) return '';
     return unsafe
          .replace(/&/g, "&amp;")
          .replace(/</g, "&lt;")
          .replace(/>/g, "&gt;")
          .replace(/"/g, "&quot;")
          .replace(/'/g, "&#039;");
-} 
+ }

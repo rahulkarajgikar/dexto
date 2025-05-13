@@ -10,7 +10,14 @@
     "clean": "rm -rf dist",
     "dev": "tsc -b --watch"
   },
-  "dependencies": {},
-  "devDependencies": {},
+  "dependencies": {
+    "discord.js": "^14.15.3",
+    "@saiki/core": "workspace:*",
+    "@saiki/logger": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.10",
+    "typescript": "^5.5.3"
+  },
   "license": "UNLICENSED"
 } 

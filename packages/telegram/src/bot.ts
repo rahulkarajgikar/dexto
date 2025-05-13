@@ -1,10 +1,9 @@
 #!/usr/bin/env node
 import dotenv from 'dotenv';
 import TelegramBot from 'node-telegram-bot-api';
-import { EventEmitter } from 'events';
 import https from 'https';
-import { ILLMService } from '../../src/ai/llm/services/types.js';
-import { MCPClientManager } from '../../src/client/manager.js';
+import { SaikiAgent } from '@saiki/core';
+import { logger } from '@saiki/logger';
 
 // Load environment variables (including TELEGRAM_BOT_TOKEN)
 dotenv.config();
@@ -45,12 +44,10 @@ async function downloadFileAsBase64(
 }
 
 // Insert initTelegramBot to wire up a TelegramBot given pre-initialized services
-export function startTelegramBot(services: {
-    clientManager: MCPClientManager;
-    llmService: ILLMService;
-    agentEventBus: EventEmitter;
-}) {
-    const { clientManager, llmService, agentEventBus } = services;
+export function startTelegramBot(agent: SaikiAgent) {
+    const clientManager = agent.clientManager;
+    const llmService = agent.llmService;
+    const agentEventBus = agent.agentEventBus;
 
     // Create and start Telegram Bot with polling
     const bot = new TelegramBot(token, { polling: true });
@@ -149,7 +146,8 @@ export function startTelegramBot(services: {
             ];
             // Cache the results
             inlineQueryCache[cacheKey] = { timestamp: now, results };
-            await bot.answerInlineQuery(inlineQuery.id, results);
+            // TODO: remove any type and use proper types
+            await bot.answerInlineQuery(inlineQuery.id, results as any);
         } catch (error) {
             console.error('Error handling inline query', error);
             // Inform user about the error through inline results

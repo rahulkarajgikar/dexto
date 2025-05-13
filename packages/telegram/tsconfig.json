@@ -2,9 +2,14 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "outDir": "./dist",
+    "rootDir": "./src",
     "module": "NodeNext",
-    "moduleResolution": "NodeNext"
-    // Add composite, declaration, sourceMap etc. later if needed
+    "moduleResolution": "NodeNext",
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "tsBuildInfoFile": "./dist/.tsbuildinfo",
+    "composite": true
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"],
@@ -12,4 +17,4 @@
     { "path": "../core" },
     { "path": "../logger" }
   ]
-} 
+}

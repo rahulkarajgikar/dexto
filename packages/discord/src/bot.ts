@@ -2,11 +2,8 @@ import dotenv from 'dotenv';
 import { Client, GatewayIntentBits, Partials, Attachment } from 'discord.js';
 import https from 'https';
 import http from 'http'; // ADDED for http support
-import { MCPClientManager } from '../../src/client/manager.js';
-import { ILLMService } from '../../src/ai/llm/services/types.js';
-import { EventEmitter } from 'events';
-import { SaikiAgent } from '../../src/ai/agent/SaikiAgent.js';
-import { logger } from '../../src/utils/logger.js';
+import { SaikiAgent } from '@saiki/core';
+import { logger } from '@saiki/logger';
 
 // Load environment variables
 dotenv.config();
@@ -86,12 +83,10 @@ async function downloadFileAsBase64(
 }
 
 // Insert initDiscordBot to wire up a Discord client given pre-initialized services
-export function startDiscordBot(services: {
-    clientManager: MCPClientManager;
-    llmService: ILLMService;
-    agentEventBus: EventEmitter;
-}) {
-    const { clientManager, llmService, agentEventBus } = services;
+export function startDiscordBot(agent: SaikiAgent) {
+    const clientManager = agent.clientManager;
+    const llmService = agent.llmService;
+    const agentEventBus = agent.agentEventBus;
 
     // Create Discord client
     const client = new Client({

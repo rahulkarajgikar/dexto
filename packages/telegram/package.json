@@ -10,7 +10,15 @@
     "clean": "rm -rf dist",
     "dev": "tsc -b --watch"
   },
-  "dependencies": {},
-  "devDependencies": {},
+  "dependencies": {
+    "@saiki/core": "workspace:*",
+    "@saiki/logger": "workspace:*",
+    "node-telegram-bot-api": "^0.66.0" 
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.10",
+    "@types/node-telegram-bot-api": "^0.64.7",
+    "typescript": "^5.5.3"
+  },
   "license": "UNLICENSED"
 } 

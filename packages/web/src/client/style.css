@@ -248,207 +248,221 @@ header h1 {
 
 .message.error {
     background-color: rgba(180, 80, 60, 0.9); /* Warm red/orange base */
-    color: #f5eadd;
+    color: #ffe0d9; /* Lighter warm error text */
+    font-weight: 500;
+    font-style: normal;
 }
-
 .message.error::before {
-    content: "❌";
+    content: "⚠️";
     position: absolute;
     left: 12px; /* Adjusted position */
-    top: 8px; /* Align with top padding/first line */
+    top: 50%;
+    transform: translateY(-50%);
     font-size: 1rem; /* Adjusted size */
 }
 
 .message.status {
-    background-color: rgba(70, 90, 110, 0.9); /* Muted blue base */
-    color: #e0e8f0;
+    background-color: rgba(90, 80, 75, 0.9); /* Consistent warm grey */
+    color: #b8ab9f; /* Muted warm text */
+    font-style: italic;
 }
-
 .message.status::before {
     content: "ℹ️";
     position: absolute;
     left: 12px; /* Adjusted position */
-    top: 8px; /* Align with top padding/first line */
+    top: 50%;
+    transform: translateY(-50%);
     font-size: 1rem; /* Adjusted size */
 }
 
-/* Styling for code within tool calls/results */
+/* Tool pre/code styling - Initially Hidden */
 .message.tool-call pre,
 .message.tool-result pre {
-    margin-top: 6px;
-    margin-bottom: 0;
-    padding: 8px 12px;
-    background-color: rgba(0, 0, 0, 0.3);
+    display: none;
+    background-color: rgba(40, 35, 30, 0.4); /* Darker warm */
+    color: #e0d6cc;
+    padding: 10px 14px;
     border-radius: 6px;
-    max-height: 200px;
-    overflow-y: auto;
-    white-space: pre-wrap; /* Allow wrapping within pre */
-    word-wrap: break-word; /* Break long lines */
-    display: none; /* Hidden by default */
+    margin-top: 8px;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-size: 0.86em;
+    border: 1px solid rgba(255, 230, 200, 0.06);
 }
 
+/* Style for expanded tool messages */
 .message.tool-call.expanded pre,
 .message.tool-result.expanded pre {
     display: block;
 }
 
+/* Add an indicator for expandable state (optional) */
 .message.tool-call::after, 
 .message.tool-result::after {
-    content: '▶ Show Details';
+    content: '+'; /* Simple plus sign */
     position: absolute;
-    right: 12px;
-    top: 8px;
-    font-size: 0.7rem;
-    color: #a09080;
-    font-style: italic;
+    right: 12px; /* Adjusted right position (was 15px) to fit new padding */
+    top: 50%; /* Center vertically */
+    transform: translateY(-50%); /* Precise vertical centering */
+    font-size: 1.2em;
+    font-weight: bold;
+    color: #b8ab9f; /* Muted warm text */
     transition: transform 0.2s ease;
 }
 
 .message.tool-call.expanded::after,
 .message.tool-result.expanded::after {
-    content: '▼ Hide Details';
-    transform: rotate(0deg); /* Ensure it points down when expanded */
+    content: '−'; /* Minus sign when expanded */
+    /* transform: rotate(180deg); REMOVED - No longer needed with +/- swap */
 }
 
 .message.tool-call code,
 .message.tool-result code {
-    font-family: SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
-    font-size: 0.8rem; /* Smaller code font */
+    /* Styles inherited */
 }
 
-/* Thinking Indicator */
+/* Thinking Indicator - Warm Tones */
 .message.ai.thinking {
-    background-color: transparent; /* No background */
-    box-shadow: none;
-    padding: 6px 12px;
-    margin-bottom: 10px;
-    align-self: flex-start;
+    padding: 12px 18px 12px 42px; /* Adjusted padding for dots */
     position: relative;
+    /* Ensure inner span exists */
+}
+
+/* Dots using pseudo-elements on the main element and the inner span */
+.message.ai.thinking::before,
+.message.ai.thinking::after,
+.message.ai.thinking span::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 5px; /* Slightly smaller dots */
+    height: 5px;
+    background-color: #a89a8e; /* Warm grey dots */
+    border-radius: 50%;
+    animation: thinking-dot 1.4s infinite ease-in-out both;
 }
 
 .message.ai.thinking::before {
-    content: '🤖'; /* Robot emoji */
-    margin-right: 8px;
-    font-size: 1rem;
-    display: inline-block; /* Make it inline */
-    vertical-align: middle;
-    /* Removed animation from robot directly */
+    left: 10px; /* Adjusted position */
+    animation-delay: -0.32s;
 }
 
-/* Add dots using ::after on an inner span */
-.message.ai.thinking span {
-    display: inline-block;
-    vertical-align: middle;
-    font-weight: bold;
-    color: #b0a090; /* Warm grey dots */
+.message.ai.thinking::after {
+    left: 20px; /* Adjusted spacing */
+    animation-delay: -0.16s;
 }
 
 .message.ai.thinking span::after {
-    content: '.';
-    animation: thinking-dot 1.4s infinite step-start;
-    display: inline-block;
-    width: 1.5em; /* Adjust width to fit 3 dots */
-    text-align: left;
+    left: 30px; /* Adjusted spacing */
+    animation-delay: 0s;
 }
 
+/* Keyframes for the bouncing dot effect */
 @keyframes thinking-dot {
-    0%, 20% { content: '.'; }
-    40% { content: '..'; }
-    60%, 80% { content: '...'; }
-    100% { content: '.'; }
+  0%, 80%, 100% { 
+    transform: translateY(-50%) scale(0);
+  } 40% { 
+    transform: translateY(-50%) scale(1.0);
+  }
 }
 
-/* Input Area */
+/* Input Area - Warm Tones */
 #input-area {
-    display: flex;
-    padding: 15px; /* Reduced padding */
+    padding: 15px 25px; /* Adjusted padding */
     border-top: 1px solid rgba(255, 230, 200, 0.08); /* Warm subtle border */
-    background-color: rgba(60, 50, 45, 0.9); /* Slightly different base */
-    align-items: flex-end; /* Align items to bottom */
-    flex-shrink: 0;
+    background-color: rgba(58, 48, 43, 0.7); /* Slightly darker warm base */
+    display: flex;
+    align-items: center;
     gap: 10px;
+    position: relative; /* Needed for absolute positioning of remove button */
 }
 
 #message-input {
     flex-grow: 1;
-    padding: 10px 15px;
-    border: 1px solid rgba(255, 230, 200, 0.15);
-    border-radius: 20px;
-    background-color: rgba(55, 45, 40, 0.95); /* Darker input field */
+    padding: 12px 18px; /* Comfortable padding */
+    border: 1px solid rgba(255, 230, 200, 0.15); /* Warm subtle border */
+    border-radius: 20px; /* Rounded input */
+    background-color: rgba(45, 40, 35, 0.8); /* Darker warm input field */
     color: #f0e6dd;
-    font-size: 0.95rem;
-    resize: none;
-    overflow-y: auto; /* Add scroll for very long input */
-    min-height: 40px; /* Match button height */
-    max-height: 150px; /* Limit expansion */
-    line-height: 1.5;
+    font-size: 1rem;
+    outline: none;
+    transition: border-color 0.2s ease, background-color 0.2s ease;
+    resize: none; /* Prevent manual resizing */
+    min-height: 46px; /* Ensure button alignment */
+    max-height: 150px; /* Limit excessive height */
+    overflow-y: auto; /* Add scroll if needed */
+    line-height: 1.4; /* Adjust line height */
+    scrollbar-width: thin; /* For Firefox */
+    scrollbar-color: rgba(125, 100, 90, 0.6) transparent; /* For Firefox */
 }
 
 #message-input::placeholder {
-    color: #908075; /* Muted placeholder text */
+    color: #a89a8e; /* Warm grey placeholder */
 }
 
 #message-input:focus {
-    outline: none;
-    border-color: rgba(255, 200, 150, 0.5); /* Warm accent focus */
-    box-shadow: 0 0 0 2px rgba(255, 200, 150, 0.15);
+    border-color: rgba(230, 155, 107, 0.5); /* Warm accent focus */
+    background-color: rgba(55, 50, 45, 0.85);
 }
 
 #send-button {
-    background-color: #a87a69; /* Warm accent color */
-    color: white;
+    background-color: #e69b6b; /* Soft orange accent */
+    color: #3a302b; /* Dark brown text for contrast */
     border: none;
-    border-radius: 50%; /* Make it circular */
-    width: 40px;
-    height: 40px;
+    padding: 0; /* Remove padding, use dimensions */
+    width: 44px;  /* Slightly larger */
+    height: 44px; /* Slightly larger */
+    border-radius: 50%; /* Circular button */
     cursor: pointer;
-    font-size: 1.5rem;
+    font-size: 1.2rem; /* Keep reduced icon size */
+    line-height: 1; /* Ensure precise vertical alignment */
     display: flex;
     justify-content: center;
     align-items: center;
-    transition: background-color 0.2s ease, transform 0.1s ease;
-    flex-shrink: 0;
-    padding: 0;
+    flex-shrink: 0; /* Prevent shrinking */
+    transition: background-color 0.2s ease;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    position: relative; /* For pseudo-element */
+    overflow: hidden; /* Prevent content overflow */
 }
 
 #send-button::before {
-    content: '➤'; /* Send icon (unicode arrow) */
-    transform: translateX(1px); /* Slight adjustment for centering */
+    content: '\2191'; /* Up arrow character */
+    font-weight: bold;
 }
 
 #send-button:hover {
-    background-color: #c08f7d; /* Lighter warm accent */
+    background-color: #f0a97a; /* Lighter orange on hover */
 }
 
-/* Status Indicator */
+/* Status Indicator in Header */
 #status-indicator {
     width: 12px;
     height: 12px;
     border-radius: 50%;
-    background-color: #ffcc00; /* Default: Connecting (Yellow) */
+    background-color: #b8ab9f; /* Default: Grey / Disconnected */
+    flex-shrink: 0; /* Prevent shrinking */
     transition: background-color 0.3s ease;
-    position: relative;
-    cursor: default;
-    flex-shrink: 0;
+    position: relative; /* For tooltip */
 }
 
-/* Tooltip - Simple CSS Tooltip */
 #status-indicator::after {
-    content: attr(data-tooltip);
+    content: attr(data-tooltip); /* Tooltip text */
     position: absolute;
-    bottom: 150%; /* Position above the indicator */
+    bottom: 100%;
     left: 50%;
-    transform: translateX(-50%);
+    transform: translateX(-50%) translateY(-5px); /* Position above */
     background-color: rgba(0, 0, 0, 0.8);
-    color: white;
-    padding: 5px 8px;
+    color: #fff;
+    padding: 4px 8px;
     border-radius: 4px;
     font-size: 0.75rem;
     white-space: nowrap;
     opacity: 0;
     visibility: hidden;
     transition: opacity 0.2s ease, visibility 0.2s ease;
-    z-index: 10;
+    pointer-events: none; /* Don't interfere with clicks */
 }
 
 #status-indicator:hover::after {
@@ -457,81 +471,88 @@ header h1 {
 }
 
 #status-indicator.connected {
-    background-color: #4caf50; /* Green */
-}
-#status-indicator.error {
-    background-color: #f44336; /* Red */
-}
-#status-indicator.connecting {
-    background-color: #ffcc00; /* Yellow */
+    background-color: #64c864; /* Green */
 }
 
-/* Thinking state with subtle animation */
+#status-indicator.error {
+    background-color: #c86464; /* Red */
+}
+
+#status-indicator.connecting {
+    background-color: #e69b6b; /* Orange/Accent */
+}
+
+/* Add style for thinking state */
 #status-indicator.thinking {
-    background-color: #80aaff; /* Light Blue */
+    background-color: #e69b6b; /* Use same orange/accent color for thinking */
+    /* Optionally add animation */
     animation: thinking-pulse 1.5s infinite ease-in-out;
 }
 
 @keyframes thinking-pulse {
-    0%, 100% { transform: scale(1); opacity: 1; }
-    50% { transform: scale(1.2); opacity: 0.7; }
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
 }
 
-/* Markdown Specific Styling */
+/* Code Blocks inside AI messages - Warm */
 .message.ai code {
-    background-color: rgba(0, 0, 0, 0.2);
-    padding: 0.1em 0.4em;
+    background-color: rgba(45, 40, 35, 0.7); /* Dark warm inline code */
+    color: #ffcc99; /* Warm highlight color for inline code */
+    padding: 0.2em 0.4em;
+    margin: 0 0.1em;
+    font-size: 0.88em;
     border-radius: 4px;
-    font-size: 0.85em;
     font-family: SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
-    color: #f5d6b8; /* Lighter code color for contrast */
 }
 
 .message.ai pre {
-    background-color: rgba(0, 0, 0, 0.3);
-    padding: 1em;
-    border-radius: 8px;
-    overflow-x: auto;
-    margin: 0.8em 0;
-    font-family: SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
-    line-height: 1.4;
+    background-color: rgba(40, 35, 30, 0.85); /* Dark warm code block */
+    color: #e0d6cc; /* Standard code text */
+    padding: 14px 18px; /* Comfortable padding */
+    border-radius: 8px; /* Consistent radius */
+    margin: 10px 0; /* Spacing */
+    overflow-x: auto; /* Allow horizontal scroll */
+    border: 1px solid rgba(255, 230, 200, 0.08); /* Subtle warm border */
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.2); /* Inner shadow */
 }
 
 .message.ai pre code {
-    background-color: transparent;
+    background-color: transparent; /* Inherit from pre */
+    color: inherit; /* Inherit from pre */
     padding: 0;
+    margin: 0;
+    font-size: 0.9em; /* Slightly larger code font */
     border-radius: 0;
-    font-size: 0.85rem;
-    color: #f0e6dd; /* Match body text */
-    /* Reset specific code styles if needed inside pre */
-    white-space: pre; /* Important for code formatting */
     border: none;
+    box-shadow: none;
+    /* white-space: pre-wrap; /* Allow wrapping within pre */
+    /* word-wrap: break-word; */ /* Ensure long lines break */
 }
 
-/* Lists */
+/* Lists and Blockquotes - Warm */
 .message.ai ul,
 .message.ai ol {
-    padding-left: 25px; /* Adjust indentation */
-    margin: 0.5em 0;
+    padding-left: 25px; /* Indentation */
+    margin: 8px 0;
 }
 
 .message.ai li {
-    margin-bottom: 0.3em;
+    margin-bottom: 5px; /* Spacing between list items */
 }
 
-/* Blockquotes */
 .message.ai blockquote {
-    border-left: 3px solid rgba(255, 230, 200, 0.3); /* Warm border */
-    padding-left: 15px;
-    margin-left: 0;
-    margin-right: 0;
-    color: #d8ccc3; /* Slightly muted blockquote text */
-    font-style: italic;
+    border-left: 3px solid #e69b6b; /* Accent color border */
+    margin: 10px 0 10px 5px; /* Spacing and slight indent */
+    padding: 8px 15px; /* Padding */
+    color: #d8ccc3; /* Slightly muted quote text */
+    background-color: rgba(68, 58, 53, 0.5); /* Faint warm background */
+    border-radius: 0 6px 6px 0; /* Rounded corners */
 }
 
-/* Connect Server Button Styling */
+/* --- New Connect Server Button Styles --- */
 #connect-server-button {
-    background-color: rgba(90, 80, 75, 0.7);
+    background-color: rgba(90, 80, 75, 0.7); /* Match reset button base */
     color: #d8ccc3;
     border: 1px solid rgba(255, 230, 200, 0.12);
     padding: 7px 12px;
@@ -540,169 +561,173 @@ header h1 {
     font-size: 0.8rem;
     font-weight: 500;
     transition: all 0.2s ease;
-    margin-left: 10px; /* Add margin */
+    margin-left: 10px; /* Add some space from reset button */
 }
 
 #connect-server-button:hover {
-    background-color: rgba(105, 95, 90, 0.8);
+    background-color: rgba(105, 95, 90, 0.8); /* Match reset button hover */
     border-color: rgba(255, 230, 200, 0.2);
     color: #f0e6dd;
 }
 
-/* Modal Styling */
+/* --- Modal Styles --- */
 .modal {
     display: none; /* Hidden by default */
     position: fixed; /* Stay in place */
-    z-index: 100; /* Sit on top */
+    z-index: 1000; /* Sit on top */
     left: 0;
     top: 0;
     width: 100%;
     height: 100%;
     overflow: auto; /* Enable scroll if needed */
-    background-color: rgba(0,0,0,0.6); /* Black w/ opacity */
+    background-color: rgba(0, 0, 0, 0.6); /* Black w/ opacity */
     backdrop-filter: blur(5px);
     -webkit-backdrop-filter: blur(5px);
 }
 
 .modal-content {
-    background-color: #3a302b; /* Match body background */
-    margin: 10% auto; /* Centered */
-    padding: 25px 35px;
-    border: 1px solid rgba(255, 230, 200, 0.15);
+    background-color: #443a35; /* Darker warm background for modal */
+    margin: 10% auto; /* 10% from the top and centered */
+    padding: 30px;
+    border: 1px solid rgba(255, 230, 200, 0.1); /* Subtle warm border */
     width: 80%;
-    max-width: 500px;
+    max-width: 500px; /* Max width */
     border-radius: 12px;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-    color: #f0e6dd;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    position: relative;
+    color: #f0e6dd; /* Warm off-white text */
 }
 
 .modal-content h2 {
     margin-top: 0;
-    color: #e0c8b0; /* Lighter heading */
-    font-weight: 600;
-    text-align: center;
     margin-bottom: 25px;
+    color: #f5eadd;
+    border-bottom: 1px solid rgba(255, 230, 200, 0.1);
+    padding-bottom: 10px;
 }
 
+/* Close Button */
 .close-button {
     color: #aaa;
-    float: right;
+    position: absolute;
+    top: 10px;
+    right: 20px;
     font-size: 28px;
     font-weight: bold;
-    line-height: 1;
-    cursor: pointer;
+    transition: color 0.2s ease;
 }
 
 .close-button:hover,
 .close-button:focus {
-    color: #f0e6dd;
+    color: #f0e6dd; /* Brighter on hover/focus */
     text-decoration: none;
     cursor: pointer;
 }
 
+/* Form Styling inside Modal */
 #connect-server-form label {
     display: block;
     margin-bottom: 8px;
     font-weight: 500;
-    color: #d8ccc3;
+    color: #c8bdaf; /* Muted label color */
 }
 
 #connect-server-form input[type="text"],
 #connect-server-form input[type="url"],
 #connect-server-form select {
     width: 100%;
-    padding: 10px;
-    margin-bottom: 15px;
+    padding: 10px 12px;
+    margin-bottom: 15px; /* Space below input */
     display: inline-block;
-    border: 1px solid rgba(255, 230, 200, 0.2);
+    border: 1px solid rgba(255, 230, 200, 0.15);
     border-radius: 6px;
     box-sizing: border-box;
-    background-color: rgba(55, 45, 40, 0.9);
-    color: #f0e6dd;
+    background-color: #5a504b; /* Input background - match AI message */
+    color: #f0e6dd; /* Input text color */
+    font-size: 0.9rem;
 }
 
 #connect-server-form input[type="text"]:focus,
 #connect-server-form input[type="url"]:focus,
 #connect-server-form select:focus {
+    border-color: #a08c7d; /* Warmer focus border */
     outline: none;
-    border-color: rgba(255, 200, 150, 0.6);
-    box-shadow: 0 0 0 2px rgba(255, 200, 150, 0.2);
+    box-shadow: 0 0 0 2px rgba(160, 140, 125, 0.3);
 }
 
 #connect-server-form button[type="submit"] {
-    background-color: #a87a69; /* Warm accent color */
-    color: white;
-    padding: 12px 20px;
+    background-color: #7d5a4f; /* Match user message color */
+    color: #f5eadd;
+    padding: 10px 20px;
     border: none;
     border-radius: 8px;
     cursor: pointer;
-    width: 100%;
-    font-size: 1rem;
+    font-size: 0.9rem;
     font-weight: 600;
     transition: background-color 0.2s ease;
+    float: right; /* Align button to the right */
 }
 
 #connect-server-form button[type="submit"]:hover {
-    background-color: #c08f7d;
+    background-color: #946a5d; /* Lighter terracotta hover */
 }
 
-/* Clear floats */
+/* Clear float for elements after the button */
 #connect-server-form::after {
     content: "";
-    clear: both;
     display: table;
+    clear: both;
 }
 
-/* Image Upload Button */
+/* Add styles for image upload and preview */
 .upload-btn {
-    background-color: transparent;
+    background: none;
     border: none;
-    color: #b0a090; /* Match placeholder color */
-    font-size: 1.5rem;
+    font-size: 1.5em; /* Adjust size as needed */
     cursor: pointer;
-    padding: 5px;
-    margin-right: 5px;
-    transition: color 0.2s ease;
+    padding: 5px 10px;
+    color: #ccc;
+    transition: color 0.2s;
 }
 
 .upload-btn:hover {
-    color: #d8ccc3;
+    color: #fff;
 }
 
 #image-preview-container {
-    display: flex;
-    align-items: center;
-    padding: 10px 15px 0 15px; /* Padding top only */
-    margin-bottom: -10px; /* Adjust spacing relative to input-area border */
-    position: relative; /* For close button positioning */
-    border-top: 1px dashed rgba(255, 230, 200, 0.1);
-    margin-top: -15px; /* Overlap slightly with input-area padding */
+    display: flex; /* Use flexbox for alignment */
+    align-items: flex-start; /* Align items to the top */
+    padding: 5px;
+    margin-bottom: 5px; /* Space below the preview */
+    border: 1px solid #444;
+    border-radius: 4px;
+    background-color: #3a3a3a; /* Slightly different background */
+    max-height: 100px; /* Limit preview height */
+    overflow: hidden; /* Hide overflow */
 }
 
 #image-preview {
-    max-height: 50px;
-    max-width: 100px;
-    border-radius: 4px;
-    margin-right: 10px;
-    object-fit: cover;
-    border: 1px solid rgba(255, 230, 200, 0.2);
+    max-width: 100px; /* Limit image width */
+    max-height: 90px; /* Limit image height */
+    height: auto;
+    border-radius: 3px;
+    object-fit: cover; /* Scale image nicely */
+    margin-right: 10px; /* Space between image and remove button */
 }
 
 #remove-image-btn {
-    background: rgba(0, 0, 0, 0.6);
+    background: rgba(0, 0, 0, 0.5);
     color: white;
     border: none;
     border-radius: 50%;
-    width: 20px;
-    height: 20px;
-    font-size: 12px;
-    line-height: 18px;
-    text-align: center;
     cursor: pointer;
-    position: absolute;
-    top: 12px; /* Adjust relative to container padding */
-    left: 95px; /* Adjust relative to image size/margin */
-    transition: background-color 0.2s ease;
+    font-size: 12px;
+    line-height: 16px; /* Center the '✖' */
+    width: 18px;
+    height: 18px;
+    padding: 0;
+    text-align: center;
+    /* Position top-right relative to container if needed, but flex alignment is okay for now */
 }
 
 #remove-image-btn:hover {
@@ -710,10 +735,16 @@ header h1 {
 }
 
 .message-image {
-    max-width: 100%;
-    max-height: 300px; /* Limit image height in messages */
-    margin-top: 10px; /* Space between text and image */
-    border-radius: 8px;
-    object-fit: contain;
-    display: block; /* Ensure it takes its own line */
-} 
+    display: block; /* Ensure image is on its own line */
+    max-width: 80%; /* Limit image width within message */
+    max-height: 300px; /* Limit image height */
+    height: auto;
+    border-radius: 5px;
+    margin-top: 8px; /* Space above the image */
+    border: 1px solid #555; /* Optional border */
+}
+
+/* Adjust chat log padding dynamically via JS now */
+/* #chat-log {
+    padding-bottom: 120px; /* Increase padding to make space for taller input area */
+/* } */ 
