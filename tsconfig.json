@@ -16,10 +16,6 @@
     "references": [
         { "path": "./packages/logger" },
         { "path": "./packages/core" },
-        { "path": "./packages/cli" },
-        { "path": "./packages/discord" },
-        { "path": "./packages/telegram" },
-        { "path": "./packages/web" },
         { "path": "./packages/saiki" }
     ]
 }

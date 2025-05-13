@@ -1,7 +1,8 @@
 import express from 'express';
 import { logger } from '@saiki/logger';
-import { resolvePackagePath, initializeApi, SaikiAgent } from '@saiki/core';
+import { resolvePackagePath, SaikiAgent } from '@saiki/core';
 import type { AgentCard } from '@saiki/core';
+import { initializeApi } from '../../api/server.js';
 import os from 'os';
 
 export async function startWebUI(

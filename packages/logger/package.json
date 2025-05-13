@@ -10,7 +10,8 @@
   "scripts": {
     "build": "tsc -b",
     "clean": "rm -rf dist",
-    "dev": "tsc -b --watch"
+    "dev": "tsc -b --watch",
+    "test": "vitest run"
   },
   "dependencies": {
     "boxen": "^7.1.1",

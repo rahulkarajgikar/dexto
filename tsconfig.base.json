@@ -26,25 +26,6 @@
     "lib": ["es2022"],
 
     /* Project Structure */
-    "baseUrl": ".", // Set base url to root for easier path mapping
-    "paths": {
-      "@saiki/core": ["packages/core/src"],
-      "@saiki/core/*": ["packages/core/src/*"],
-      "@saiki/cli": ["packages/cli/src"],
-      "@saiki/cli/*": ["packages/cli/src/*"],
-      "@saiki/web": ["packages/web/src"],
-      "@saiki/web/*": ["packages/web/src/*"],
-      "@saiki/discord": ["packages/discord/src"],
-      "@saiki/discord/*": ["packages/discord/src/*"],
-      "@saiki/telegram": ["packages/telegram/src"],
-      "@saiki/telegram/*": ["packages/telegram/src/*"],
-      "@saiki/logger": ["packages/logger/src"],
-      "@saiki/logger/*": ["packages/logger/src/*"],
-      "@saiki/docs": ["packages/docs/src"],
-      "@saiki/docs/*": ["packages/docs/src/*"],
-      "@truffle-ai/saiki": ["packages/saiki/src"],
-      "@truffle-ai/saiki/*": ["packages/saiki/src/*"]
-    },
     "composite": true
   },
   "exclude": ["node_modules", "dist", "**/dist", "**/.*/", "**/node_modules"] // Exclude common folders globally

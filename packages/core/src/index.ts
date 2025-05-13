@@ -10,16 +10,13 @@ export * from './config/types.js';
 // Export client types (if any)
 export * from './client/types.js';
 export { MCPClientManager } from './client/manager.js';
+export * from './events/types.js';
 
 // Export LLM types and registry functions
 export * from './ai/llm/types.js';
 export * from './ai/llm/registry.js';
 
-// Export API related modules
-export { initializeApi } from './api/server.js';
-export type { EventSubscriber } from './api/types.js';
-export { WebSocketEventSubscriber } from './api/websocket-subscriber.js';
-
 // Export utility functions/classes
 export * from './utils/path.js';
 export * from './utils/user-info.js';
+export { createAgentCard } from './config/agentCard.js';
