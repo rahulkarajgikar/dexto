@@ -9,7 +9,7 @@
   "exports": { "import": "./dist/index.js", "require": "./dist/index.js" },
   "scripts": {
     "build": "tsc -b",
-    "clean": "rm -rf dist",
+    "clean": "rimraf dist tsconfig.tsbuildinfo",
     "dev": "tsc -b --watch",
     "test": "vitest run"
   },
@@ -32,5 +32,5 @@
   "devDependencies": {
     "@types/node": "^20.14.10"
   },
-  "license": "MIT"
+  "license": "Elastic-2.0"
 } 

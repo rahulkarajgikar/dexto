@@ -28,12 +28,13 @@
     "mcp",
     "model-context-protocol",
     "ai",
+    "agent",
     "cli",
     "natural-language",
     "openai",
     "truffle-ai"
   ],
-  "author": "",
+  "author": "truffle-ai",
   "license": "Elastic-2.0",
   "dependencies": {
     "copyfiles": "^2.4.1",
