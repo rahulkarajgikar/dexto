@@ -1,7 +1,6 @@
 {
   "name": "@truffle-ai/saiki-logger",
   "version": "0.1.0",
-  "private": true,
   "type": "module",
   "description": "Shared logger utility for Saiki packages.",
   "main": "dist/index.js",
@@ -23,5 +22,5 @@
     "@types/node": "^20.14.10",
     "@types/winston": "^2.4.4"
   },
-  "license": "UNLICENSED"
+  "license": "Elastic-2.0"
 } 

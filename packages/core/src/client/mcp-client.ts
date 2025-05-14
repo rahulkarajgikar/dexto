@@ -14,6 +14,10 @@ import { IMCPClient } from './types.js';
 import { resolvePackagePath } from '../utils/path.js';
 import { GetPromptResult } from '@modelcontextprotocol/sdk/types.js';
 import { ReadResourceResult } from '@modelcontextprotocol/sdk/types.js';
+import { createRequire } from 'module';
+import path from 'path';
+
+const require = createRequire(import.meta.url);
 
 // const DEFAULT_TIMEOUT = 60000; // Commented out or remove if not used elsewhere
 /**
@@ -75,23 +79,37 @@ export class MCPClient implements IMCPClient {
         this.serverEnv = env || null;
         this.serverAlias = serverAlias || null;
 
-        // --- Resolve path for bundled node scripts ---
-        // TODO: Improve this logic to be less hacky
-        if (
-            command === 'node' &&
-            this.resolvedArgs.length > 0 &&
-            this.resolvedArgs[0].startsWith('dist/')
-        ) {
-            try {
-                const scriptRelativePath = this.resolvedArgs[0];
-                this.resolvedArgs[0] = resolvePackagePath(scriptRelativePath, true);
-                logger.debug(
-                    `Resolved bundled script path: ${scriptRelativePath} -> ${this.resolvedArgs[0]}`
-                );
-            } catch (e) {
-                logger.warn(
-                    `Failed to resolve path for bundled script ${this.resolvedArgs[0]}: ${JSON.stringify(e, null, 2)}`
-                );
+        // --- Resolve path for node scripts (if not already absolute) ---
+        // TODO: This is a hack to support the CLI bundled default config with relative paths.
+        // Fix this later. We will move to separately deployed
+        if (command === 'node' && this.resolvedArgs.length > 0) {
+            const scriptArg = this.resolvedArgs[0];
+            if (!path.isAbsolute(scriptArg)) {
+                // Only attempt to resolve if not already absolute
+                try {
+                    if (scriptArg.startsWith('@')) {
+                        // For @scoped paths, require.resolve is the most robust way.
+                        // This expects the full path within the package, e.g., @scope/package/dist/server.js
+                        this.resolvedArgs[0] = require.resolve(scriptArg);
+                        logger.debug(
+                            `Resolved @-scoped node script path using require.resolve: ${scriptArg} -> ${this.resolvedArgs[0]}`
+                        );
+                    } else {
+                        // For other non-absolute, non-@-scoped paths (e.g., relative like './server.js' or 'some-script.js'),
+                        // Node itself will try to resolve them relative to CWD when spawning.
+                        // Or, if this needs to be relative to the *config file location* that defined this server,
+                        // that would require passing the config file's directory to MCPClient.
+                        // For now, we pass it as-is if it's not @-scoped and not absolute.
+                        logger.debug(
+                            `Node script path "${scriptArg}" is not absolute and not @-scoped. Passing as-is to node (will be CWD-relative).`
+                        );
+                    }
+                } catch (e) {
+                    logger.warn(
+                        `Failed to resolve path for node script ${scriptArg} with require.resolve: ${e instanceof Error ? e.message : String(e)}`
+                    );
+                    // Consider re-throwing or handling this failure more strictly if resolution is critical.
+                }
             }
         }
         // --- End path resolution ---

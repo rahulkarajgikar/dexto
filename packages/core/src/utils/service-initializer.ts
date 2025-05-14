@@ -37,6 +37,7 @@ import { PromptManager } from '../ai/systemPrompt/manager.js';
 import { loadConfigFile } from '../config/loader.js';
 import { ConfigManager } from '../config/manager.js';
 import type { CLIConfigOverrides } from '../config/types.js';
+import type { AgentConfig } from '../config/schemas.js';
 
 /**
  * Type for the core agent services returned by initializeServices
@@ -80,18 +81,26 @@ export type InitializeServicesOptions = {
 // High-level factory to load, validate, and wire up all agent services in one call
 /**
  * Loads and validates configuration and initializes all agent services as a single unit.
- * @param configPath Path to the agent config file
+ * @param configPathOrObject Path to the agent config file or AgentConfig object
  * @param cliArgs Overrides from the CLI
  * @param overrides Optional service overrides for testing or advanced scenarios
  * @returns All the initialized services and the config manager
  */
 export async function createAgentServices(
-    configPath: string,
+    configPathOrObject: string | AgentConfig,
     cliArgs: CLIConfigOverrides,
     overrides?: InitializeServicesOptions
 ): Promise<AgentServices> {
-    // 1. Load raw configuration from file
-    const rawConfig = await loadConfigFile(configPath);
+    let rawConfig: AgentConfig;
+
+    // 1. Load raw configuration from file or use provided object
+    if (typeof configPathOrObject === 'string') {
+        logger.debug(`Loading agent configuration from path: ${configPathOrObject}`);
+        rawConfig = await loadConfigFile(configPathOrObject);
+    } else {
+        logger.debug('Using provided agent configuration object.');
+        rawConfig = configPathOrObject; // It's already an AgentConfig object
+    }
 
     // 2. Initialize config manager, apply CLI config level overrides and validate
     const configManager = new ConfigManager(rawConfig).overrideCLI(cliArgs);
