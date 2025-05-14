@@ -1,6 +1,6 @@
 import { ITokenizer, TokenizationError } from './types.js';
 import { encoding_for_model, get_encoding, Tiktoken, TiktokenModel } from 'tiktoken';
-import { logger } from '@saiki/logger';
+import { logger } from '@truffle-ai/saiki-logger';
 
 // Fallback encoding name if model is not supported by tiktoken
 const FALLBACK_ENCODING = 'cl100k_base'; // Encoding used by GPT-4, GPT-3.5 Turbo, GPT-4o etc.

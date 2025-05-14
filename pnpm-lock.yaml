@@ -84,7 +84,7 @@ importers:
       '@modelcontextprotocol/sdk':
         specifier: ^1.11.0
         version: 1.11.0
-      '@saiki/logger':
+      '@truffle-ai/saiki-logger':
         specifier: workspace:*
         version: link:../logger
       ai:
@@ -135,7 +135,7 @@ importers:
         specifier: ^2.4.4
         version: 2.4.4
 
-  packages/saiki:
+  packages/saiki-cli:
     dependencies:
       '@ai-sdk/anthropic':
         specifier: ^1.2.2
@@ -152,10 +152,10 @@ importers:
       '@modelcontextprotocol/sdk':
         specifier: ^1.11.0
         version: 1.11.0
-      '@saiki/core':
+      '@truffle-ai/saiki-core':
         specifier: workspace:*
         version: link:../core
-      '@saiki/logger':
+      '@truffle-ai/saiki-logger':
         specifier: workspace:*
         version: link:../logger
       ai:

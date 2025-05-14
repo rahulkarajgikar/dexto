@@ -1,5 +1,5 @@
 import { ToolConfirmationProvider, ToolExecutionDetails } from './types.js';
-import { logger } from '@saiki/logger';
+import { logger } from '@truffle-ai/saiki-logger';
 import * as readline from 'readline';
 import chalk from 'chalk';
 import { InMemorySettingsProvider } from '../../settings/in-memory-provider.js';

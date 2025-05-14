@@ -2,8 +2,8 @@ import dotenv from 'dotenv';
 import { Client, GatewayIntentBits, Partials, Attachment } from 'discord.js';
 import https from 'https';
 import http from 'http'; // ADDED for http support
-import { SaikiAgent } from '@saiki/core';
-import { logger } from '@saiki/logger';
+import { SaikiAgent } from '@truffle-ai/saiki-core';
+import { logger } from '@truffle-ai/saiki-logger';
 
 // Load environment variables
 dotenv.config();

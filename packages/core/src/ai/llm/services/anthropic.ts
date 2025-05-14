@@ -2,7 +2,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { MCPClientManager } from '../../../client/manager.js';
 import { ILLMService, LLMServiceConfig } from './types.js';
 import { ToolSet } from '../../types.js';
-import { logger } from '@saiki/logger';
+import { logger } from '@truffle-ai/saiki-logger';
 import { EventEmitter } from 'events';
 import { MessageManager } from '../messages/manager.js';
 import { getMaxTokensForModel } from '../registry.js';

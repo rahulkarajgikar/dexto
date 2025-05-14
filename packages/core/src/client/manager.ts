@@ -1,6 +1,6 @@
 import { MCPClient } from './mcp-client.js';
 import { ServerConfigs, McpServerConfig } from '../config/schemas.js';
-import { logger } from '@saiki/logger';
+import { logger } from '@truffle-ai/saiki-logger';
 import { IMCPClient } from './types.js';
 import { ToolConfirmationProvider } from './tool-confirmation/types.js';
 import { CLIConfirmationProvider } from './tool-confirmation/cli-confirmation-provider.js';

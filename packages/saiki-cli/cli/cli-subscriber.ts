@@ -1,7 +1,7 @@
-import { logger } from '@saiki/logger';
+import { logger } from '@truffle-ai/saiki-logger';
 import boxen from 'boxen';
 import chalk from 'chalk';
-import { EventSubscriber } from '@saiki/core';
+import { EventSubscriber } from '@truffle-ai/saiki-core';
 import { EventEmitter } from 'events';
 
 /**

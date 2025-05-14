@@ -28,7 +28,7 @@
 import { MCPClientManager } from '../client/manager.js';
 import { ILLMService } from '../ai/llm/services/types.js';
 import { createLLMService } from '../ai/llm/services/factory.js';
-import { logger } from '@saiki/logger';
+import { logger } from '@truffle-ai/saiki-logger';
 import { EventEmitter } from 'events';
 import { MessageManager } from '../ai/llm/messages/manager.js';
 import { createMessageManager } from '../ai/llm/messages/factory.js';

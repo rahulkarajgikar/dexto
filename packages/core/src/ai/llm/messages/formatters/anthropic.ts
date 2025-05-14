@@ -1,6 +1,6 @@
 import { IMessageFormatter } from './types.js';
 import { InternalMessage } from '../types.js';
-import { logger } from '@saiki/logger';
+import { logger } from '@truffle-ai/saiki-logger';
 import { getImageData } from '../utils.js';
 
 /**

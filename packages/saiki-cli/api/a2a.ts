@@ -1,6 +1,6 @@
 import type { Express } from 'express';
-import type { AgentCard } from '@saiki/core';
-import { logger } from '@saiki/logger';
+import type { AgentCard } from '@truffle-ai/saiki-core';
+import { logger } from '@truffle-ai/saiki-logger';
 
 /**
  * Sets up the A2A Agent Card endpoint.

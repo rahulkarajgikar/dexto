@@ -1,7 +1,7 @@
 import express from 'express';
-import { logger } from '@saiki/logger';
-import { resolvePackagePath, SaikiAgent } from '@saiki/core';
-import type { AgentCard } from '@saiki/core';
+import { logger } from '@truffle-ai/saiki-logger';
+import { resolvePackagePath, SaikiAgent } from '@truffle-ai/saiki-core';
+import type { AgentCard } from '@truffle-ai/saiki-core';
 import { initializeApi } from '../../api/server.js';
 import os from 'os';
 

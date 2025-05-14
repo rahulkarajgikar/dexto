@@ -1,4 +1,4 @@
-import { logger } from '@saiki/logger';
+import { logger } from '@truffle-ai/saiki-logger';
 import { LLMConfig } from '../../config/schemas.js';
 import {
     CantInferProviderError,

@@ -54,13 +54,13 @@ export function resolvePackagePath(targetPath: string, resolveFromPackageRoot: b
                 return monorepoConfigPath; // Found in monorepo root
             }
             // If not in monorepo root, or monorepo root doesn't have DEFAULT_CONFIG_PATH,
-            // then we don't assume @saiki/core has it either.
+            // then we don't assume @truffle-ai/saiki-core has it either.
             // Fall through to CWD resolution for DEFAULT_CONFIG_PATH as a last resort for local execution from root.
             // This means if main.ts calls with DEFAULT_CONFIG_PATH and resolveFromPackageRoot=true,
             // and findMonorepoRootWithConfig fails, it will try to resolve 'configuration/saiki.yml' from CWD.
         } else {
             // If resolveFromPackageRoot is true for OTHER paths (not DEFAULT_CONFIG_PATH),
-            // resolve relative to the current package's (@saiki/core) root.
+            // resolve relative to the current package's (@truffle-ai/saiki-core) root.
             let currentPackageRoot = scriptDir;
             while (true) {
                 const pkgPath = path.join(currentPackageRoot, 'package.json');

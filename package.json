@@ -1,5 +1,5 @@
 {
-  "name": "@saiki/monorepo",
+  "name": "saiki-monorepo",
   "version": "0.2.0",
   "description": "Saiki - Your command center for controlling computers and services with natural language - connect once, command everything",
   "type": "module",

@@ -1,6 +1,6 @@
 import { MCPClientManager } from '../../../client/manager.js';
 import { ILLMService, LLMServiceConfig } from './types.js';
-import { logger } from '@saiki/logger';
+import { logger } from '@truffle-ai/saiki-logger';
 import { streamText, generateText, CoreMessage, LanguageModelV1 } from 'ai';
 import { ToolSet } from '../../types.js';
 import { ToolSet as VercelToolSet, jsonSchema } from 'ai';

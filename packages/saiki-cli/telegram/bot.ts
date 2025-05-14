@@ -2,8 +2,8 @@
 import dotenv from 'dotenv';
 import TelegramBot from 'node-telegram-bot-api';
 import https from 'https';
-import { SaikiAgent } from '@saiki/core';
-import { logger } from '@saiki/logger';
+import { SaikiAgent } from '@truffle-ai/saiki-core';
+import { logger } from '@truffle-ai/saiki-logger';
 
 // Load environment variables (including TELEGRAM_BOT_TOKEN)
 dotenv.config();

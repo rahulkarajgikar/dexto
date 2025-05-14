@@ -2,11 +2,11 @@ import type { Express } from 'express';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { ReadResourceCallback } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
-import type { AgentCard } from '@saiki/core';
-import { logger } from '@saiki/logger';
+import type { AgentCard } from '@truffle-ai/saiki-core';
+import { logger } from '@truffle-ai/saiki-logger';
 import { z } from 'zod';
 import express from 'express';
-import { SaikiAgent } from '@saiki/core';
+import { SaikiAgent } from '@truffle-ai/saiki-core';
 
 /**
  * Initializes and sets up the MCP server, its tools, resources, and HTTP endpoints.

@@ -4,7 +4,7 @@ import { createTokenizer } from '../tokenizer/factory.js';
 import { LLMConfig } from '../../../config/schemas.js';
 import { LLMRouter } from '../types.js';
 import { PromptManager } from '../../systemPrompt/manager.js';
-import { logger } from '@saiki/logger';
+import { logger } from '@truffle-ai/saiki-logger';
 import { getEffectiveMaxTokens } from '../registry.js';
 
 /**

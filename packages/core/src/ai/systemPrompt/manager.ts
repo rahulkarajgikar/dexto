@@ -5,7 +5,7 @@ import { registerPromptGenerator } from './registry.js';
 import type { DynamicPromptGenerator } from './registry.js';
 import type { SystemPromptContributor, DynamicContributorContext } from './types.js';
 import { DynamicContributor } from './contributors.js';
-import { logger } from '@saiki/logger';
+import { logger } from '@truffle-ai/saiki-logger';
 
 /**
  * PromptManager orchestrates registration, loading, and composition

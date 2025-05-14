@@ -98,7 +98,7 @@ import YourProviderSDK from '@provider/sdk-library'; // Your provider's SDK
 import { MCPClientManager } from '../../../client/manager.js'; // Use MCPClientManager
 import { ILLMService, LLMServiceConfig } from './types.js';
 import { ToolSet } from '../../types.js';
-import { logger } from '@saiki/logger';
+import { logger } from '@truffle-ai/saiki-logger';
 import { EventEmitter } from 'events';
 import { MessageManager } from '../messages/manager.js';
 import { getMaxTokens } from '../tokenizer/utils.js';

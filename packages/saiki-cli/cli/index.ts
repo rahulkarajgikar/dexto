@@ -1,8 +1,8 @@
 import readline from 'readline';
 import chalk from 'chalk';
-import { logger } from '@saiki/logger';
+import { logger } from '@truffle-ai/saiki-logger';
 import { CLISubscriber } from './cli-subscriber.js';
-import { SaikiAgent } from '@saiki/core';
+import { SaikiAgent } from '@truffle-ai/saiki-core';
 
 const validLogLevels = ['error', 'warn', 'info', 'http', 'verbose', 'debug', 'silly'];
 const HELP_MESSAGE = `Available commands:

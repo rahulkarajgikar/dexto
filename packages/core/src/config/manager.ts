@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { logger } from '@saiki/logger';
+import { logger } from '@truffle-ai/saiki-logger';
 import { AgentConfigSchema } from './schemas.js';
 import type { AgentConfig } from './schemas.js';
 import type { CLIConfigOverrides, LLMProvenance } from './types.js';

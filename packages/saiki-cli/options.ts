@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import { logger } from '@saiki/logger';
-import { getSupportedProviders } from '@saiki/core';
+import { logger } from '@truffle-ai/saiki-logger';
+import { getSupportedProviders } from '@truffle-ai/saiki-core';
 
 /**
  * Validates the command-line options.

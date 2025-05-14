@@ -5,14 +5,14 @@ import type { Server as HttpServer } from 'http';
 import { WebSocketServer } from 'ws';
 import type { WebSocket } from 'ws';
 import { WebSocketEventSubscriber } from './websocket-subscriber.js';
-import { logger } from '@saiki/logger'; // Updated path assuming logger is a dependency
+import { logger } from '@truffle-ai/saiki-logger'; // Updated path assuming logger is a dependency
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { randomUUID } from 'crypto';
-import type { AgentCard } from '@saiki/core';
+import type { AgentCard } from '@truffle-ai/saiki-core';
 import { setupA2ARoutes } from './a2a.js';
 import { initializeMcpServerEndpoints } from './mcp_handler.js';
-import { createAgentCard } from '@saiki/core';
-import { SaikiAgent } from '@saiki/core';
+import { createAgentCard } from '@truffle-ai/saiki-core';
+import { SaikiAgent } from '@truffle-ai/saiki-core';
 
 // Define the return type structure
 interface InitializeApiResult {

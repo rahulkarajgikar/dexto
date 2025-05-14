@@ -2,7 +2,7 @@
 import { existsSync } from 'fs';
 import { Command, CommanderError } from 'commander';
 import dotenv from 'dotenv';
-import { logger } from '@saiki/logger';
+import { logger } from '@truffle-ai/saiki-logger';
 import {
     DEFAULT_CONFIG_PATH as CORE_DEFAULT_CONFIG_PATH_NAME,
     resolvePackagePath,
@@ -11,7 +11,7 @@ import {
     getProviderFromModel,
     getAllSupportedModels,
     SaikiAgent,
-} from '@saiki/core';
+} from '@truffle-ai/saiki-core';
 import { startAiCli, startHeadlessCli } from './cli/index.js';
 import { startWebUI } from './web/server/index.js';
 import { startDiscordBot } from './discord/index.js';
@@ -61,7 +61,7 @@ function determineFinalConfigPath(
         return cliBundledDefaultConfig;
     }
 
-    // 4. Fallback to CORE_DEFAULT_CONFIG_PATH_NAME from @saiki/core
+    // 4. Fallback to CORE_DEFAULT_CONFIG_PATH_NAME from @truffle-ai/saiki-core
     // This will trigger the monorepo-root check or CWD fallback via resolvePackagePath in core.
     logger.debug(
         `No specific config found, falling back to core default logic for: ${CORE_DEFAULT_CONFIG_PATH_NAME}`
