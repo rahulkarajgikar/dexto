@@ -19,17 +19,18 @@
 npm install -g @truffle-ai/saiki
 ```
 
-<details><summary><strong>Build & Link from source</strong></summary>
+<details><summary><strong>Build from source</strong></summary>
 
 ```bash
 git clone https://github.com/truffle-ai/saiki.git
 cd saiki
-npm install
-npm run build
-npm link
+pnpm install
+pnpm run build
 ```
 
-After linking, the `saiki` command becomes available globally.
+(Optional) If you prefer to make your local build globally available as `saiki`, you can navigate to `packages/saiki` and run `pnpm link --global`. Note: This requires pnpm's global bin directory to be configured (usually by running `pnpm setup` once and restarting your terminal).
+
+After linking (if you chose the optional step), the `saiki` command becomes available globally.
 
 </details>
 
@@ -42,11 +43,11 @@ Invoke the interactive CLI:
 saiki
 ```
 
-<details><summary><strong>Alternative: without global install</strong></summary>
+<details><summary><strong>Running from source repo</strong></summary>
 
-You can also run directly via npm:
+Run directly from the root:
 ```bash
-npm start
+pnpm run start
 ```
 
 </details>
@@ -59,10 +60,11 @@ Serve the experimental web interface:
 saiki --mode web --web-port 3000
 ```
 
-<details><summary><strong>Alternative: without global install</strong></summary>
+<details><summary><strong>Running from source repo</strong></summary>
 
+Run directly from the root:
 ```bash
-npm start -- --mode web --web-port 3000
+pnpm run start --mode web --web-port 3000
 ```
 
 </details>
@@ -213,7 +215,7 @@ We welcome contributions! Here's how to get started:
    ```
 4. Make your changes:
    - Follow existing TypeScript and code style conventions.
-   - Run `npm run lint:fix` and `npm run format` before committing.
+   - Run `pnpm run lint:fix` and `pnpm run format` before committing.
    - Add or update tests for new functionality.
 5. Commit and push your branch:
    ```bash

@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 import { existsSync } from 'fs';
-import { Command } from 'commander';
+import { Command, CommanderError } from 'commander';
 import dotenv from 'dotenv';
 import { logger } from '@saiki/logger';
 import {
-    DEFAULT_CONFIG_PATH,
+    DEFAULT_CONFIG_PATH as CORE_DEFAULT_CONFIG_PATH_NAME,
     resolvePackagePath,
     createAgentServices,
     AgentServices,
@@ -17,6 +17,8 @@ import { startWebUI } from './web/server/index.js';
 import { startDiscordBot } from './discord/index.js';
 import { startTelegramBot } from './telegram/index.js';
 import { validateCliOptions, handleCliOptionsError } from './options.js';
+import { fileURLToPath } from 'url';
+import path from 'path';
 
 // Load environment variables
 dotenv.config();
@@ -24,6 +26,47 @@ dotenv.config();
 // Explicitly set the log level from environment
 if (process.env.LOG_LEVEL) {
     logger.setLevel(process.env.LOG_LEVEL);
+}
+
+const __filename = fileURLToPath(import.meta.url);
+const cliDistDir = path.dirname(__filename);
+
+function determineFinalConfigPath(
+    optionsConfigFile: string | undefined,
+    envVarConfigPath: string | undefined
+): string {
+    // 1. CLI option --config-file (highest priority)
+    if (optionsConfigFile) {
+        logger.debug(`Using config path from --config-file CLI argument: ${optionsConfigFile}`);
+        return optionsConfigFile;
+    }
+
+    // 2. SAIKI_CONFIG_PATH environment variable
+    if (envVarConfigPath) {
+        logger.debug(
+            `Using config path from SAIKI_CONFIG_PATH environment variable: ${envVarConfigPath}`
+        );
+        return envVarConfigPath;
+    }
+
+    // 3. saiki-cli's own bundled default config (for published version)
+    // Assumes 'default_configuration' is copied into 'dist' during build.
+    const cliBundledDefaultConfig = path.resolve(
+        cliDistDir,
+        'default_configuration', // This folder should be in 'dist'
+        'default.saiki.yml'
+    );
+    if (existsSync(cliBundledDefaultConfig)) {
+        logger.debug(`Using bundled default config from @saiki/cli: ${cliBundledDefaultConfig}`);
+        return cliBundledDefaultConfig;
+    }
+
+    // 4. Fallback to CORE_DEFAULT_CONFIG_PATH_NAME from @saiki/core
+    // This will trigger the monorepo-root check or CWD fallback via resolvePackagePath in core.
+    logger.debug(
+        `No specific config found, falling back to core default logic for: ${CORE_DEFAULT_CONFIG_PATH_NAME}`
+    );
+    return CORE_DEFAULT_CONFIG_PATH_NAME; // This is 'configuration/saiki.yml'
 }
 
 const program = new Command();
@@ -59,7 +102,7 @@ program
     .description('AI-powered CLI and WebUI for interacting with MCP servers')
     .argument('[prompt...]', 'Optional headless prompt for single command mode')
     // General Options
-    .option('-c, --config-file <path>', 'Path to config file', DEFAULT_CONFIG_PATH)
+    .option('-c, --config-file <path>', 'Path to config file')
     .option('-s, --strict', 'Require all server connections to succeed')
     .option('--no-verbose', 'Disable verbose output')
     .option('--mode <mode>', 'Run mode: cli, web, discord, or telegram', 'cli')
@@ -71,9 +114,10 @@ program
 
 program.parse();
 const headlessInput = program.args.length > 0 ? program.args.join(' ') : undefined;
-
-// Get options
 const options = program.opts();
+
+const finalConfigPath = determineFinalConfigPath(options.configFile, process.env.SAIKI_CONFIG_PATH);
+
 // Dynamically infer provider and api key from the supplied model
 if (options.model) {
     let modelProvider: string;
@@ -107,27 +151,9 @@ if (options.model) {
     }
 }
 
-let determinedConfigFile = options.configFile;
-
-// If the CLI option wasn't used (i.e., it's still the default value from commander)
-// AND the environment variable is set, then use the environment variable.
-if (options.configFile === DEFAULT_CONFIG_PATH && process.env.SAIKI_CONFIG_PATH) {
-    determinedConfigFile = process.env.SAIKI_CONFIG_PATH;
-    logger.debug(
-        `Using config path from SAIKI_CONFIG_PATH environment variable: ${determinedConfigFile}`
-    );
-} else if (options.configFile !== DEFAULT_CONFIG_PATH) {
-    logger.debug(`Using config path from --config-file CLI argument: ${determinedConfigFile}`);
-} else {
-    logger.debug(`Using default config path: ${determinedConfigFile}`);
-}
-
 const connectionMode = options.strict ? 'strict' : ('lenient' as 'strict' | 'lenient');
 const runMode = options.mode.toLowerCase();
 const webPort = parseInt(options.webPort, 10);
-const resolveFromPackageRootLogic = determinedConfigFile === DEFAULT_CONFIG_PATH;
-// Platform-independent path handling
-const normalizedConfigPath = resolvePackagePath(determinedConfigFile, resolveFromPackageRootLogic);
 
 // basic validation of options here
 try {
@@ -136,7 +162,7 @@ try {
     handleCliOptionsError(error);
 }
 
-logger.info(`Initializing Saiki with config: ${normalizedConfigPath}`, null, 'blue');
+logger.info(`Initializing Saiki with resolved config path: ${finalConfigPath}`, null, 'blue');
 
 // Conditionally display CLI examples
 if (runMode === 'cli') {
@@ -161,9 +187,9 @@ async function startApp() {
     };
     let services: AgentServices;
     try {
-        services = await createAgentServices(normalizedConfigPath, cliArgs, {
+        services = await createAgentServices(finalConfigPath, cliArgs, {
             connectionMode,
-            runMode: runMode, // Pass the original runMode here
+            runMode: runMode,
         });
     } catch (err) {
         if (err instanceof Error) {
@@ -182,17 +208,14 @@ async function startApp() {
     const agent = new SaikiAgent(services);
 
     // Start based on mode
-    // TODO: We ideally should be able to start all services with one or more interfaces at once. Single backend, multiple frontend interfaces.
     if (runMode === 'cli') {
         if (headlessInput) {
             await startHeadlessCli(agent, headlessInput);
             process.exit(0);
         } else {
-            // Run CLI
             await startAiCli(agent);
         }
     } else if (runMode === 'web') {
-        // Run WebUI with configured MCP identity (pass agentCard only)
         const agentCard = services.configManager.getConfig().agentCard ?? {};
         startWebUI(agent, webPort, agentCard);
         logger.info(`WebUI available at http://localhost:${webPort}`, null, 'magenta');

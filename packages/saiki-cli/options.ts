@@ -14,7 +14,7 @@ export function validateCliOptions(opts: any): void {
 
     // Base schema for primitive shape
     const cliOptionShape = z.object({
-        configFile: z.string().nonempty('Config file path must not be empty'),
+        configFile: z.string().nonempty('Config file path must not be empty').optional(),
         strict: z.boolean().optional().default(false),
         verbose: z.boolean().optional().default(true),
         mode: z.enum(['cli', 'web', 'discord', 'telegram'], {

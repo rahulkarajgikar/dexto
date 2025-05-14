@@ -11,7 +11,7 @@ mcpServers:
     type: stdio
     command: node
     args:
-      - packages/saiki/dist/servers/puppeteerServer.js
+      - packages/saiki-cli/dist/servers/puppeteerServer.js
 
 # # describes the llm configuration
 llm:

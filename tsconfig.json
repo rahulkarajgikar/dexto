@@ -16,6 +16,6 @@
     "references": [
         { "path": "./packages/logger" },
         { "path": "./packages/core" },
-        { "path": "./packages/saiki" }
+        { "path": "./packages/saiki-cli" }
     ]
 }
