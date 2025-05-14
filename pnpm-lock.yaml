@@ -113,8 +113,6 @@ importers:
         specifier: ^20.14.10
         version: 20.17.36
 
-  packages/docs: {}
-
   packages/logger:
     dependencies:
       boxen:
