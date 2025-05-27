@@ -13,9 +13,9 @@ Why developers choose Saiki:
 - **Customizable, Config-Driven Agents**: Create a Saiki agent by creating one config file. Configure your tools, LLM configuration, prompts, context management strategies in one file and re-use that anywhere. 
 - **Feature-rich developer tools**: Saiki has a powerful CLI and web UI playground you can use to build, test and experiment with different AI agents.
 - **First-class MCP support** : Connect your Saiki agents to either remote and local MCP servers to enhance their functionality
-- **Multi-LLM support**: Saiki supports OpenAI, Anthropic, Google and Groq LLMs. Saiki is open
+- **Multi-LLM support**: Saiki supports OpenAI, Anthropic, Google and Groq LLMs. Saiki also supports custom base URLs in OpenAI format, so you can bring your own LLMs.
 - **Powerful in-built APIs**: Saiki agents come with powerful in-built APIs - your AI Agent already has most of the functionality you will need. Saiki core library makes it extremely easy to build your own APIs as well.
-- **Use saiki agents in any application**: Saiki agents can be used on telegram, discord, slack, and even as their own MCP servers - all out of the box! 
+- **Use Saiki agents in any application**: Saiki agents can be used on telegram, discord, slack, and even as their own MCP servers - all out of the box! 
 - **In-built context management**: Saiki agents have in-built context management to handle the token limits of LLMs. Even this is customizable!
 
 Saiki is the missing natural language layer across your stack. Its powerful in-built features and high customizability means that whether you're automating workflows, building agents, or prototyping new ideas, Saiki gives you the tools to move fast — and bend it to your needs. 

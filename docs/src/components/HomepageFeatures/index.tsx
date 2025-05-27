@@ -48,7 +48,7 @@ const FeatureList: FeatureItem[] = [
     icon: '🧠',
     description: (
       <>
-        Saiki supports OpenAI, Anthropic, Google and Groq LLMs. Saiki is open 
+        Saiki supports OpenAI, Anthropic, Google and Groq LLMs.
         source and makes it extremely easy to build your own APIs as well.
       </>
     ),
