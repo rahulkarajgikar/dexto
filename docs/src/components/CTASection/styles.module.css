@@ -1,7 +1,7 @@
 .ctaSection {
   position: relative;
   padding: 6rem 0;
-  background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 100%);
+  background: linear-gradient(135deg, #1a0b2e 0%, #2d1b69 100%);
   overflow: hidden;
 }
 
@@ -37,37 +37,37 @@
 }
 
 .primaryButton {
-  background: linear-gradient(45deg, #0066ff, #00ff41);
-  color: #0a0a0a;
+  background: linear-gradient(45deg, #8b5cf6, #fbbf24);
+  color: #1a0b2e;
   border: none;
   font-weight: 600;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 15px rgba(0, 102, 255, 0.4), 0 0 20px rgba(0, 255, 65, 0.2);
+  box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4), 0 0 20px rgba(251, 191, 36, 0.2);
 }
 
 .primaryButton:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(0, 102, 255, 0.6), 0 0 30px rgba(0, 255, 65, 0.4);
-  color: #0a0a0a;
+  box-shadow: 0 8px 25px rgba(139, 92, 246, 0.6), 0 0 30px rgba(251, 191, 36, 0.4);
+  color: #1a0b2e;
   filter: brightness(1.1);
 }
 
 .secondaryButton {
-  border: 2px solid rgba(0, 102, 255, 0.6);
-  color: #0066ff;
+  border: 2px solid rgba(139, 92, 246, 0.6);
+  color: #8b5cf6;
   font-weight: 600;
   transition: all 0.3s ease;
   backdrop-filter: blur(10px);
-  background: rgba(0, 102, 255, 0.1);
-  box-shadow: 0 0 15px rgba(0, 102, 255, 0.2);
+  background: rgba(139, 92, 246, 0.1);
+  box-shadow: 0 0 15px rgba(139, 92, 246, 0.2);
 }
 
 .secondaryButton:hover {
-  background: rgba(0, 102, 255, 0.2);
-  border-color: #0066ff;
+  background: rgba(139, 92, 246, 0.2);
+  border-color: #8b5cf6;
   transform: translateY(-2px);
-  color: #00ff41;
-  box-shadow: 0 4px 15px rgba(0, 102, 255, 0.4), 0 0 25px rgba(0, 255, 65, 0.3);
+  color: #fbbf24;
+  box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4), 0 0 25px rgba(251, 191, 36, 0.3);
 }
 
 .installCommand {
@@ -76,8 +76,8 @@
 }
 
 .commandBox {
-  background: rgba(0, 0, 0, 0.4);
-  border: 1px solid rgba(0, 102, 255, 0.4);
+  background: rgba(26, 11, 46, 0.4);
+  border: 1px solid rgba(139, 92, 246, 0.4);
   border-radius: 8px;
   padding: 1rem 1.5rem;
   font-family: 'Fira Code', 'Monaco', 'Consolas', monospace;
@@ -88,17 +88,17 @@
   align-items: center;
   gap: 0.5rem;
   transition: all 0.3s ease;
-  box-shadow: 0 0 20px rgba(0, 102, 255, 0.3), inset 0 0 10px rgba(0, 255, 65, 0.1);
+  box-shadow: 0 0 20px rgba(139, 92, 246, 0.3), inset 0 0 10px rgba(251, 191, 36, 0.1);
 }
 
 .commandBox:hover {
-  background: rgba(0, 0, 0, 0.5);
-  border-color: rgba(0, 102, 255, 0.6);
-  box-shadow: 0 0 30px rgba(0, 102, 255, 0.4), 0 0 15px rgba(0, 255, 65, 0.2);
+  background: rgba(26, 11, 46, 0.5);
+  border-color: rgba(139, 92, 246, 0.6);
+  box-shadow: 0 0 30px rgba(139, 92, 246, 0.4), 0 0 15px rgba(251, 191, 36, 0.2);
 }
 
 .commandPrompt {
-  color: #00ff41;
+  color: #fbbf24;
   font-weight: 600;
 }
 
@@ -127,7 +127,7 @@
 .gradientOrb1 {
   width: 400px;
   height: 400px;
-  background: linear-gradient(45deg, #0066ff, #3366ff);
+  background: linear-gradient(45deg, #8b5cf6, #a855f7);
   top: -10%;
   right: -10%;
   animation-delay: 0s;
@@ -136,7 +136,7 @@
 .gradientOrb2 {
   width: 300px;
   height: 300px;
-  background: linear-gradient(45deg, #00ff41, #00ff88);
+  background: linear-gradient(45deg, #fbbf24, #f59e0b);
   bottom: -10%;
   left: -10%;
   animation-delay: 4s;
@@ -149,16 +149,16 @@
 
 /* Dark theme adjustments */
 [data-theme='dark'] .ctaSection {
-  background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 100%);
+  background: linear-gradient(135deg, #1a0b2e 0%, #2d1b69 100%);
 }
 
 [data-theme='dark'] .primaryButton {
-  background: linear-gradient(45deg, #0066ff, #00ff41);
-  color: #0a0a0a;
+  background: linear-gradient(45deg, #8b5cf6, #fbbf24);
+  color: #1a0b2e;
 }
 
 [data-theme='dark'] .primaryButton:hover {
-  color: #0a0a0a;
+  color: #1a0b2e;
 }
 
 /* Responsive Design */
