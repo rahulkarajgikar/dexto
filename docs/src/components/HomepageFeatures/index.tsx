@@ -38,7 +38,7 @@ const FeatureList: FeatureItem[] = [
     icon: '🔌',
     description: (
       <>
-        Connect to any MCP servers to your Saiki agents to enhance their functionality.
+        Connect Saiki agents to remote and local MCP servers to enhance their functionality.
       </>
     ),
     highlights: ['MCP integration', 'Extensible tools', 'Rich ecosystem']
@@ -55,12 +55,12 @@ const FeatureList: FeatureItem[] = [
     highlights: ['Multiple providers', 'Easy integration', 'Custom APIs']
   },
   {
-    title: 'Use Saiki Agents in Any Application',
+    title: 'Access Saiki Agents in Any Application',
     icon: '🚀',
     description: (
       <>
         Saiki agents can be used on telegram, discord, slack, and even as their own MCP servers 
-        - all out of the box!
+        - all out of the box! Saiki agents can even be used in your custom applications!
       </>
     ),
     highlights: ['Platform agnostic', 'Multiple channels', 'MCP server mode']

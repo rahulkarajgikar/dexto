@@ -89,10 +89,11 @@ function QuickStartSection() {
         <div className={styles.quickStartContent}>
           <div className={styles.quickStartHeader}>
             <Heading as="h2" className={styles.quickStartTitle}>
-              Two Ways to Build with Saiki
+              How to build with Saiki
             </Heading>
             <p className={styles.quickStartSubtitle}>
-              Use the CLI for quick interactions or the programmatic API for building applications
+              Use the CLI and web-playground for quick interactions, building, testing and deploying Saiki AI Agents.
+              Then use the programmatic API for building AI applications!
             </p>
           </div>
           
