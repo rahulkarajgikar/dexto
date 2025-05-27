@@ -9,17 +9,17 @@
 
 /* You can override the default Infima variables here. */
 :root {
-  /* AI-themed color palette */
-  --ifm-color-primary: #667eea;
-  --ifm-color-primary-dark: #5a6fd8;
-  --ifm-color-primary-darker: #5469d4;
-  --ifm-color-primary-darkest: #4557c2;
-  --ifm-color-primary-light: #728dfc;
-  --ifm-color-primary-lighter: #7e93fc;
-  --ifm-color-primary-lightest: #9ca9ff;
+  /* AI-themed color palette - Cyan/Teal futuristic theme */
+  --ifm-color-primary: #00d4ff;
+  --ifm-color-primary-dark: #00b8e6;
+  --ifm-color-primary-darker: #00a8d6;
+  --ifm-color-primary-darkest: #0088b3;
+  --ifm-color-primary-light: #1ae0ff;
+  --ifm-color-primary-lighter: #33e6ff;
+  --ifm-color-primary-lightest: #66ecff;
   
   /* Enhanced color system */
-  --ifm-color-secondary: #764ba2;
+  --ifm-color-secondary: #00ffa3;
   --ifm-color-success: #10b981;
   --ifm-color-info: #3b82f6;
   --ifm-color-warning: #f59e0b;
@@ -65,15 +65,15 @@
 
 /* Dark theme enhancements */
 [data-theme='dark'] {
-  --ifm-color-primary: #818cf8;
-  --ifm-color-primary-dark: #6366f1;
-  --ifm-color-primary-darker: #5b21b6;
-  --ifm-color-primary-darkest: #4c1d95;
-  --ifm-color-primary-light: #a5b4fc;
-  --ifm-color-primary-lighter: #c7d2fe;
-  --ifm-color-primary-lightest: #e0e7ff;
+  --ifm-color-primary: #00d4ff;
+  --ifm-color-primary-dark: #00b8e6;
+  --ifm-color-primary-darker: #00a8d6;
+  --ifm-color-primary-darkest: #0088b3;
+  --ifm-color-primary-light: #1ae0ff;
+  --ifm-color-primary-lighter: #33e6ff;
+  --ifm-color-primary-lightest: #66ecff;
   
-  --ifm-color-secondary: #c084fc;
+  --ifm-color-secondary: #00ffa3;
   
   /* Dark theme code styling */
   --ifm-code-background: #1e293b;
@@ -107,23 +107,28 @@ html {
 
 .button--primary {
   background: linear-gradient(135deg, var(--ifm-color-primary), var(--ifm-color-secondary));
-  color: white;
+  color: #0f172a;
+  font-weight: 600;
 }
 
 .button--primary:hover {
   background: linear-gradient(135deg, var(--ifm-color-primary-dark), var(--ifm-color-secondary));
-  color: white;
+  color: #0f172a;
+  filter: brightness(1.1);
 }
 
 .button--secondary {
-  background: white;
+  background: rgba(0, 212, 255, 0.1);
   color: var(--ifm-color-primary);
-  border: 2px solid var(--ifm-color-primary);
+  border: 2px solid rgba(0, 212, 255, 0.5);
+  backdrop-filter: blur(10px);
 }
 
 .button--secondary:hover {
-  background: var(--ifm-color-primary);
-  color: white;
+  background: rgba(0, 212, 255, 0.2);
+  color: var(--ifm-color-secondary);
+  border-color: var(--ifm-color-primary);
+  box-shadow: 0 4px 15px rgba(0, 212, 255, 0.3);
 }
 
 /* Enhanced navbar */

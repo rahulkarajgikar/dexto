@@ -18,7 +18,7 @@
   font-size: 2.5rem;
   font-weight: 700;
   margin-bottom: 1.5rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #00d4ff 0%, #00ffa3 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -41,7 +41,7 @@
   padding: 2rem;
   height: 100%;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  border: 1px solid #e2e8f0;
+  border: 1px solid rgba(0, 212, 255, 0.2);
   transition: all 0.3s ease;
   position: relative;
   overflow: hidden;
@@ -54,7 +54,7 @@
   left: 0;
   right: 0;
   height: 4px;
-  background: linear-gradient(90deg, #667eea, #764ba2, #f093fb, #f5576c);
+  background: linear-gradient(90deg, #00d4ff, #00ffa3, #0099ff, #00e5ff);
   background-size: 300% 100%;
   animation: gradientMove 3s ease-in-out infinite;
 }
@@ -66,7 +66,8 @@
 
 .featureCard:hover {
   transform: translateY(-4px);
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04), 0 0 20px rgba(0, 212, 255, 0.3);
+  border-color: rgba(0, 212, 255, 0.4);
 }
 
 .featureIcon {
@@ -75,10 +76,11 @@
   justify-content: center;
   width: 64px;
   height: 64px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #00d4ff 0%, #00ffa3 100%);
   border-radius: 16px;
   margin-bottom: 1.5rem;
   position: relative;
+  box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
 }
 
 .iconEmoji {
@@ -126,8 +128,8 @@
   justify-content: center;
   width: 16px;
   height: 16px;
-  background: linear-gradient(135deg, #10b981, #059669);
-  color: white;
+  background: linear-gradient(135deg, #00ffa3, #00e5ff);
+  color: #0f172a;
   border-radius: 50%;
   font-size: 0.75rem;
   font-weight: bold;
@@ -136,21 +138,22 @@
 
 /* Dark theme support */
 [data-theme='dark'] .features {
-  background: linear-gradient(180deg, #1a1a1a 0%, #0f0f0f 100%);
+  background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
 }
 
 [data-theme='dark'] .featureCard {
-  background: #1e1e1e;
-  border-color: #333;
+  background: #1e293b;
+  border: 1px solid rgba(0, 212, 255, 0.2);
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
 }
 
 [data-theme='dark'] .featureCard:hover {
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 10px 10px -5px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 10px 10px -5px rgba(0, 0, 0, 0.3), 0 0 20px rgba(0, 212, 255, 0.3);
+  border-color: rgba(0, 212, 255, 0.4);
 }
 
 [data-theme='dark'] .featuresTitle {
-  background: linear-gradient(135deg, #818cf8 0%, #c084fc 100%);
+  background: linear-gradient(135deg, #00d4ff 0%, #00ffa3 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
