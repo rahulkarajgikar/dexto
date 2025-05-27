@@ -5,52 +5,98 @@ import styles from './styles.module.css';
 
 type FeatureItem = {
   title: string;
-  Svg: React.ComponentType<React.ComponentProps<'svg'>>;
+  icon: string;
   description: ReactNode;
+  highlights: string[];
 };
 
 const FeatureList: FeatureItem[] = [
   {
-    title: 'Easy to Use',
-    Svg: require('@site/static/img/undraw_docusaurus_mountain.svg').default,
+    title: 'Customizable, Config-Driven Agents',
+    icon: '🤖',
     description: (
       <>
-        Docusaurus was designed from the ground up to be easily installed and
-        used to get your website up and running quickly.
+        Create a Saiki agent by creating one config file. Configure your tools, LLM 
+        configuration, prompts, context management strategies in one file and re-use that anywhere.
       </>
     ),
+    highlights: ['One config file', 'Multiple LLM providers', 'Reusable configurations']
   },
   {
-    title: 'Focus on What Matters',
-    Svg: require('@site/static/img/undraw_docusaurus_tree.svg').default,
+    title: 'Feature-rich Developer Tools',
+    icon: '🛠️',
     description: (
       <>
-        Docusaurus lets you focus on your docs, and we&apos;ll do the chores. Go
-        ahead and move your docs into the <code>docs</code> directory.
+        Saiki has a powerful CLI and web UI playground you can use to build, test and experiment with 
+        different AI agents.
       </>
     ),
+    highlights: ['Interactive CLI', 'Web playground', 'Real-time testing']
   },
   {
-    title: 'Powered by React',
-    Svg: require('@site/static/img/undraw_docusaurus_react.svg').default,
+    title: 'First-class MCP Support',
+    icon: '🔌',
     description: (
       <>
-        Extend or customize your website layout by reusing React. Docusaurus can
-        be extended while reusing the same header and footer.
+        Connect to any MCP servers to your Saiki agents to enhance their functionality.
       </>
     ),
+    highlights: ['MCP integration', 'Extensible tools', 'Rich ecosystem']
+  },
+  {
+    title: 'Multi-LLM Support',
+    icon: '🧠',
+    description: (
+      <>
+        Saiki supports OpenAI, Anthropic, Google and Groq LLMs. Saiki is open 
+        source and makes it extremely easy to build your own APIs as well.
+      </>
+    ),
+    highlights: ['Multiple providers', 'Easy integration', 'Custom APIs']
+  },
+  {
+    title: 'Use Saiki Agents in Any Application',
+    icon: '🚀',
+    description: (
+      <>
+        Saiki agents can be used on telegram, discord, slack, and even as their own MCP servers 
+        - all out of the box!
+      </>
+    ),
+    highlights: ['Platform agnostic', 'Multiple channels', 'MCP server mode']
+  },
+  {
+    title: 'In-built Context Management',
+    icon: '💾',
+    description: (
+      <>
+        Saiki agents have in-built context management to handle the token limits of LLMs. Even this is 
+        customizable!
+      </>
+    ),
+    highlights: ['Smart context handling', 'Token optimization', 'Fully customizable']
   },
 ];
 
-function Feature({title, Svg, description}: FeatureItem) {
+function Feature({title, icon, description, highlights}: FeatureItem) {
   return (
-    <div className={clsx('col col--4')}>
-      <div className="text--center">
-        <Svg className={styles.featureSvg} role="img" />
-      </div>
-      <div className="text--center padding-horiz--md">
-        <Heading as="h3">{title}</Heading>
-        <p>{description}</p>
+    <div className={clsx('col col--4', styles.feature)}>
+      <div className={styles.featureCard}>
+        <div className={styles.featureIcon}>
+          <span className={styles.iconEmoji}>{icon}</span>
+        </div>
+        <div className={styles.featureContent}>
+          <Heading as="h3" className={styles.featureTitle}>{title}</Heading>
+          <p className={styles.featureDescription}>{description}</p>
+          <ul className={styles.featureHighlights}>
+            {highlights.map((highlight, idx) => (
+              <li key={idx} className={styles.highlight}>
+                <span className={styles.checkmark}>✓</span>
+                {highlight}
+              </li>
+            ))}
+          </ul>
+        </div>
       </div>
     </div>
   );
@@ -60,6 +106,16 @@ export default function HomepageFeatures(): ReactNode {
   return (
     <section className={styles.features}>
       <div className="container">
+        <div className={styles.featuresHeader}>
+          <Heading as="h2" className={styles.featuresTitle}>
+            Why developers choose Saiki
+          </Heading>
+          <p className={styles.featuresSubtitle}>
+            Saiki is the missing natural language layer across your stack. Its powerful in-built features and high customizability means that 
+            whether you're automating workflows, building agents, or prototyping new ideas, Saiki gives you the tools to move fast — and bend 
+            it to your needs.
+          </p>
+        </div>
         <div className="row">
           {FeatureList.map((props, idx) => (
             <Feature key={idx} {...props} />

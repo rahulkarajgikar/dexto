@@ -4,20 +4,274 @@
  */
 
 .heroBanner {
-  padding: 4rem 0;
-  text-align: center;
   position: relative;
+  padding: 4rem 0;
+  text-align: left;
   overflow: hidden;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  min-height: 80vh;
+  display: flex;
+  align-items: center;
 }
 
-@media screen and (max-width: 996px) {
-  .heroBanner {
-    padding: 2rem;
-  }
+.heroContent {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4rem;
+  align-items: center;
+  position: relative;
+  z-index: 2;
+}
+
+.heroText {
+  max-width: 600px;
+}
+
+.heroTitle {
+  font-size: 3.5rem;
+  font-weight: 800;
+  line-height: 1.1;
+  margin-bottom: 1.5rem;
+  color: white;
+}
+
+.gradient {
+  background: linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1, #96ceb4);
+  background-size: 400% 400%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: gradientShift 4s ease-in-out infinite;
+}
+
+@keyframes gradientShift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+.heroSubtitle {
+  font-size: 1.25rem;
+  line-height: 1.6;
+  margin-bottom: 2rem;
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 400;
 }
 
 .buttons {
   display: flex;
-  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.getStartedButton {
+  background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+  border: none;
+  color: white;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.getStartedButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+  color: white;
+}
+
+.githubButton {
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+}
+
+.githubButton:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: translateY(-2px);
+  color: white;
+}
+
+.heroVisual {
+  display: flex;
   justify-content: center;
+  align-items: center;
+}
+
+.codeBlock {
+  background: rgba(0, 0, 0, 0.8);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  max-width: 500px;
+  width: 100%;
+}
+
+.codeHeader {
+  background: rgba(255, 255, 255, 0.05);
+  padding: 0.75rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.codeDots {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.codeDots span {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #ff5f56;
+}
+
+.codeDots span:nth-child(2) {
+  background: #ffbd2e;
+}
+
+.codeDots span:nth-child(3) {
+  background: #27ca3f;
+}
+
+.codeTitle {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.codeContent {
+  padding: 1.5rem;
+}
+
+.codeContent pre {
+  margin: 0;
+  font-family: 'Fira Code', 'Monaco', 'Consolas', monospace;
+  font-size: 0.875rem;
+  line-height: 1.6;
+  color: #e1e4e8;
+  background: none;
+}
+
+.heroBackground {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1;
+}
+
+.gridPattern {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: 
+    linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+  background-size: 50px 50px;
+  animation: gridMove 20s linear infinite;
+}
+
+@keyframes gridMove {
+  0% { transform: translate(0, 0); }
+  100% { transform: translate(50px, 50px); }
+}
+
+.gradientOrb1,
+.gradientOrb2,
+.gradientOrb3 {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(40px);
+  opacity: 0.3;
+  animation: float 6s ease-in-out infinite;
+}
+
+.gradientOrb1 {
+  width: 300px;
+  height: 300px;
+  background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+  top: 10%;
+  right: 10%;
+  animation-delay: 0s;
+}
+
+.gradientOrb2 {
+  width: 200px;
+  height: 200px;
+  background: linear-gradient(45deg, #45b7d1, #96ceb4);
+  bottom: 20%;
+  left: 10%;
+  animation-delay: 2s;
+}
+
+.gradientOrb3 {
+  width: 150px;
+  height: 150px;
+  background: linear-gradient(45deg, #a8e6cf, #dcedc1);
+  top: 50%;
+  left: 50%;
+  animation-delay: 4s;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  33% { transform: translateY(-20px) rotate(120deg); }
+  66% { transform: translateY(10px) rotate(240deg); }
+}
+
+/* Responsive Design */
+@media screen and (max-width: 996px) {
+  .heroContent {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+    text-align: center;
+  }
+  
+  .heroTitle {
+    font-size: 2.5rem;
+  }
+  
+  .heroSubtitle {
+    font-size: 1.125rem;
+  }
+  
+  .codeBlock {
+    max-width: 400px;
+  }
+}
+
+@media screen and (max-width: 768px) {
+  .heroBanner {
+    padding: 2rem 0;
+    min-height: 70vh;
+  }
+  
+  .heroTitle {
+    font-size: 2rem;
+  }
+  
+  .heroSubtitle {
+    font-size: 1rem;
+  }
+  
+  .buttons {
+    justify-content: center;
+  }
+  
+  .codeBlock {
+    max-width: 320px;
+  }
+  
+  .codeContent pre {
+    font-size: 0.75rem;
+  }
 }

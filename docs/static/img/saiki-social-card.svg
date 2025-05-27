@@ -1,0 +1,54 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="text" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#ff6b6b;stop-opacity:1" />
+      <stop offset="25%" style="stop-color:#4ecdc4;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#45b7d1;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#96ceb4;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  
+  <!-- Grid pattern -->
+  <defs>
+    <pattern id="grid" width="50" height="50" patternUnits="userSpaceOnUse">
+      <path d="M 50 0 L 0 0 0 50" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
+    </pattern>
+  </defs>
+  <rect width="1200" height="630" fill="url(#grid)"/>
+  
+  <!-- Floating orbs -->
+  <circle cx="200" cy="150" r="80" fill="rgba(255,107,107,0.3)" filter="blur(20px)"/>
+  <circle cx="1000" cy="200" r="60" fill="rgba(78,205,196,0.3)" filter="blur(15px)"/>
+  <circle cx="900" cy="500" r="70" fill="rgba(150,206,180,0.3)" filter="blur(18px)"/>
+  
+  <!-- Main content -->
+  <text x="600" y="200" text-anchor="middle" fill="white" font-family="Inter, sans-serif" font-size="72" font-weight="800">Saiki</text>
+  <text x="600" y="280" text-anchor="middle" fill="rgba(255,255,255,0.9)" font-family="Inter, sans-serif" font-size="36" font-weight="400">Build AI Agents with ease</text>
+  
+  <!-- Subtitle -->
+  <text x="600" y="350" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-family="Inter, sans-serif" font-size="24" font-weight="400">An open-source, modular and extensible framework</text>
+  <text x="600" y="390" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-family="Inter, sans-serif" font-size="24" font-weight="400">for building AI Agents and AI powered applications</text>
+  
+  <!-- Code snippet background -->
+  <rect x="300" y="450" width="600" height="120" rx="12" fill="rgba(0,0,0,0.3)" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+  
+  <!-- Code snippet -->
+  <text x="320" y="480" fill="#4ade80" font-family="Fira Code, monospace" font-size="16" font-weight="600">$</text>
+  <text x="340" y="480" fill="#e2e8f0" font-family="Fira Code, monospace" font-size="16">npm install -g @truffle-ai/saiki</text>
+  
+  <text x="320" y="510" fill="#4ade80" font-family="Fira Code, monospace" font-size="16" font-weight="600">$</text>
+  <text x="340" y="510" fill="#e2e8f0" font-family="Fira Code, monospace" font-size="16">saiki init my-agent</text>
+  
+  <text x="320" y="540" fill="#4ade80" font-family="Fira Code, monospace" font-size="16" font-weight="600">$</text>
+  <text x="340" y="540" fill="#e2e8f0" font-family="Fira Code, monospace" font-size="16">saiki start</text>
+  
+  <!-- GitHub link -->
+  <text x="600" y="610" text-anchor="middle" fill="rgba(255,255,255,0.7)" font-family="Inter, sans-serif" font-size="18">github.com/truffle-ai/saiki</text>
+</svg> 

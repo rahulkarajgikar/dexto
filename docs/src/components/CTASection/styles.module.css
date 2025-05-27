@@ -1,0 +1,195 @@
+.ctaSection {
+  position: relative;
+  padding: 6rem 0;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  overflow: hidden;
+}
+
+.ctaContent {
+  text-align: center;
+  position: relative;
+  z-index: 2;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.ctaTitle {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: white;
+  margin-bottom: 1.5rem;
+  line-height: 1.2;
+}
+
+.ctaDescription {
+  font-size: 1.25rem;
+  color: rgba(255, 255, 255, 0.9);
+  margin-bottom: 2.5rem;
+  line-height: 1.6;
+}
+
+.ctaButtons {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  margin-bottom: 3rem;
+  flex-wrap: wrap;
+}
+
+.primaryButton {
+  background: white;
+  color: var(--ifm-color-primary);
+  border: none;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.primaryButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+  color: var(--ifm-color-primary);
+}
+
+.secondaryButton {
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+}
+
+.secondaryButton:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: translateY(-2px);
+  color: white;
+}
+
+.installCommand {
+  display: flex;
+  justify-content: center;
+}
+
+.commandBox {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  padding: 1rem 1.5rem;
+  font-family: 'Fira Code', 'Monaco', 'Consolas', monospace;
+  font-size: 0.875rem;
+  color: white;
+  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.3s ease;
+}
+
+.commandBox:hover {
+  background: rgba(0, 0, 0, 0.4);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.commandPrompt {
+  color: #4ade80;
+  font-weight: 600;
+}
+
+.commandText {
+  color: #e2e8f0;
+}
+
+.ctaBackground {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1;
+}
+
+.gradientOrb1,
+.gradientOrb2 {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(60px);
+  opacity: 0.3;
+  animation: float 8s ease-in-out infinite;
+}
+
+.gradientOrb1 {
+  width: 400px;
+  height: 400px;
+  background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+  top: -10%;
+  right: -10%;
+  animation-delay: 0s;
+}
+
+.gradientOrb2 {
+  width: 300px;
+  height: 300px;
+  background: linear-gradient(45deg, #a8e6cf, #dcedc1);
+  bottom: -10%;
+  left: -10%;
+  animation-delay: 4s;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-30px) rotate(180deg); }
+}
+
+/* Dark theme adjustments */
+[data-theme='dark'] .ctaSection {
+  background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+}
+
+[data-theme='dark'] .primaryButton {
+  background: var(--ifm-color-primary);
+  color: white;
+}
+
+[data-theme='dark'] .primaryButton:hover {
+  color: white;
+}
+
+/* Responsive Design */
+@media screen and (max-width: 996px) {
+  .ctaSection {
+    padding: 4rem 0;
+  }
+  
+  .ctaTitle {
+    font-size: 2rem;
+  }
+  
+  .ctaDescription {
+    font-size: 1.125rem;
+  }
+}
+
+@media screen and (max-width: 768px) {
+  .ctaSection {
+    padding: 3rem 0;
+  }
+  
+  .ctaTitle {
+    font-size: 1.75rem;
+  }
+  
+  .ctaDescription {
+    font-size: 1rem;
+  }
+  
+  .ctaButtons {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .commandBox {
+    padding: 0.75rem 1rem;
+    font-size: 0.75rem;
+  }
+} 

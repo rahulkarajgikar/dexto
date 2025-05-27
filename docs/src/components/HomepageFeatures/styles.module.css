@@ -1,11 +1,219 @@
 .features {
   display: flex;
   align-items: center;
-  padding: 2rem 0;
+  padding: 6rem 0;
   width: 100%;
+  background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
 }
 
-.featureSvg {
-  height: 200px;
-  width: 200px;
+.featuresHeader {
+  text-align: center;
+  margin-bottom: 4rem;
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.featuresTitle {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.featuresSubtitle {
+  font-size: 1.125rem;
+  line-height: 1.7;
+  color: #64748b;
+  margin: 0;
+}
+
+.feature {
+  margin-bottom: 2rem;
+}
+
+.featureCard {
+  background: white;
+  border-radius: 16px;
+  padding: 2rem;
+  height: 100%;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  border: 1px solid #e2e8f0;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.featureCard::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #667eea, #764ba2, #f093fb, #f5576c);
+  background-size: 300% 100%;
+  animation: gradientMove 3s ease-in-out infinite;
+}
+
+@keyframes gradientMove {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+.featureCard:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.featureIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 16px;
+  margin-bottom: 1.5rem;
+  position: relative;
+}
+
+.iconEmoji {
+  font-size: 2rem;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+}
+
+.featureContent {
+  flex: 1;
+}
+
+.featureTitle {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  color: #1e293b;
+  line-height: 1.4;
+}
+
+.featureDescription {
+  color: #64748b;
+  line-height: 1.6;
+  margin-bottom: 1.5rem;
+  font-size: 0.95rem;
+}
+
+.featureHighlights {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.highlight {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+  font-size: 0.875rem;
+  color: #475569;
+}
+
+.checkmark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+  border-radius: 50%;
+  font-size: 0.75rem;
+  font-weight: bold;
+  flex-shrink: 0;
+}
+
+/* Dark theme support */
+[data-theme='dark'] .features {
+  background: linear-gradient(180deg, #1a1a1a 0%, #0f0f0f 100%);
+}
+
+[data-theme='dark'] .featureCard {
+  background: #1e1e1e;
+  border-color: #333;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+}
+
+[data-theme='dark'] .featureCard:hover {
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 10px 10px -5px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme='dark'] .featuresTitle {
+  background: linear-gradient(135deg, #818cf8 0%, #c084fc 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+[data-theme='dark'] .featuresSubtitle {
+  color: #94a3b8;
+}
+
+[data-theme='dark'] .featureTitle {
+  color: #f1f5f9;
+}
+
+[data-theme='dark'] .featureDescription {
+  color: #94a3b8;
+}
+
+[data-theme='dark'] .highlight {
+  color: #cbd5e1;
+}
+
+/* Responsive Design */
+@media screen and (max-width: 996px) {
+  .features {
+    padding: 4rem 0;
+  }
+  
+  .featuresTitle {
+    font-size: 2rem;
+  }
+  
+  .featuresSubtitle {
+    font-size: 1rem;
+  }
+  
+  .featureCard {
+    padding: 1.5rem;
+  }
+}
+
+@media screen and (max-width: 768px) {
+  .features {
+    padding: 3rem 0;
+  }
+  
+  .featuresHeader {
+    margin-bottom: 3rem;
+  }
+  
+  .featuresTitle {
+    font-size: 1.75rem;
+  }
+  
+  .featureCard {
+    padding: 1.25rem;
+  }
+  
+  .featureIcon {
+    width: 56px;
+    height: 56px;
+  }
+  
+  .iconEmoji {
+    font-size: 1.75rem;
+  }
 }
