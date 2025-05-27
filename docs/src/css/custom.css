@@ -151,6 +151,125 @@ html {
   box-shadow: var(--ifm-box-shadow-md);
 }
 
+/* Terminal-style code blocks for bash */
+.prism-code[class*="language-bash"] {
+  background: #1a1a1a !important;
+  border: 1px solid #333;
+  position: relative;
+  font-family: 'Fira Code', 'Monaco', 'Consolas', 'SF Mono', monospace !important;
+}
+
+.prism-code[class*="language-bash"]::before {
+  content: '';
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  width: 12px;
+  height: 12px;
+  background: #ff5f56;
+  border-radius: 50%;
+  box-shadow: 20px 0 0 #ffbd2e, 40px 0 0 #27ca3f;
+  z-index: 2;
+}
+
+.prism-code[class*="language-bash"] .token-line {
+  padding-left: 70px;
+  min-height: 1.5em;
+  display: flex;
+  align-items: center;
+}
+
+.prism-code[class*="language-bash"] .token-line:first-child {
+  margin-top: 20px;
+}
+
+/* Remove all syntax highlighting for terminal look */
+.prism-code[class*="language-bash"] .token {
+  color: #e1e4e8 !important;
+  background: none !important;
+}
+
+.prism-code[class*="language-bash"] .token.comment {
+  color: #6a737d !important;
+  font-style: italic;
+}
+
+.prism-code[class*="language-bash"] .token.string {
+  color: #e1e4e8 !important;
+}
+
+.prism-code[class*="language-bash"] .token.function {
+  color: #e1e4e8 !important;
+}
+
+.prism-code[class*="language-bash"] .token.keyword {
+  color: #e1e4e8 !important;
+}
+
+.prism-code[class*="language-bash"] .token.operator {
+  color: #e1e4e8 !important;
+}
+
+.prism-code[class*="language-bash"] .token.punctuation {
+  color: #e1e4e8 !important;
+}
+
+/* Style command prompts specifically */
+.prism-code[class*="language-bash"] .token-line:has-text("$") {
+  color: #50fa7b !important;
+}
+
+/* Dark theme terminal adjustments */
+[data-theme='dark'] .prism-code[class*="language-bash"] {
+  background: #0d1117 !important;
+  border: 1px solid #30363d;
+}
+
+[data-theme='dark'] .prism-code[class*="language-bash"] .token {
+  color: #c9d1d9 !important;
+}
+
+[data-theme='dark'] .prism-code[class*="language-bash"] .token.comment {
+  color: #8b949e !important;
+}
+
+/* Additional terminal styling to override all token colors */
+.prism-code[class*="language-bash"] .token.builtin,
+.prism-code[class*="language-bash"] .token.class-name,
+.prism-code[class*="language-bash"] .token.constant,
+.prism-code[class*="language-bash"] .token.deleted,
+.prism-code[class*="language-bash"] .token.important,
+.prism-code[class*="language-bash"] .token.inserted,
+.prism-code[class*="language-bash"] .token.number,
+.prism-code[class*="language-bash"] .token.property,
+.prism-code[class*="language-bash"] .token.regex,
+.prism-code[class*="language-bash"] .token.selector,
+.prism-code[class*="language-bash"] .token.symbol,
+.prism-code[class*="language-bash"] .token.tag,
+.prism-code[class*="language-bash"] .token.url,
+.prism-code[class*="language-bash"] .token.variable {
+  color: #e1e4e8 !important;
+  background: none !important;
+}
+
+[data-theme='dark'] .prism-code[class*="language-bash"] .token.builtin,
+[data-theme='dark'] .prism-code[class*="language-bash"] .token.class-name,
+[data-theme='dark'] .prism-code[class*="language-bash"] .token.constant,
+[data-theme='dark'] .prism-code[class*="language-bash"] .token.deleted,
+[data-theme='dark'] .prism-code[class*="language-bash"] .token.important,
+[data-theme='dark'] .prism-code[class*="language-bash"] .token.inserted,
+[data-theme='dark'] .prism-code[class*="language-bash"] .token.number,
+[data-theme='dark'] .prism-code[class*="language-bash"] .token.property,
+[data-theme='dark'] .prism-code[class*="language-bash"] .token.regex,
+[data-theme='dark'] .prism-code[class*="language-bash"] .token.selector,
+[data-theme='dark'] .prism-code[class*="language-bash"] .token.symbol,
+[data-theme='dark'] .prism-code[class*="language-bash"] .token.tag,
+[data-theme='dark'] .prism-code[class*="language-bash"] .token.url,
+[data-theme='dark'] .prism-code[class*="language-bash"] .token.variable {
+  color: #c9d1d9 !important;
+  background: none !important;
+}
+
 /* Enhanced cards */
 .card {
   border-radius: var(--ifm-card-border-radius);

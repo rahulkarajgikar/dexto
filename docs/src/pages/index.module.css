@@ -158,6 +158,154 @@
   background: none;
 }
 
+.terminalCode {
+  color: #e1e4e8 !important;
+  font-family: 'Fira Code', 'Monaco', 'Consolas', 'SF Mono', monospace !important;
+  background: none !important;
+  white-space: pre-wrap;
+}
+
+/* Add terminal cursor animation */
+.terminalCode::after {
+  content: '█';
+  animation: blink 1s infinite;
+  color: #50fa7b;
+  margin-left: 4px;
+}
+
+@keyframes blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+
+/* Quick Start Section */
+.quickStartSection {
+  padding: 4rem 0;
+  background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
+}
+
+[data-theme='dark'] .quickStartSection {
+  background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
+}
+
+.quickStartContent {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.quickStartHeader {
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+.quickStartTitle {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.quickStartSubtitle {
+  font-size: 1.125rem;
+  color: #64748b;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+[data-theme='dark'] .quickStartSubtitle {
+  color: #94a3b8;
+}
+
+.quickStartGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  align-items: start;
+}
+
+.quickStartCard {
+  background: white;
+  border-radius: 16px;
+  padding: 2rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+}
+
+.quickStartCard:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+[data-theme='dark'] .quickStartCard {
+  background: #1e293b;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.cardHeader {
+  margin-bottom: 1.5rem;
+}
+
+.cardHeader h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: #1e293b;
+}
+
+[data-theme='dark'] .cardHeader h3 {
+  color: #f1f5f9;
+}
+
+.cardHeader p {
+  color: #64748b;
+  margin: 0;
+}
+
+[data-theme='dark'] .cardHeader p {
+  color: #94a3b8;
+}
+
+.codeExample {
+  background: #1e1e1e;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #333;
+}
+
+.codeExample .codeHeader {
+  background: rgba(255, 255, 255, 0.05);
+  padding: 0.75rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.codeExample .codeContent {
+  padding: 1rem;
+}
+
+.codeExample .codeContent pre {
+  margin: 0;
+  font-family: 'Fira Code', 'Monaco', 'Consolas', monospace;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: #e1e4e8;
+  background: none;
+  overflow-x: auto;
+}
+
+.terminalText {
+  color: #e1e4e8 !important;
+  font-family: 'Fira Code', 'Monaco', 'Consolas', 'SF Mono', monospace !important;
+  background: none !important;
+  white-space: pre-wrap;
+}
+
 .heroBackground {
   position: absolute;
   top: 0;
@@ -235,17 +383,26 @@
     gap: 2rem;
     text-align: center;
   }
-  
+
   .heroTitle {
     font-size: 2.5rem;
   }
-  
+
   .heroSubtitle {
     font-size: 1.125rem;
   }
-  
+
   .codeBlock {
     max-width: 400px;
+  }
+
+  .quickStartGrid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  .quickStartTitle {
+    font-size: 2rem;
   }
 }
 
@@ -272,6 +429,22 @@
   }
   
   .codeContent pre {
+    font-size: 0.75rem;
+  }
+
+  .quickStartSection {
+    padding: 2rem 0;
+  }
+
+  .quickStartCard {
+    padding: 1.5rem;
+  }
+
+  .quickStartTitle {
+    font-size: 1.75rem;
+  }
+
+  .codeExample .codeContent pre {
     font-size: 0.75rem;
   }
 }

@@ -43,30 +43,29 @@ function HomepageHeader() {
                   <span></span>
                   <span></span>
                 </div>
-                <span className={styles.codeTitle}>my-agent.ts</span>
+                <span className={styles.codeTitle}>Terminal</span>
               </div>
               <div className={styles.codeContent}>
-                <pre>
-{`import { createSaikiAgent } from '@truffle-ai/saiki';
+                <pre className={styles.terminalCode}>
+{`$ npm install -g @truffle-ai/saiki
+✓ Installed successfully!
 
-const agentConfig = {
-  llm: {
-    provider: 'openai',
-    model: 'gpt-4.1-mini',
-    apiKey: process.env.OPENAI_API_KEY,
-    systemPrompt: 'You are a helpful AI assistant with access to tools.'
-  },
-  mcpServers: {
-    filesystem: {
-      type: 'stdio',
-      command: 'npx',
-      args: ['-y', '@modelcontextprotocol/server-filesystem', '.']
-    }
-  }
-};
+$ saiki
+✨ Starting Saiki CLI...
+🤖 How can I help you today?
 
-const agent = await createSaikiAgent(agentConfig);
-const response = await agent.run('Hello, how can you help me?');`}
+> find all .js files in this directory
+📁 Found 12 JavaScript files:
+   - src/index.js
+   - src/utils.js
+   - tests/app.test.js
+   ...
+
+$ saiki --mode web
+🌐 Starting Web UI at http://localhost:3000
+
+$ saiki --mode discord
+🤖 Discord bot is now online!`}
                 </pre>
               </div>
             </div>
@@ -83,6 +82,98 @@ const response = await agent.run('Hello, how can you help me?');`}
   );
 }
 
+function QuickStartSection() {
+  return (
+    <section className={styles.quickStartSection}>
+      <div className="container">
+        <div className={styles.quickStartContent}>
+          <div className={styles.quickStartHeader}>
+            <Heading as="h2" className={styles.quickStartTitle}>
+              Two Ways to Build with Saiki
+            </Heading>
+            <p className={styles.quickStartSubtitle}>
+              Use the CLI for quick interactions or the programmatic API for building applications
+            </p>
+          </div>
+          
+          <div className={styles.quickStartGrid}>
+            <div className={styles.quickStartCard}>
+              <div className={styles.cardHeader}>
+                <h3>🚀 CLI Mode</h3>
+                <p>Perfect for quick tasks and automation</p>
+              </div>
+              <div className={styles.codeExample}>
+                <div className={styles.codeHeader}>
+                  <div className={styles.codeDots}>
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                  </div>
+                  <span className={styles.codeTitle}>Terminal</span>
+                </div>
+                <div className={styles.codeContent}>
+                  <pre className={styles.terminalText}>
+{`# Install globally
+$ npm install -g @truffle-ai/saiki
+
+# Start interactive CLI
+$ saiki
+🤖 How can I help you today?
+
+# One-shot commands
+$ saiki find all .js files
+$ saiki --mode web
+$ saiki --mode discord`}
+                  </pre>
+                </div>
+              </div>
+            </div>
+
+            <div className={styles.quickStartCard}>
+              <div className={styles.cardHeader}>
+                <h3>⚡ Programmatic API</h3>
+                <p>Build custom applications and integrations</p>
+              </div>
+              <div className={styles.codeExample}>
+                <div className={styles.codeHeader}>
+                  <div className={styles.codeDots}>
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                  </div>
+                  <span className={styles.codeTitle}>my-agent.ts</span>
+                </div>
+                <div className={styles.codeContent}>
+                  <pre>
+{`import { createSaikiAgent } from '@truffle-ai/saiki';
+
+const agent = await createSaikiAgent({
+  llm: {
+    provider: 'openai',
+    model: 'gpt-4o-mini',
+    apiKey: process.env.OPENAI_API_KEY
+  },
+  mcpServers: {
+    filesystem: {
+      type: 'stdio',
+      command: 'npx',
+      args: ['-y', '@modelcontextprotocol/server-filesystem', '.']
+    }
+  }
+});
+
+const response = await agent.run('Hello!');`}
+                  </pre>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export default function Home(): React.ReactElement {
   const {siteConfig} = useDocusaurusContext();
   return (
@@ -91,6 +182,7 @@ export default function Home(): React.ReactElement {
       description="An open-source, modular and extensible framework for building AI Agents and AI powered applications">
       <HomepageHeader />
       <main>
+        <QuickStartSection />
         <HomepageFeatures />
         <CTASection />
       </main>
