@@ -207,7 +207,7 @@ const config: Config = {
             id: 'star-repo',
             content:
                 '⭐️ If you like Saiki, give it a star on <a target="_blank" rel="noopener noreferrer" href="https://github.com/truffle-ai/saiki">GitHub</a>! ⭐️',
-            backgroundColor: '#8b5cf6',
+            backgroundColor: '#f97316',
             textColor: '#ffffff',
             isCloseable: true,
         },

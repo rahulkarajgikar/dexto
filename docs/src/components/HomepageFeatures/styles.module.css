@@ -3,7 +3,7 @@
   align-items: center;
   padding: 6rem 0;
   width: 100%;
-  background: linear-gradient(180deg, #1e1b3a 0%, #2d1b69 100%);
+  background: linear-gradient(180deg, #2d1b0f 0%, #3d2414 100%);
 }
 
 .featuresHeader {
@@ -18,11 +18,11 @@
   font-size: 2.5rem;
   font-weight: 700;
   margin-bottom: 1.5rem;
-  background: linear-gradient(135deg, #8b5cf6 0%, #fbbf24 100%);
+  background: linear-gradient(135deg, #f97316 0%, #ef4444 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  filter: drop-shadow(0 0 10px rgba(251, 191, 36, 0.3));
+  filter: drop-shadow(0 0 10px rgba(239, 68, 68, 0.3));
 }
 
 .featuresSubtitle {
@@ -37,12 +37,12 @@
 }
 
 .featureCard {
-  background: rgba(45, 27, 105, 0.9);
+  background: rgba(61, 36, 20, 0.9);
   border-radius: 16px;
   padding: 2rem;
   height: 100%;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
-  border: 1px solid rgba(139, 92, 246, 0.3);
+  border: 1px solid rgba(249, 115, 22, 0.3);
   transition: all 0.3s ease;
   position: relative;
   overflow: hidden;
@@ -56,7 +56,7 @@
   left: 0;
   right: 0;
   height: 4px;
-  background: linear-gradient(90deg, #8b5cf6, #fbbf24, #a855f7, #f59e0b);
+  background: linear-gradient(90deg, #f97316, #ef4444, #fb923c, #dc2626);
   background-size: 300% 100%;
   animation: gradientMove 3s ease-in-out infinite;
 }
@@ -68,8 +68,8 @@
 
 .featureCard:hover {
   transform: translateY(-4px);
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 10px 10px -5px rgba(0, 0, 0, 0.3), 0 0 20px rgba(139, 92, 246, 0.4), 0 0 40px rgba(251, 191, 36, 0.2);
-  border-color: rgba(139, 92, 246, 0.6);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 10px 10px -5px rgba(0, 0, 0, 0.3), 0 0 20px rgba(249, 115, 22, 0.4), 0 0 40px rgba(239, 68, 68, 0.2);
+  border-color: rgba(249, 115, 22, 0.6);
 }
 
 .featureIcon {
@@ -78,11 +78,11 @@
   justify-content: center;
   width: 64px;
   height: 64px;
-  background: linear-gradient(135deg, #8b5cf6 0%, #fbbf24 100%);
+  background: linear-gradient(135deg, #f97316 0%, #ef4444 100%);
   border-radius: 16px;
   margin-bottom: 1.5rem;
   position: relative;
-  box-shadow: 0 0 20px rgba(139, 92, 246, 0.4), 0 0 30px rgba(251, 191, 36, 0.2);
+  box-shadow: 0 0 20px rgba(249, 115, 22, 0.4), 0 0 30px rgba(239, 68, 68, 0.2);
 }
 
 .iconEmoji {
@@ -130,37 +130,37 @@
   justify-content: center;
   width: 16px;
   height: 16px;
-  background: linear-gradient(135deg, #fbbf24, #f59e0b);
-  color: #1a0b2e;
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  color: #1a0f0a;
   border-radius: 50%;
   font-size: 0.75rem;
   font-weight: bold;
   flex-shrink: 0;
-  box-shadow: 0 0 10px rgba(251, 191, 36, 0.4);
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.4);
 }
 
 /* Dark theme support */
 [data-theme='dark'] .features {
-  background: linear-gradient(180deg, #1a0b2e 0%, #2d1b69 100%);
+  background: linear-gradient(180deg, #1a0f0a 0%, #2d1b0f 100%);
 }
 
 [data-theme='dark'] .featureCard {
-  background: rgba(45, 27, 105, 0.9);
-  border: 1px solid rgba(139, 92, 246, 0.3);
+  background: rgba(61, 36, 20, 0.9);
+  border: 1px solid rgba(249, 115, 22, 0.3);
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
 }
 
 [data-theme='dark'] .featureCard:hover {
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.4), 0 0 20px rgba(139, 92, 246, 0.4), 0 0 40px rgba(251, 191, 36, 0.2);
-  border-color: rgba(139, 92, 246, 0.6);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.4), 0 0 20px rgba(249, 115, 22, 0.4), 0 0 40px rgba(239, 68, 68, 0.2);
+  border-color: rgba(249, 115, 22, 0.6);
 }
 
 [data-theme='dark'] .featuresTitle {
-  background: linear-gradient(135deg, #8b5cf6 0%, #fbbf24 100%);
+  background: linear-gradient(135deg, #f97316 0%, #ef4444 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  filter: drop-shadow(0 0 10px rgba(251, 191, 36, 0.3));
+  filter: drop-shadow(0 0 10px rgba(239, 68, 68, 0.3));
 }
 
 [data-theme='dark'] .featuresSubtitle {

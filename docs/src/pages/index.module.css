@@ -8,7 +8,7 @@
   padding: 4rem 0;
   text-align: left;
   overflow: hidden;
-  background: linear-gradient(135deg, #1a0b2e 0%, #2d1b69 50%, #1a0b2e 100%);
+  background: linear-gradient(135deg, #1a0f0a 0%, #2d1b0f 50%, #1a0f0a 100%);
   min-height: 80vh;
   display: flex;
   align-items: center;
@@ -36,13 +36,13 @@
 }
 
 .gradient {
-  background: linear-gradient(45deg, #8b5cf6, #fbbf24, #a855f7, #f59e0b);
+  background: linear-gradient(45deg, #f97316, #ef4444, #fb923c, #dc2626);
   background-size: 400% 400%;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
   animation: gradientShift 4s ease-in-out infinite;
-  filter: drop-shadow(0 0 20px rgba(251, 191, 36, 0.4));
+  filter: drop-shadow(0 0 20px rgba(239, 68, 68, 0.4));
 }
 
 @keyframes gradientShift {
@@ -65,37 +65,37 @@
 }
 
 .getStartedButton {
-  background: linear-gradient(45deg, #8b5cf6, #fbbf24);
+  background: linear-gradient(45deg, #f97316, #ef4444);
   border: none;
-  color: #1a0b2e;
+  color: #1a0f0a;
   font-weight: 600;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4), 0 0 20px rgba(251, 191, 36, 0.2);
+  box-shadow: 0 4px 15px rgba(249, 115, 22, 0.4), 0 0 20px rgba(239, 68, 68, 0.2);
 }
 
 .getStartedButton:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(139, 92, 246, 0.6), 0 0 30px rgba(251, 191, 36, 0.4);
-  color: #1a0b2e;
+  box-shadow: 0 8px 25px rgba(249, 115, 22, 0.6), 0 0 30px rgba(239, 68, 68, 0.4);
+  color: #1a0f0a;
   filter: brightness(1.1);
 }
 
 .githubButton {
-  border: 2px solid rgba(139, 92, 246, 0.6);
-  color: #8b5cf6;
+  border: 2px solid rgba(249, 115, 22, 0.6);
+  color: #f97316;
   font-weight: 600;
   transition: all 0.3s ease;
   backdrop-filter: blur(10px);
-  background: rgba(139, 92, 246, 0.1);
-  box-shadow: 0 0 15px rgba(139, 92, 246, 0.2);
+  background: rgba(249, 115, 22, 0.1);
+  box-shadow: 0 0 15px rgba(249, 115, 22, 0.2);
 }
 
 .githubButton:hover {
-  background: rgba(139, 92, 246, 0.2);
-  border-color: #8b5cf6;
+  background: rgba(249, 115, 22, 0.2);
+  border-color: #f97316;
   transform: translateY(-2px);
-  color: #fbbf24;
-  box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4), 0 0 25px rgba(251, 191, 36, 0.3);
+  color: #ef4444;
+  box-shadow: 0 4px 15px rgba(249, 115, 22, 0.4), 0 0 25px rgba(239, 68, 68, 0.3);
 }
 
 .heroVisual {
@@ -105,23 +105,23 @@
 }
 
 .codeBlock {
-  background: rgba(26, 11, 46, 0.95);
+  background: rgba(26, 15, 10, 0.95);
   border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.7), 0 0 30px rgba(139, 92, 246, 0.3), inset 0 0 20px rgba(251, 191, 36, 0.1);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.7), 0 0 30px rgba(249, 115, 22, 0.3), inset 0 0 20px rgba(239, 68, 68, 0.1);
   backdrop-filter: blur(10px);
-  border: 1px solid rgba(139, 92, 246, 0.4);
+  border: 1px solid rgba(249, 115, 22, 0.4);
   max-width: 500px;
   width: 100%;
 }
 
 .codeHeader {
-  background: rgba(139, 92, 246, 0.15);
+  background: rgba(249, 115, 22, 0.15);
   padding: 0.75rem 1rem;
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  border-bottom: 1px solid rgba(139, 92, 246, 0.3);
+  border-bottom: 1px solid rgba(249, 115, 22, 0.3);
 }
 
 .codeDots {
@@ -174,7 +174,7 @@
 .terminalCode::after {
   content: '█';
   animation: blink 1s infinite;
-  color: #fbbf24;
+  color: #ef4444;
   margin-left: 4px;
 }
 
@@ -186,7 +186,7 @@
 /* Quick Start Section */
 .quickStartSection {
   padding: 4rem 0;
-  background: linear-gradient(180deg, #1e1b3a 0%, #2d1b69 100%);
+  background: linear-gradient(180deg, #2d1b0f 0%, #3d2414 100%);
   position: relative;
 }
 
@@ -198,14 +198,14 @@
   right: 0;
   bottom: 0;
   background-image: 
-    linear-gradient(rgba(139, 92, 246, 0.05) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(139, 92, 246, 0.05) 1px, transparent 1px);
+    linear-gradient(rgba(249, 115, 22, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(249, 115, 22, 0.05) 1px, transparent 1px);
   background-size: 30px 30px;
   pointer-events: none;
 }
 
 [data-theme='dark'] .quickStartSection {
-  background: linear-gradient(180deg, #1a0b2e 0%, #2d1b69 100%);
+  background: linear-gradient(180deg, #1a0f0a 0%, #2d1b0f 100%);
 }
 
 .quickStartContent {
@@ -222,11 +222,11 @@
   font-size: 2.5rem;
   font-weight: 700;
   margin-bottom: 1rem;
-  background: linear-gradient(135deg, #8b5cf6, #fbbf24);
+  background: linear-gradient(135deg, #f97316, #ef4444);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  filter: drop-shadow(0 0 10px rgba(251, 191, 36, 0.3));
+  filter: drop-shadow(0 0 10px rgba(239, 68, 68, 0.3));
 }
 
 .quickStartSubtitle {
@@ -268,11 +268,11 @@
 }
 
 .quickStartCard {
-  background: rgba(45, 27, 105, 0.9);
+  background: rgba(61, 36, 20, 0.9);
   border-radius: 16px;
   padding: 2rem;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
-  border: 1px solid rgba(139, 92, 246, 0.3);
+  border: 1px solid rgba(249, 115, 22, 0.3);
   transition: all 0.3s ease;
   backdrop-filter: blur(10px);
   position: relative;
@@ -281,13 +281,13 @@
 
 .quickStartCard:hover {
   transform: translateY(-4px);
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 10px 10px -5px rgba(0, 0, 0, 0.3), 0 0 20px rgba(139, 92, 246, 0.4), 0 0 40px rgba(251, 191, 36, 0.2);
-  border-color: rgba(139, 92, 246, 0.6);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 10px 10px -5px rgba(0, 0, 0, 0.3), 0 0 20px rgba(249, 115, 22, 0.4), 0 0 40px rgba(239, 68, 68, 0.2);
+  border-color: rgba(249, 115, 22, 0.6);
 }
 
 [data-theme='dark'] .quickStartCard {
-  background: rgba(45, 27, 105, 0.9);
-  border: 1px solid rgba(139, 92, 246, 0.3);
+  background: rgba(61, 36, 20, 0.9);
+  border: 1px solid rgba(249, 115, 22, 0.3);
 }
 
 .cardHeader {
@@ -367,8 +367,8 @@
   right: 0;
   bottom: 0;
   background-image: 
-    linear-gradient(rgba(139, 92, 246, 0.15) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(139, 92, 246, 0.15) 1px, transparent 1px);
+    linear-gradient(rgba(249, 115, 22, 0.15) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(249, 115, 22, 0.15) 1px, transparent 1px);
   background-size: 50px 50px;
   animation: gridMove 20s linear infinite;
 }
@@ -391,7 +391,7 @@
 .gradientOrb1 {
   width: 300px;
   height: 300px;
-  background: linear-gradient(45deg, #8b5cf6, #a855f7);
+  background: linear-gradient(45deg, #f97316, #fb923c);
   top: 10%;
   right: 10%;
   animation-delay: 0s;
@@ -400,7 +400,7 @@
 .gradientOrb2 {
   width: 200px;
   height: 200px;
-  background: linear-gradient(45deg, #fbbf24, #f59e0b);
+  background: linear-gradient(45deg, #ef4444, #dc2626);
   bottom: 20%;
   left: 10%;
   animation-delay: 2s;
@@ -409,7 +409,7 @@
 .gradientOrb3 {
   width: 150px;
   height: 150px;
-  background: linear-gradient(45deg, #8b5cf6, #fbbf24);
+  background: linear-gradient(45deg, #f97316, #ef4444);
   top: 50%;
   left: 50%;
   animation-delay: 4s;

@@ -9,21 +9,21 @@
 
 /* You can override the default Infima variables here. */
 :root {
-  /* AI-themed color palette - Purple + Gold luxury theme */
-  --ifm-color-primary: #8b5cf6;
-  --ifm-color-primary-dark: #7c3aed;
-  --ifm-color-primary-darker: #6d28d9;
-  --ifm-color-primary-darkest: #5b21b6;
-  --ifm-color-primary-light: #a78bfa;
-  --ifm-color-primary-lighter: #c4b5fd;
-  --ifm-color-primary-lightest: #ddd6fe;
+  /* AI-themed color palette - Orange + Red energetic theme */
+  --ifm-color-primary: #f97316;
+  --ifm-color-primary-dark: #ea580c;
+  --ifm-color-primary-darker: #dc2626;
+  --ifm-color-primary-darkest: #b91c1c;
+  --ifm-color-primary-light: #fb923c;
+  --ifm-color-primary-lighter: #fdba74;
+  --ifm-color-primary-lightest: #fed7aa;
   
   /* Enhanced color system */
-  --ifm-color-secondary: #fbbf24;
+  --ifm-color-secondary: #ef4444;
   --ifm-color-success: #10b981;
   --ifm-color-info: #3b82f6;
   --ifm-color-warning: #f59e0b;
-  --ifm-color-danger: #ef4444;
+  --ifm-color-danger: #dc2626;
   
   /* Typography */
   --ifm-font-family-base: 'Inter', system-ui, -apple-system, sans-serif;
@@ -65,26 +65,26 @@
 
 /* Dark theme enhancements */
 [data-theme='dark'] {
-  --ifm-color-primary: #8b5cf6;
-  --ifm-color-primary-dark: #7c3aed;
-  --ifm-color-primary-darker: #6d28d9;
-  --ifm-color-primary-darkest: #5b21b6;
-  --ifm-color-primary-light: #a78bfa;
-  --ifm-color-primary-lighter: #c4b5fd;
-  --ifm-color-primary-lightest: #ddd6fe;
+  --ifm-color-primary: #f97316;
+  --ifm-color-primary-dark: #ea580c;
+  --ifm-color-primary-darker: #dc2626;
+  --ifm-color-primary-darkest: #b91c1c;
+  --ifm-color-primary-light: #fb923c;
+  --ifm-color-primary-lighter: #fdba74;
+  --ifm-color-primary-lightest: #fed7aa;
   
-  --ifm-color-secondary: #fbbf24;
+  --ifm-color-secondary: #ef4444;
   
   /* Dark theme code styling */
-  --ifm-code-background: #2d1b69;
-  --docusaurus-highlighted-code-line-bg: rgba(139, 92, 246, 0.2);
+  --ifm-code-background: #2d1b0f;
+  --docusaurus-highlighted-code-line-bg: rgba(249, 115, 22, 0.2);
   
   /* Dark navbar */
-  --ifm-navbar-background-color: rgba(26, 11, 46, 0.95);
+  --ifm-navbar-background-color: rgba(26, 15, 10, 0.95);
   
   /* Enhanced dark colors */
-  --ifm-background-color: #1a0b2e;
-  --ifm-background-surface-color: #2d1b69;
+  --ifm-background-color: #1a0f0a;
+  --ifm-background-surface-color: #2d1b0f;
 }
 
 /* Global enhancements */
@@ -107,31 +107,31 @@ html {
 
 .button--primary {
   background: linear-gradient(135deg, var(--ifm-color-primary), var(--ifm-color-secondary));
-  color: #1a0b2e;
+  color: #1a0f0a;
   font-weight: 600;
-  box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3), 0 0 20px rgba(251, 191, 36, 0.2);
+  box-shadow: 0 4px 15px rgba(249, 115, 22, 0.3), 0 0 20px rgba(239, 68, 68, 0.2);
 }
 
 .button--primary:hover {
   background: linear-gradient(135deg, var(--ifm-color-primary-dark), var(--ifm-color-secondary));
-  color: #1a0b2e;
+  color: #1a0f0a;
   filter: brightness(1.1);
-  box-shadow: 0 8px 25px rgba(139, 92, 246, 0.4), 0 0 30px rgba(251, 191, 36, 0.3);
+  box-shadow: 0 8px 25px rgba(249, 115, 22, 0.4), 0 0 30px rgba(239, 68, 68, 0.3);
 }
 
 .button--secondary {
-  background: rgba(139, 92, 246, 0.1);
+  background: rgba(249, 115, 22, 0.1);
   color: var(--ifm-color-primary);
-  border: 2px solid rgba(139, 92, 246, 0.5);
+  border: 2px solid rgba(249, 115, 22, 0.5);
   backdrop-filter: blur(10px);
-  box-shadow: 0 0 15px rgba(139, 92, 246, 0.2);
+  box-shadow: 0 0 15px rgba(249, 115, 22, 0.2);
 }
 
 .button--secondary:hover {
-  background: rgba(139, 92, 246, 0.2);
+  background: rgba(249, 115, 22, 0.2);
   color: var(--ifm-color-secondary);
   border-color: var(--ifm-color-primary);
-  box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4), 0 0 25px rgba(251, 191, 36, 0.3);
+  box-shadow: 0 4px 15px rgba(249, 115, 22, 0.4), 0 0 25px rgba(239, 68, 68, 0.3);
 }
 
 /* Enhanced navbar */
@@ -357,8 +357,8 @@ html {
 
 /* Enhanced footer */
 .footer {
-  background: linear-gradient(135deg, #1a0b2e 0%, #2d1b69 100%);
-  border-top: 1px solid rgba(139, 92, 246, 0.2);
+  background: linear-gradient(135deg, #1a0f0a 0%, #2d1b0f 100%);
+  border-top: 1px solid rgba(249, 115, 22, 0.2);
 }
 
 .footer__title {
@@ -384,14 +384,14 @@ html {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(139, 92, 246, 0.4);
+  background: rgba(249, 115, 22, 0.4);
   border-radius: 4px;
-  box-shadow: 0 0 5px rgba(251, 191, 36, 0.2);
+  box-shadow: 0 0 5px rgba(239, 68, 68, 0.2);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(139, 92, 246, 0.6);
-  box-shadow: 0 0 10px rgba(251, 191, 36, 0.3);
+  background: rgba(249, 115, 22, 0.6);
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.3);
 }
 
 /* Enhanced mobile experience */
