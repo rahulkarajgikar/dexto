@@ -207,8 +207,8 @@ const config: Config = {
             id: 'star-repo',
             content:
                 '⭐️ If you like Saiki, give it a star on <a target="_blank" rel="noopener noreferrer" href="https://github.com/truffle-ai/saiki">GitHub</a>! ⭐️',
-            backgroundColor: '#00d4ff',
-            textColor: '#0f172a',
+            backgroundColor: '#0066ff',
+            textColor: '#ffffff',
             isCloseable: true,
         },
     } satisfies Preset.ThemeConfig,
