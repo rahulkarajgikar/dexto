@@ -8,9 +8,9 @@ describe('MemoryStorageProvider', () => {
 
     beforeEach(() => {
         context = {
-            storageRoot: '/tmp/test',
             isDevelopment: true,
-            projectRoot: '/tmp/test/project',
+            projectRoot: '/tmp/test-project',
+            storageRoot: '/tmp/test',
             forceGlobal: false,
         };
         provider = new MemoryStorageProvider({}, context, 'test');

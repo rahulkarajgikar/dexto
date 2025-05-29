@@ -20,12 +20,11 @@ import type {
     CollectionStorageProvider,
     SessionStorageProvider,
     StorageContext,
-    StorageProviderConfig,
 } from './types.js';
 import type { StorageConfig } from '../config/schemas.js';
 
 export interface StorageInfo {
-    type: 'memory' | 'file' | 'sqlite';
+    type: 'memory' | 'file' | 'sqlite' | 'redis' | 'database' | 's3';
     location?: string;
     context: StorageContext;
 }
@@ -45,104 +44,102 @@ export class StorageManager {
     ) {}
 
     /**
-     * Get a key-value storage provider for the specified use case.
+     * Get a storage provider for key-value storage
      */
     async getProvider<T = any>(key: string): Promise<StorageProvider<T>> {
         if (!this.providers.has(key)) {
-            const storageConfig = this.getStorageConfigForKey(key);
-            const provider = await createStorageProvider<T>(storageConfig, this.context, key);
-            this.providers.set(key, provider);
+            const providerConfig = this.getStorageConfigForKey(key);
+            const provider = await createStorageProvider<T>(providerConfig, this.context, key);
+            this.providers.set(key, provider as StorageProvider);
         }
-        return this.providers.get(key)! as StorageProvider<T>;
+        return this.providers.get(key) as StorageProvider<T>;
     }
 
     /**
-     * Get a collection storage provider for the specified use case.
+     * Get a collection storage provider for array/list storage
      */
     async getCollectionProvider<T = any>(key: string): Promise<CollectionStorageProvider<T>> {
         if (!this.collectionProviders.has(key)) {
-            const storageConfig = this.getStorageConfigForKey(key);
+            const providerConfig = this.getStorageConfigForKey(key);
             const provider = await createCollectionStorageProvider<T>(
-                storageConfig,
+                providerConfig,
                 this.context,
                 key
             );
             this.collectionProviders.set(key, provider);
         }
-        return this.collectionProviders.get(key)! as CollectionStorageProvider<T>;
+        return this.collectionProviders.get(key) as CollectionStorageProvider<T>;
     }
 
     /**
-     * Get a session storage provider for the specified use case.
+     * Get a session storage provider for TTL-based storage
      */
     async getSessionProvider<T = any>(key: string): Promise<SessionStorageProvider<T>> {
         if (!this.sessionProviders.has(key)) {
-            const storageConfig = this.getStorageConfigForKey(key);
+            const providerConfig = this.getStorageConfigForKey(key);
             const provider = await createSessionStorageProvider<T>(
-                storageConfig,
+                providerConfig,
                 this.context,
                 key
             );
             this.sessionProviders.set(key, provider);
         }
-        return this.sessionProviders.get(key)! as SessionStorageProvider<T>;
+        return this.sessionProviders.get(key) as SessionStorageProvider<T>;
     }
 
     /**
-     * Get storage configuration for a specific key, falling back to default.
+     * Get storage configuration for a specific key
      */
-    private getStorageConfigForKey(key: string): StorageProviderConfig {
-        // Check if it's a built-in key
-        if (key in this.config && key !== 'default' && key !== 'custom') {
-            const config = this.config[key as keyof StorageConfig];
-            return { type: config.type, ...config } as StorageProviderConfig;
+    private getStorageConfigForKey(key: string): NonNullable<StorageConfig[keyof StorageConfig]> {
+        // Try exact key match first
+        if (this.config[key]) {
+            return this.config[key];
         }
 
-        // Check custom configurations
-        if (this.config.custom && key in this.config.custom) {
-            const config = this.config.custom[key];
-            return { type: config.type, ...config } as StorageProviderConfig;
+        // Try custom.* keys
+        if (key.startsWith('custom.')) {
+            const customKey = key.substring(7); // Remove 'custom.' prefix
+            if (this.config.custom && this.config.custom[customKey]) {
+                return this.config.custom[customKey];
+            }
         }
 
         // Fall back to default
-        const defaultConfig = this.config.default;
-        return { type: defaultConfig.type, ...defaultConfig } as StorageProviderConfig;
+        if (!this.config.default) {
+            throw new Error(
+                `No storage configuration found for key '${key}' and no default configuration`
+            );
+        }
+
+        return this.config.default;
     }
 
     /**
-     * Get information about the storage setup for debugging.
+     * Get information about the storage setup
      */
     getStorageInfo(): StorageInfo {
-        const defaultConfig = this.config.default;
+        const defaultConfig = this.config.default || { type: 'memory' };
         return {
-            type: defaultConfig.type as 'memory' | 'file' | 'sqlite',
-            location: this.context.storageRoot,
+            type: defaultConfig.type as any,
+            location: this.context.storageRoot || this.context.connectionString,
             context: this.context,
         };
     }
 
     /**
-     * Close all storage providers and cleanup resources.
+     * Close all storage providers
      */
     async close(): Promise<void> {
-        const allProviders = [
-            ...this.providers.values(),
-            ...this.collectionProviders.values(),
-            ...this.sessionProviders.values(),
-        ];
-
-        await Promise.all(allProviders.map((provider) => provider.close()));
-
-        this.providers.clear();
-        this.collectionProviders.clear();
-        this.sessionProviders.clear();
-
-        logger.debug('All storage providers closed');
+        await Promise.all([
+            ...Array.from(this.providers.values()).map((p) => p.close()),
+            ...Array.from(this.collectionProviders.values()).map((p) => p.close()),
+            ...Array.from(this.sessionProviders.values()).map((p) => p.close()),
+        ]);
     }
 }
 
 /**
- * Create a storage manager from agent configuration
+ * Create a storage manager with automatic context detection
  */
 export async function createStorageManager(
     storageConfig: StorageConfig = {
@@ -158,13 +155,43 @@ export async function createStorageManager(
         projectRoot?: string;
         forceGlobal?: boolean;
         customRoot?: string;
+        connectionString?: string;
+        connectionOptions?: Record<string, any>;
     } = {}
 ): Promise<StorageManager> {
-    const context = await StoragePathResolver.createContext(contextOptions);
+    let context: StorageContext;
+
+    // Check if any storage config needs remote connection
+    const needsRemoteConnection = Object.values(storageConfig).some((config) => {
+        if (config && typeof config === 'object' && 'type' in config) {
+            // Extract the type from the config object
+            const configType = typeof config.type === 'string' ? config.type : 'memory';
+            return !StoragePathResolver.needsPathResolution(configType);
+        }
+        return false;
+    });
+
+    if (needsRemoteConnection && contextOptions.connectionString) {
+        // Use remote context for remote storage backends
+        context = StoragePathResolver.createRemoteContext(contextOptions.connectionString, {
+            isDevelopment: contextOptions.isDevelopment,
+            projectRoot: contextOptions.projectRoot,
+            connectionOptions: contextOptions.connectionOptions,
+        });
+    } else {
+        // Use local context for local storage backends
+        context = await StoragePathResolver.createLocalContext({
+            isDevelopment: contextOptions.isDevelopment,
+            projectRoot: contextOptions.projectRoot,
+            forceGlobal: contextOptions.forceGlobal,
+            customRoot: contextOptions.customRoot,
+        });
+    }
 
     logger.debug('Creating storage manager', {
         storageConfig,
         context,
+        needsRemoteConnection,
     });
 
     return new StorageManager(storageConfig, context);
@@ -174,26 +201,47 @@ export async function createStorageManager(
  * Create a simple storage provider for one-off usage
  */
 export async function createSimpleStorageProvider<T = any>(
-    type: 'memory' | 'file' | 'sqlite',
+    type: 'memory' | 'file' | 'sqlite' | 'redis' | 'database' | 's3',
     namespace: string,
-    options: Record<string, any> = {}
+    options: any = {}
 ): Promise<StorageProvider<T>> {
-    const context = await StoragePathResolver.createContext({
-        isDevelopment: process.env.NODE_ENV !== 'production',
-    });
+    let context: StorageContext;
 
-    const config: StorageProviderConfig = { type, ...options };
-    return createStorageProvider<T>(config, context, namespace);
+    if (StoragePathResolver.needsPathResolution(type)) {
+        context = await StoragePathResolver.createLocalContext({
+            isDevelopment: process.env.NODE_ENV !== 'production',
+        });
+    } else {
+        // For remote storage, require connection string in options
+        if (!('url' in options) || !options.url) {
+            throw new Error(`Remote storage type '${type}' requires url in options`);
+        }
+        context = StoragePathResolver.createRemoteContext(options.url as string, {
+            isDevelopment: process.env.NODE_ENV !== 'production',
+        });
+    }
+
+    const config = { type, ...options };
+    return createStorageProvider<T>(
+        config as NonNullable<StorageConfig[keyof StorageConfig]>,
+        context,
+        namespace
+    );
 }
 
 /**
  * Create a storage provider based on configuration
  */
 async function createStorageProvider<T>(
-    config: StorageProviderConfig,
+    config: NonNullable<StorageConfig[keyof StorageConfig]>,
     context: StorageContext,
     namespace: string
 ): Promise<StorageProvider<T>> {
+    // Extract type from config (Zod has already normalized it)
+    if (typeof config !== 'object' || !config || !('type' in config)) {
+        throw new Error('Invalid storage configuration - missing type');
+    }
+
     switch (config.type) {
         case 'memory':
             return new MemoryStorageProvider<T>(config, context, namespace);
@@ -201,6 +249,15 @@ async function createStorageProvider<T>(
             return new FileStorageProvider<T>(config, context, namespace);
         case 'sqlite':
             return new SQLiteStorageProvider<T>(config, context, namespace);
+        case 'redis':
+            // TODO: Implement RedisStorageProvider
+            throw new Error('Redis storage provider not yet implemented');
+        case 'database':
+            // TODO: Implement DatabaseStorageProvider
+            throw new Error('Database storage provider not yet implemented');
+        case 's3':
+            // TODO: Implement S3StorageProvider
+            throw new Error('S3 storage provider not yet implemented');
         default:
             throw new Error(`Unknown storage type: ${(config as any).type}`);
     }
@@ -210,7 +267,7 @@ async function createStorageProvider<T>(
  * Create a collection storage provider based on configuration
  */
 async function createCollectionStorageProvider<T>(
-    config: StorageProviderConfig,
+    config: NonNullable<StorageConfig[keyof StorageConfig]>,
     context: StorageContext,
     namespace: string
 ): Promise<CollectionStorageProvider<T>> {
@@ -222,7 +279,7 @@ async function createCollectionStorageProvider<T>(
  * Create a session storage provider based on configuration
  */
 async function createSessionStorageProvider<T>(
-    config: StorageProviderConfig,
+    config: NonNullable<StorageConfig[keyof StorageConfig]>,
     context: StorageContext,
     namespace: string
 ): Promise<SessionStorageProvider<T>> {

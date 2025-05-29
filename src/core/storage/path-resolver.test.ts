@@ -6,9 +6,9 @@ describe('StoragePathResolver', () => {
     describe('resolveStorageRoot', () => {
         it('should resolve to project .saiki in development', async () => {
             const context = {
-                storageRoot: '',
                 isDevelopment: true,
                 projectRoot: '/tmp/test-project',
+                storageRoot: '',
                 forceGlobal: false,
             };
 
@@ -18,9 +18,9 @@ describe('StoragePathResolver', () => {
 
         it('should resolve to global ~/.saiki in production', async () => {
             const context = {
-                storageRoot: '',
                 isDevelopment: false,
                 projectRoot: '/tmp/test-project-production',
+                storageRoot: '',
                 forceGlobal: false,
             };
 

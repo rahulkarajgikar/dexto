@@ -5,11 +5,50 @@ import { logger } from '../logger/index.js';
 import type { StorageContext } from './types.js';
 
 /**
- * Resolves storage paths intelligently based on context
+ * Resolves storage paths intelligently based on context.
+ * Only handles local storage backends (memory, file, sqlite).
+ * Remote storage backends (redis, database) don't need path resolution.
  */
 export class StoragePathResolver {
     private static readonly SAIKI_DIR = '.saiki';
     private static readonly GLOBAL_SAIKI_DIR = '.saiki';
+
+    /**
+     * Check if a storage backend needs local path resolution
+     */
+    static needsPathResolution(storageType: string): boolean {
+        return ['memory', 'file', 'sqlite'].includes(storageType);
+    }
+
+    /**
+     * Parse connection string for remote storage backends
+     */
+    static parseConnectionString(connectionString: string): {
+        type: string;
+        host?: string;
+        port?: number;
+        database?: string;
+        username?: string;
+        password?: string;
+        path?: string;
+        options?: Record<string, string>;
+    } {
+        try {
+            const url = new URL(connectionString);
+            return {
+                type: url.protocol.replace(':', ''),
+                host: url.hostname || undefined,
+                port: url.port ? parseInt(url.port) : undefined,
+                database: url.pathname.replace('/', '') || undefined,
+                username: url.username || undefined,
+                password: url.password || undefined,
+                path: url.pathname || undefined,
+                options: Object.fromEntries(url.searchParams),
+            };
+        } catch (error) {
+            throw new Error(`Invalid connection string: ${connectionString}`);
+        }
+    }
 
     /**
      * Resolve the base storage directory based on context
@@ -110,9 +149,9 @@ export class StoragePathResolver {
     }
 
     /**
-     * Create storage context from environment
+     * Create storage context from environment for local storage
      */
-    static async createContext(
+    static async createLocalContext(
         options: {
             isDevelopment?: boolean;
             projectRoot?: string;
@@ -143,6 +182,40 @@ export class StoragePathResolver {
             customRoot: options.customRoot,
             storageRoot,
         };
+    }
+
+    /**
+     * Create storage context for remote storage
+     */
+    static createRemoteContext(
+        connectionString: string,
+        options: {
+            isDevelopment?: boolean;
+            projectRoot?: string;
+            connectionOptions?: Record<string, any>;
+        } = {}
+    ): StorageContext {
+        return {
+            isDevelopment: options.isDevelopment ?? process.env.NODE_ENV !== 'production',
+            projectRoot: options.projectRoot,
+            connectionString,
+            connectionOptions: options.connectionOptions,
+        };
+    }
+
+    /**
+     * Create storage context from environment (backwards compatibility)
+     * @deprecated Use createLocalContext or createRemoteContext instead
+     */
+    static async createContext(
+        options: {
+            isDevelopment?: boolean;
+            projectRoot?: string;
+            forceGlobal?: boolean;
+            customRoot?: string;
+        } = {}
+    ): Promise<StorageContext> {
+        return this.createLocalContext(options);
     }
 
     /**

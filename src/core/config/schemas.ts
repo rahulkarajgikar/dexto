@@ -364,6 +364,12 @@ const FileStorageSchema = z.object({
     compression: z.boolean().optional().default(false).describe('Whether to compress the file'),
 });
 
+const SQLiteStorageSchema = z.object({
+    type: z.literal('sqlite'),
+    path: z.string().optional().describe('SQLite database file path (defaults to auto-generated)'),
+    table: z.string().optional().describe('Table name (defaults to storage type)'),
+});
+
 const DatabaseStorageSchema = z.object({
     type: z.literal('database'),
     url: z.string().describe('Database connection URL'),
@@ -414,6 +420,7 @@ const S3StorageSchema = z.object({
 const StorageProviderSchema = z.discriminatedUnion('type', [
     MemoryStorageSchema,
     FileStorageSchema,
+    SQLiteStorageSchema,
     DatabaseStorageSchema,
     RedisStorageSchema,
     S3StorageSchema,
@@ -428,7 +435,9 @@ const StorageConfigSchema = z.union([
         // Handle simple string configurations
         if (val === 'memory') return { type: 'memory' as const };
         if (val === 'file') return { type: 'file' as const, path: './storage' };
+        if (val === 'sqlite') return { type: 'sqlite' as const };
         if (val.startsWith('file:')) return { type: 'file' as const, path: val.slice(5) };
+        if (val.startsWith('sqlite:')) return { type: 'sqlite' as const, path: val.slice(7) };
         if (val.startsWith('redis:')) return { type: 'redis' as const, url: val };
         if (val.startsWith('postgres:') || val.startsWith('mysql:') || val.startsWith('mongodb:')) {
             return { type: 'database' as const, url: val };

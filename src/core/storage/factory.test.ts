@@ -14,9 +14,9 @@ describe('StorageManager', () => {
     beforeEach(() => {
         vi.clearAllMocks();
         context = {
-            storageRoot: '/tmp/test-storage',
             isDevelopment: true,
             projectRoot: '/tmp/test-project',
+            storageRoot: '/tmp/test-storage',
             forceGlobal: false,
         };
         // Create manager with a proper config

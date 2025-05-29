@@ -12,20 +12,34 @@
  * path resolution between .saiki/ (development) and ~/.saiki/ (production).
  */
 
+// Import storage configuration types from Zod schemas
+import type { StorageConfig } from '../config/schemas.js';
+export type { StorageConfig };
+
 /**
  * Context information for storage path resolution and configuration.
+ * For local storage providers (memory, file, sqlite), includes path resolution.
+ * For remote storage providers (redis, database), includes connection info.
  */
 export interface StorageContext {
-    /** Root directory for storage (e.g., /path/to/.saiki or /path/to/.saiki) */
-    storageRoot: string;
     /** Whether running in development mode */
     isDevelopment: boolean;
     /** Project root directory (if in development) */
     projectRoot?: string;
-    /** Whether to force global storage (~/.saiki) regardless of mode */
-    forceGlobal: boolean;
-    /** Custom storage root override */
+
+    // Local storage fields (for file-based backends)
+    /** Root directory for storage (e.g., /path/to/.saiki or /path/to/.saiki) - only for local storage */
+    storageRoot?: string;
+    /** Whether to force global storage (~/.saiki) regardless of mode - only for local storage */
+    forceGlobal?: boolean;
+    /** Custom storage root override - only for local storage */
     customRoot?: string;
+
+    // Remote storage fields
+    /** Connection string for remote storage (e.g., redis://localhost:6379, postgres://...) */
+    connectionString?: string;
+    /** Additional connection options for remote storage - TODO: Define exact types when implementing specific backends */
+    connectionOptions?: any;
 }
 
 /**
@@ -113,31 +127,23 @@ export interface SessionStorageProvider<T = any> {
 }
 
 /**
- * Configuration for storage providers (local definition to avoid conflicts)
- */
-export interface StorageProviderConfig {
-    type: 'memory' | 'file' | 'sqlite' | 'database' | 'redis' | 's3';
-    [key: string]: any;
-}
-
-/**
  * Storage factory interface
  */
 export interface StorageFactory {
     createProvider<T>(
-        config: StorageProviderConfig,
+        config: NonNullable<StorageConfig[keyof StorageConfig]>,
         context: StorageContext,
         namespace?: string
     ): Promise<StorageProvider<T>>;
 
     createCollectionProvider<T>(
-        config: StorageProviderConfig,
+        config: NonNullable<StorageConfig[keyof StorageConfig]>,
         context: StorageContext,
         namespace?: string
     ): Promise<CollectionStorageProvider<T>>;
 
     createSessionProvider<T>(
-        config: StorageProviderConfig,
+        config: NonNullable<StorageConfig[keyof StorageConfig]>,
         context: StorageContext,
         namespace?: string
     ): Promise<SessionStorageProvider<T>>;
