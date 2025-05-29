@@ -1,6 +1,6 @@
 import { InternalMessage } from '../types.js';
 
-export interface ConversationHistoryProvider {
+export interface IConversationHistoryProvider {
     /** Load the full message history for a given session */
     getHistory(sessionId: string): Promise<InternalMessage[]>;
 

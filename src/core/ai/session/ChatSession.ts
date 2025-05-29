@@ -1,4 +1,5 @@
 import { createHistoryProvider } from '../llm/messages/history/factory.js';
+import { createHistoryProviderWithStorage } from '../llm/messages/history/factory.js';
 import { createMessageManager } from '../llm/messages/factory.js';
 import { createLLMService } from '../llm/services/factory.js';
 import { createTokenizer } from '../llm/tokenizer/factory.js';
@@ -6,10 +7,12 @@ import { createMessageFormatter } from '../llm/messages/formatters/factory.js';
 import { getEffectiveMaxTokens } from '../llm/registry.js';
 import type { MessageManager } from '../llm/messages/manager.js';
 import type { ILLMService } from '../llm/services/types.js';
+import type { InternalMessage } from '../llm/messages/types.js';
 import type { PromptManager } from '../systemPrompt/manager.js';
 import type { MCPClientManager } from '../../client/manager.js';
 import type { LLMConfig } from '../../config/schemas.js';
 import type { AgentStateManager } from '../../config/agent-state-manager.js';
+import type { StorageManager } from '../../storage/factory.js';
 import {
     SessionEventBus,
     AgentEventBus,
@@ -117,6 +120,7 @@ export class ChatSession {
             promptManager: PromptManager;
             clientManager: MCPClientManager;
             agentEventBus: AgentEventBus;
+            storageManager: StorageManager;
         },
         public readonly id: string
     ) {
@@ -126,8 +130,16 @@ export class ChatSession {
         // Set up event forwarding to agent's global bus
         this.setupEventForwarding();
 
-        // Create session-specific services
-        this.initializeServices();
+        // Services will be initialized in init() method due to async requirements
+        logger.debug(`ChatSession ${this.id}: Created, awaiting initialization`);
+    }
+
+    /**
+     * Initialize the session services asynchronously.
+     * This must be called after construction to set up the storage-backed services.
+     */
+    public async init(): Promise<void> {
+        await this.initializeServices();
     }
 
     /**
@@ -163,21 +175,19 @@ export class ChatSession {
     }
 
     /**
-     * Initializes session-specific services.
+     * Initializes session-specific services using the new unified storage layer.
      */
-    private initializeServices(): void {
+    private async initializeServices(): Promise<void> {
         // Get current effective configuration for this session from state manager
-        // Approach 1: Specific getters for individual config sections (most efficient)
         const llmConfig = this.services.stateManager.getLLMConfig(this.id);
-        const storageConfig = this.services.stateManager.getStorageConfig();
 
-        // Alternative approach: Get complete config if you need multiple sections
-        // const fullConfig = this.services.stateManager.getEffectiveConfig(this.id);
-        // const llmConfig = fullConfig.llm;
-        // const storageConfig = fullConfig.storage;
-
-        // Create session-specific history provider
-        const historyProvider = createHistoryProvider(storageConfig.history);
+        // Create session-specific history provider using the unified storage system
+        // This provides better persistence and consistency compared to the legacy approach
+        const historyProvider = await createHistoryProviderWithStorage(
+            await this.services.storageManager.getCollectionProvider<
+                InternalMessage & { sessionId: string }
+            >('history')
+        );
 
         // Create session-specific message manager
         this.messageManager = createMessageManager(
@@ -198,7 +208,7 @@ export class ChatSession {
             this.messageManager
         );
 
-        logger.debug(`ChatSession ${this.id}: Services initialized`);
+        logger.debug(`ChatSession ${this.id}: Services initialized with unified storage`);
     }
 
     /**

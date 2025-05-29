@@ -1,0 +1,224 @@
+# Storage Configuration Examples
+# This file demonstrates the flexible storage interface for Saiki agents
+
+# Example 1: Simple - Everything in memory (default)
+simple_agent:
+  llm:
+    provider: anthropic
+    model: claude-3-sonnet
+    apiKey: $ANTHROPIC_API_KEY
+  mcpServers:
+    filesystem:
+      type: stdio
+      command: npx
+      args: ["-y", "@modelcontextprotocol/server-filesystem", "/tmp"]
+  # No storage config needed - defaults to memory
+
+# Example 2: Development - Files for persistence, memory for cache
+# Uses project-local .saiki/ directory in development
+dev_agent:
+  llm:
+    provider: anthropic
+    model: claude-3-sonnet
+    apiKey: $ANTHROPIC_API_KEY
+  mcpServers:
+    filesystem:
+      type: stdio
+      command: npx
+      args: ["-y", "@modelcontextprotocol/server-filesystem", "/tmp"]
+  storage:
+    default: memory
+    history: file:./dev-data/history
+    sessions: file:./dev-data/sessions
+    userInfo: file:./dev-data/users
+
+# Example 3: SQLite for local persistence
+# Uses .saiki/sqlite/ in project or ~/.saiki/sqlite/ globally
+sqlite_agent:
+  llm:
+    provider: anthropic
+    model: claude-3-sonnet
+    apiKey: $ANTHROPIC_API_KEY
+  mcpServers:
+    filesystem:
+      type: stdio
+      command: npx
+      args: ["-y", "@modelcontextprotocol/server-filesystem", "/tmp"]
+  storage:
+    default: sqlite
+    # All storage types now use SQLite with automatic path resolution
+
+# Example 4: Production - Redis for everything
+prod_agent:
+  llm:
+    provider: anthropic
+    model: claude-3-sonnet
+    apiKey: $ANTHROPIC_API_KEY
+  mcpServers:
+    filesystem:
+      type: stdio
+      command: npx
+      args: ["-y", "@modelcontextprotocol/server-filesystem", "/tmp"]
+  storage:
+    default: redis://prod-redis:6379
+    # All storage types now use Redis
+
+# Example 5: Hybrid - Different storage for different needs
+hybrid_agent:
+  llm:
+    provider: anthropic
+    model: claude-3-sonnet
+    apiKey: $ANTHROPIC_API_KEY
+  mcpServers:
+    filesystem:
+      type: stdio
+      command: npx
+      args: ["-y", "@modelcontextprotocol/server-filesystem", "/tmp"]
+  storage:
+    default: memory
+    history: 
+      type: sqlite
+      ttl: 604800000  # 7 days in milliseconds
+    sessions: redis://cache:6379
+    toolCache: memory
+    userInfo:
+      type: file
+      path: ./data/users.json
+      backup: true
+      compression: true
+
+# Example 6: SQLite with detailed configuration
+sqlite_detailed_agent:
+  llm:
+    provider: anthropic
+    model: claude-3-sonnet
+    apiKey: $ANTHROPIC_API_KEY
+  mcpServers:
+    filesystem:
+      type: stdio
+      command: npx
+      args: ["-y", "@modelcontextprotocol/server-filesystem", "/tmp"]
+  storage:
+    default:
+      type: sqlite
+      table: default_storage
+    history:
+      type: sqlite
+      table: conversation_history
+      ttl: 2592000000  # 30 days
+    sessions:
+      type: sqlite
+      table: user_sessions
+      sessionTTL: 3600000  # 1 hour
+    toolCache:
+      type: sqlite
+      table: tool_cache
+      ttl: 300000  # 5 minutes
+
+# Example 7: Enterprise - Full configuration with S3
+enterprise_agent:
+  llm:
+    provider: anthropic
+    model: claude-3-sonnet
+    apiKey: $ANTHROPIC_API_KEY
+  mcpServers:
+    filesystem:
+      type: stdio
+      command: npx
+      args: ["-y", "@modelcontextprotocol/server-filesystem", "/tmp"]
+  storage:
+    default:
+      type: database
+      url: postgres://prod-db:5432/saiki
+      pool:
+        min: 2
+        max: 20
+      ssl: true
+    history: s3:agent-history:us-west-2
+    toolCache:
+      type: redis
+      url: redis://cache-cluster:6379
+      cluster: true
+      ttl: 3600
+    custom:
+      analytics:
+        type: s3
+        bucket: agent-analytics
+        region: us-east-1
+        storageClass: INTELLIGENT_TIERING
+      backups:
+        type: s3
+        bucket: agent-backups
+        region: us-west-2
+        storageClass: GLACIER
+
+# Example 8: Local development with detailed file config
+# Automatically uses .saiki/ in project directory during development
+local_dev_agent:
+  llm:
+    provider: anthropic
+    model: claude-3-sonnet
+    apiKey: $ANTHROPIC_API_KEY
+  mcpServers:
+    filesystem:
+      type: stdio
+      command: npx
+      args: ["-y", "@modelcontextprotocol/server-filesystem", "/tmp"]
+  storage:
+    default: memory
+    history:
+      type: file
+      path: ./data/history.jsonl
+      format: jsonl
+      maxSize: 100MB
+      backup: true
+    sessions:
+      type: file
+      path: ./data/sessions.json
+      format: json
+      backup: false
+    userInfo:
+      type: file
+      path: ./data/users.json
+      format: json
+      compression: true
+
+# Example 9: Mixed SQLite and File storage
+# Shows how different components can use different storage backends
+mixed_storage_agent:
+  llm:
+    provider: anthropic
+    model: claude-3-sonnet
+    apiKey: $ANTHROPIC_API_KEY
+  mcpServers:
+    filesystem:
+      type: stdio
+      command: npx
+      args: ["-y", "@modelcontextprotocol/server-filesystem", "/tmp"]
+  storage:
+    default: sqlite
+    history:
+      type: sqlite
+      table: chat_history
+      ttl: 1209600000  # 14 days
+    sessions:
+      type: file
+      format: json
+      backup: true
+    userInfo:
+      type: file
+      format: json
+      backup: true
+      compression: true
+    toolCache:
+      type: sqlite
+      table: tool_responses
+      ttl: 86400000  # 1 day
+    custom:
+      logs:
+        type: file
+        format: jsonl
+        backup: true
+      metrics:
+        type: sqlite
+        table: agent_metrics 

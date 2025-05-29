@@ -6,6 +6,7 @@ import { AgentEventBus } from '../../events/index.js';
 import { logger } from '../../logger/index.js';
 import type { AgentStateManager } from '../../config/agent-state-manager.js';
 import type { LLMConfig } from '../../config/schemas.js';
+import type { StorageManager } from '../../storage/factory.js';
 
 export interface SessionMetadata {
     createdAt: Date;
@@ -34,6 +35,7 @@ export class SessionManager {
             promptManager: PromptManager;
             clientManager: MCPClientManager;
             agentEventBus: AgentEventBus;
+            storageManager: StorageManager;
         },
         options: {
             maxSessions?: number;
@@ -51,7 +53,7 @@ export class SessionManager {
      * @returns The created or existing ChatSession
      * @throws Error if maximum sessions limit is reached
      */
-    public createSession(sessionId?: string): ChatSession {
+    public async createSession(sessionId?: string): Promise<ChatSession> {
         const id = sessionId ?? randomUUID();
 
         this.cleanupExpiredSessions();
@@ -65,8 +67,10 @@ export class SessionManager {
             throw new Error(`Maximum sessions (${this.maxSessions}) reached`);
         }
 
-        // Pass services to ChatSession instead of agent
+        // Create and initialize session with storage support
         const session = new ChatSession(this.services, id);
+        await session.init(); // Initialize the async services
+
         this.sessions.set(id, session);
         this.sessionMetadata.set(id, {
             createdAt: new Date(),
@@ -84,11 +88,11 @@ export class SessionManager {
      *
      * @returns The default ChatSession (creates one if it doesn't exist)
      */
-    public getDefaultSession(): ChatSession {
+    public async getDefaultSession(): Promise<ChatSession> {
         const defaultSessionId = 'default';
 
         if (!this.sessions.has(defaultSessionId)) {
-            return this.createSession(defaultSessionId);
+            return await this.createSession(defaultSessionId);
         }
 
         this.updateSessionActivity(defaultSessionId);
@@ -280,7 +284,7 @@ export class SessionManager {
     public async switchLLMForDefaultSession(
         newLLMConfig: LLMConfig
     ): Promise<{ message: string; warnings: string[] }> {
-        const defaultSession = this.getDefaultSession();
+        const defaultSession = await this.getDefaultSession();
 
         await defaultSession.switchLLM(newLLMConfig);
 

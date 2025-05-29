@@ -8,7 +8,7 @@ import { logger } from '../../../logger/index.js';
 import { getImageData, countMessagesTokens } from './utils.js';
 import { DynamicContributorContext } from '../../systemPrompt/types.js';
 import { PromptManager } from '../../systemPrompt/manager.js';
-import { ConversationHistoryProvider } from './history/types.js';
+import { IConversationHistoryProvider } from './history/types.js';
 import { SessionEventBus } from '../../../events/index.js';
 /**
  * Manages conversation history and provides message formatting capabilities.
@@ -68,7 +68,7 @@ export class MessageManager {
      */
     private compressionStrategies: ICompressionStrategy[];
 
-    private historyProvider: ConversationHistoryProvider;
+    private historyProvider: IConversationHistoryProvider;
     private sessionId: string;
 
     /**
@@ -89,7 +89,7 @@ export class MessageManager {
         sessionEventBus: SessionEventBus,
         maxTokens: number,
         tokenizer: ITokenizer,
-        historyProvider: ConversationHistoryProvider,
+        historyProvider: IConversationHistoryProvider,
         sessionId: string,
         compressionStrategies: ICompressionStrategy[] = [
             new MiddleRemovalStrategy(),

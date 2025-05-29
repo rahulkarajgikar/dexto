@@ -101,13 +101,14 @@ export class SaikiAgent {
     // ============= CORE AGENT FUNCTIONALITY =============
 
     /**
-     * Processes a single turn of interaction with the user.
-     * This is the primary method for conversing with the agent.
+     * Main method for processing user input.
+     * Processes user input through the agent's LLM service and returns the response.
      *
-     * @param userInput The input from the user.
-     * @param imageDataInput Optional image data with MIME type for multimodal processing.
-     * @param sessionId Optional session ID. If not provided, uses the default session.
-     * @returns The agent's response, or null if no significant response.
+     * @param userInput - The user's message or query to process
+     * @param imageDataInput - Optional image data and MIME type for multimodal input
+     * @param sessionId - Optional session ID for multi-session scenarios
+     * @returns Promise that resolves to the AI's response text, or null if no significant response
+     * @throws Error if processing fails
      */
     public async run(
         userInput: string,
@@ -121,11 +122,11 @@ export class SaikiAgent {
                 // Use specific session or create it if it doesn't exist
                 session =
                     this.sessionManager.getSession(sessionId) ||
-                    this.sessionManager.createSession(sessionId);
+                    (await this.sessionManager.createSession(sessionId));
             } else {
                 // Use default session for backward compatibility
                 if (!this.defaultSession) {
-                    this.defaultSession = this.sessionManager.createSession('default');
+                    this.defaultSession = await this.sessionManager.createSession('default');
                     logger.debug(
                         `SaikiAgent.run: created default session ${this.defaultSession.id}`
                     );
@@ -161,8 +162,8 @@ export class SaikiAgent {
      * @param sessionId Optional session ID. If not provided, a UUID will be generated.
      * @returns The created or existing ChatSession
      */
-    public createSession(sessionId?: string): ChatSession {
-        return this.sessionManager.createSession(sessionId);
+    public async createSession(sessionId?: string): Promise<ChatSession> {
+        return await this.sessionManager.createSession(sessionId);
     }
 
     /**
@@ -233,7 +234,7 @@ export class SaikiAgent {
             } else {
                 // Use default session for backward compatibility
                 if (!this.defaultSession) {
-                    this.defaultSession = this.sessionManager.createSession('default');
+                    this.defaultSession = await this.sessionManager.createSession('default');
                 }
                 session = this.defaultSession;
             }

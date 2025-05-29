@@ -336,6 +336,150 @@ export const ServerConfigsSchema = z
     .describe('A dictionary of server configurations, keyed by server name');
 export type ServerConfigs = z.infer<typeof ServerConfigsSchema>;
 
+// Storage Configuration Schemas
+
+// Base storage provider schemas
+const MemoryStorageSchema = z.object({
+    type: z.literal('memory'),
+    maxSize: z
+        .number()
+        .int()
+        .positive()
+        .optional()
+        .describe('Maximum number of items to store in memory'),
+    ttl: z
+        .number()
+        .int()
+        .positive()
+        .optional()
+        .describe('Time-to-live in milliseconds for stored items'),
+});
+
+const FileStorageSchema = z.object({
+    type: z.literal('file'),
+    path: z.string().describe('File path for storage'),
+    format: z.enum(['json', 'jsonl', 'csv']).optional().default('json').describe('File format'),
+    maxSize: z.string().optional().describe('Maximum file size (e.g., "10MB", "1GB")'),
+    backup: z.boolean().optional().default(false).describe('Whether to create backup files'),
+    compression: z.boolean().optional().default(false).describe('Whether to compress the file'),
+});
+
+const DatabaseStorageSchema = z.object({
+    type: z.literal('database'),
+    url: z.string().describe('Database connection URL'),
+    table: z.string().optional().describe('Table/collection name (defaults to storage type)'),
+    pool: z
+        .object({
+            min: z.number().int().nonnegative().optional().default(0),
+            max: z.number().int().positive().optional().default(10),
+        })
+        .optional()
+        .describe('Connection pool settings'),
+    ssl: z.boolean().optional().describe('Whether to use SSL connection'),
+});
+
+const RedisStorageSchema = z.object({
+    type: z.literal('redis'),
+    url: z.string().describe('Redis connection URL'),
+    keyPrefix: z.string().optional().describe('Prefix for all keys'),
+    ttl: z.number().int().positive().optional().describe('Default TTL in seconds'),
+    cluster: z.boolean().optional().default(false).describe('Whether to use Redis cluster mode'),
+});
+
+const S3StorageSchema = z.object({
+    type: z.literal('s3'),
+    bucket: z.string().describe('S3 bucket name'),
+    region: z.string().describe('AWS region'),
+    keyPrefix: z.string().optional().describe('Prefix for all object keys'),
+    encryption: z
+        .boolean()
+        .optional()
+        .default(true)
+        .describe('Whether to use server-side encryption'),
+    storageClass: z
+        .enum([
+            'STANDARD',
+            'REDUCED_REDUNDANCY',
+            'STANDARD_IA',
+            'ONEZONE_IA',
+            'INTELLIGENT_TIERING',
+            'GLACIER',
+            'DEEP_ARCHIVE',
+        ])
+        .optional()
+        .default('STANDARD'),
+});
+
+// Union of all storage provider types
+const StorageProviderSchema = z.discriminatedUnion('type', [
+    MemoryStorageSchema,
+    FileStorageSchema,
+    DatabaseStorageSchema,
+    RedisStorageSchema,
+    S3StorageSchema,
+]);
+
+// Storage configuration can be:
+// 1. A simple string (defaults to memory)
+// 2. A storage provider object
+// 3. An object with provider + custom options
+const StorageConfigSchema = z.union([
+    z.string().transform((val) => {
+        // Handle simple string configurations
+        if (val === 'memory') return { type: 'memory' as const };
+        if (val === 'file') return { type: 'file' as const, path: './storage' };
+        if (val.startsWith('file:')) return { type: 'file' as const, path: val.slice(5) };
+        if (val.startsWith('redis:')) return { type: 'redis' as const, url: val };
+        if (val.startsWith('postgres:') || val.startsWith('mysql:') || val.startsWith('mongodb:')) {
+            return { type: 'database' as const, url: val };
+        }
+        if (val.startsWith('s3:')) {
+            const [, bucket, region] = val.split(':');
+            return { type: 's3' as const, bucket, region: region || 'us-east-1' };
+        }
+        throw new Error(`Invalid storage configuration: ${val}`);
+    }),
+    StorageProviderSchema,
+]);
+
+export const StorageSchema = z
+    .object({
+        // Global storage defaults
+        default: StorageConfigSchema.optional()
+            .default('memory')
+            .describe('Default storage configuration for all types'),
+
+        // Specific storage configurations
+        history: StorageConfigSchema.optional().describe('Storage for conversation history'),
+        allowedTools: StorageConfigSchema.optional().describe(
+            'Storage for allowed tools configuration'
+        ),
+        userInfo: StorageConfigSchema.optional().describe('Storage for user information'),
+        toolCache: StorageConfigSchema.optional().describe('Storage for tool response caching'),
+        sessions: StorageConfigSchema.optional().describe('Storage for session data'),
+
+        // Custom storage types (extensible)
+        custom: z
+            .record(StorageConfigSchema)
+            .optional()
+            .default({})
+            .describe('Custom storage configurations'),
+    })
+    .transform((data) => {
+        // Apply defaults: if a specific storage type isn't configured, use the default
+        const defaultConfig = data.default;
+        return {
+            ...data,
+            history: data.history ?? defaultConfig,
+            allowedTools: data.allowedTools ?? defaultConfig,
+            userInfo: data.userInfo ?? defaultConfig,
+            toolCache: data.toolCache ?? defaultConfig,
+            sessions: data.sessions ?? defaultConfig,
+        };
+    });
+
+export type StorageConfig = z.infer<typeof StorageSchema>;
+
 export const AgentConfigSchema = z
     .object({
         agentCard: AgentCardSchema.describe('Configuration for the agent card').optional(),
@@ -343,44 +487,7 @@ export const AgentConfigSchema = z
             'Configurations for MCP (Multi-Capability Peer) servers used by the agent'
         ),
         llm: LLMConfigSchema.describe('Core LLM configuration for the agent'),
-        storage: z
-            .object({
-                history: z
-                    .object({
-                        provider: z.enum(['memory', 'file']).default('memory'),
-                        options: z.record(z.any()).optional(),
-                    })
-                    .optional()
-                    .default({ provider: 'memory' }),
-                allowedTools: z
-                    .object({
-                        provider: z.enum(['memory']).default('memory'),
-                        options: z.record(z.any()).optional(),
-                    })
-                    .optional()
-                    .default({ provider: 'memory' }),
-                userInfo: z
-                    .object({
-                        provider: z.enum(['memory']).default('memory'),
-                        options: z.record(z.any()).optional(),
-                    })
-                    .optional()
-                    .default({ provider: 'memory' }),
-                toolCache: z
-                    .object({
-                        provider: z.enum(['memory']).default('memory'),
-                        options: z.record(z.any()).optional(),
-                    })
-                    .optional()
-                    .default({ provider: 'memory' }),
-            })
-            .optional()
-            .default({
-                history: { provider: 'memory' },
-                allowedTools: { provider: 'memory' },
-                userInfo: { provider: 'memory' },
-                toolCache: { provider: 'memory' },
-            }),
+        storage: StorageSchema.optional().describe('Storage configuration for the agent'),
         sessions: z
             .object({
                 maxSessions: z
@@ -408,5 +515,4 @@ export const AgentConfigSchema = z
             .describe('Session management configuration'),
     })
     .describe('Main configuration for an agent, including its LLM and server connections');
-
 export type AgentConfig = z.infer<typeof AgentConfigSchema>;

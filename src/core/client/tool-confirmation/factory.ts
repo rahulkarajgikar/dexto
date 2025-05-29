@@ -19,16 +19,25 @@ import {
     createAllowedToolsProvider,
     AllowedToolsConfig,
 } from './allowed-tools-provider/factory.js';
-import { InMemoryAllowedToolsProvider } from './allowed-tools-provider/in-memory.js';
-// import { WebConfirmationProvider } from './web-confirmation-provider.js';
-// import { UIConfirmationProvider } from './ui-confirmation-provider.js';
+import type { IAllowedToolsProvider } from './allowed-tools-provider/types.js';
+
+export interface ToolConfirmationOptions {
+    runMode: 'cli' | 'web' | 'discord' | 'telegram' | 'mcp';
+    allowedToolsProvider?: IAllowedToolsProvider;
+    allowedToolsConfig?: AllowedToolsConfig;
+}
 
 export function createToolConfirmationProvider(
-    runMode: 'cli' | 'web' | 'discord' | 'telegram' | 'mcp',
-    allowedToolsCfg?: AllowedToolsConfig
+    options: ToolConfirmationOptions
 ): ToolConfirmationProvider {
-    // Build allowedToolsProvider based on config or default
-    const toolsProvider = allowedToolsCfg ? createAllowedToolsProvider(allowedToolsCfg) : undefined;
+    const { runMode, allowedToolsProvider, allowedToolsConfig } = options;
+
+    // Build allowedToolsProvider if config is provided and provider isn't
+    let toolsProvider = allowedToolsProvider;
+    if (!toolsProvider && allowedToolsConfig) {
+        toolsProvider = createAllowedToolsProvider(allowedToolsConfig);
+    }
+
     switch (runMode) {
         case 'cli':
             return new CLIConfirmationProvider(toolsProvider);
@@ -40,5 +49,23 @@ export function createToolConfirmationProvider(
             return new NoOpConfirmationProvider();
         default:
             throw new Error(`Unknown run mode for ToolConfirmationProvider: ${runMode}`);
+    }
+}
+
+// Convenience function for backward compatibility
+export function createToolConfirmationProviderLegacy(
+    runMode: 'cli' | 'web' | 'discord' | 'telegram' | 'mcp',
+    allowedToolsConfig?: AllowedToolsConfig | IAllowedToolsProvider
+): ToolConfirmationProvider {
+    if (allowedToolsConfig && 'allowTool' in allowedToolsConfig) {
+        return createToolConfirmationProvider({
+            runMode,
+            allowedToolsProvider: allowedToolsConfig as IAllowedToolsProvider,
+        });
+    } else {
+        return createToolConfirmationProvider({
+            runMode,
+            allowedToolsConfig: allowedToolsConfig as AllowedToolsConfig,
+        });
     }
 }
