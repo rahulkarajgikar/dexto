@@ -424,16 +424,18 @@ export async function initializeApi(agent: SaikiAgent, agentCardOverride?: Parti
     // List all active sessions
     app.get('/api/sessions', async (req, res) => {
         try {
-            const sessionIds = agent.listSessions();
-            const sessions = sessionIds.map((id) => {
-                const metadata = agent.getSessionMetadata(id);
-                return {
-                    id,
-                    createdAt: metadata?.createdAt || null,
-                    lastActivity: metadata?.lastActivity || null,
-                    messageCount: metadata?.messageCount || 0,
-                };
-            });
+            const sessionIds = await agent.listSessions();
+            const sessions = await Promise.all(
+                sessionIds.map(async (id) => {
+                    const metadata = await agent.getSessionMetadata(id);
+                    return {
+                        id,
+                        createdAt: metadata?.createdAt || null,
+                        lastActivity: metadata?.lastActivity || null,
+                        messageCount: metadata?.messageCount || 0,
+                    };
+                })
+            );
             res.json({ sessions });
         } catch (error) {
             logger.error(`Error listing sessions: ${error.message}`);
@@ -445,8 +447,8 @@ export async function initializeApi(agent: SaikiAgent, agentCardOverride?: Parti
     app.post('/api/sessions', express.json(), async (req, res) => {
         try {
             const { sessionId } = req.body;
-            const session = agent.createSession(sessionId);
-            const metadata = agent.getSessionMetadata(session.id);
+            const session = await agent.createSession(sessionId);
+            const metadata = await agent.getSessionMetadata(session.id);
             res.status(201).json({
                 session: {
                     id: session.id,
@@ -465,12 +467,12 @@ export async function initializeApi(agent: SaikiAgent, agentCardOverride?: Parti
     app.get('/api/sessions/:sessionId', async (req, res) => {
         try {
             const { sessionId } = req.params;
-            const session = agent.getSession(sessionId);
+            const session = await agent.getSession(sessionId);
             if (!session) {
                 return res.status(404).json({ error: 'Session not found' });
             }
 
-            const metadata = agent.getSessionMetadata(sessionId);
+            const metadata = await agent.getSessionMetadata(sessionId);
             const history = await agent.getSessionHistory(sessionId);
 
             res.json({
@@ -492,7 +494,7 @@ export async function initializeApi(agent: SaikiAgent, agentCardOverride?: Parti
     app.get('/api/sessions/:sessionId/history', async (req, res) => {
         try {
             const { sessionId } = req.params;
-            const session = agent.getSession(sessionId);
+            const session = await agent.getSession(sessionId);
             if (!session) {
                 return res.status(404).json({ error: 'Session not found' });
             }
@@ -511,7 +513,7 @@ export async function initializeApi(agent: SaikiAgent, agentCardOverride?: Parti
     app.delete('/api/sessions/:sessionId', async (req, res) => {
         try {
             const { sessionId } = req.params;
-            const session = agent.getSession(sessionId);
+            const session = await agent.getSession(sessionId);
             if (!session) {
                 return res.status(404).json({ error: 'Session not found' });
             }
@@ -528,12 +530,12 @@ export async function initializeApi(agent: SaikiAgent, agentCardOverride?: Parti
     app.post('/api/sessions/:sessionId/reset', async (req, res) => {
         try {
             const { sessionId } = req.params;
-            const session = agent.getSession(sessionId);
+            const session = await agent.getSession(sessionId);
             if (!session) {
                 return res.status(404).json({ error: 'Session not found' });
             }
 
-            await agent.resetSession(sessionId);
+            await agent.resetConversation(sessionId);
             res.json({ status: 'reset', sessionId });
         } catch (error) {
             logger.error(`Error resetting session ${req.params.sessionId}: ${error.message}`);
