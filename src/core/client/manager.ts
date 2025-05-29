@@ -204,6 +204,12 @@ export class MCPClientManager {
         serverConfigs: ServerConfigs,
         connectionMode: 'strict' | 'lenient' = 'lenient'
     ): Promise<void> {
+        // Handle empty server configurations gracefully
+        if (Object.keys(serverConfigs).length === 0) {
+            logger.info('No MCP servers configured - running without external tools');
+            return;
+        }
+
         const successfulConnections: string[] = [];
         const connectionPromises: Promise<void>[] = [];
 

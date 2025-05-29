@@ -1,4 +1,3 @@
-import { createHistoryProvider } from '../llm/messages/history/factory.js';
 import { createHistoryProviderWithStorage } from '../llm/messages/history/factory.js';
 import { createMessageManager } from '../llm/messages/factory.js';
 import { createLLMService } from '../llm/services/factory.js';
@@ -12,7 +11,7 @@ import type { PromptManager } from '../systemPrompt/manager.js';
 import type { MCPClientManager } from '../../client/manager.js';
 import type { LLMConfig } from '../../config/schemas.js';
 import type { AgentStateManager } from '../../config/agent-state-manager.js';
-import type { StorageManager } from '../../storage/factory.js';
+import type { StorageInstances } from '../../storage/types.js';
 import {
     SessionEventBus,
     AgentEventBus,
@@ -120,7 +119,7 @@ export class ChatSession {
             promptManager: PromptManager;
             clientManager: MCPClientManager;
             agentEventBus: AgentEventBus;
-            storageManager: StorageManager;
+            storageManager: StorageInstances;
         },
         public readonly id: string
     ) {
@@ -182,11 +181,10 @@ export class ChatSession {
         const llmConfig = this.services.stateManager.getLLMConfig(this.id);
 
         // Create session-specific history provider using the unified storage system
-        // This provides better persistence and consistency compared to the legacy approach
-        const historyProvider = await createHistoryProviderWithStorage(
-            await this.services.storageManager.getCollectionProvider<
-                InternalMessage & { sessionId: string }
-            >('history')
+        // The storage instance handles the specifics of memory vs file vs database storage
+        const historyProvider = createHistoryProviderWithStorage(
+            this.services.storageManager.history,
+            this.id
         );
 
         // Create session-specific message manager

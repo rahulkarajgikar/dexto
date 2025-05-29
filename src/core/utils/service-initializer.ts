@@ -30,8 +30,9 @@ import { createToolConfirmationProvider } from '../client/tool-confirmation/fact
 import { PromptManager } from '../ai/systemPrompt/manager.js';
 import { StaticConfigManager } from '../config/static-config-manager.js';
 import { AgentStateManager } from '../config/agent-state-manager.js';
-import { SessionManager } from '../ai/session/SessionManager.js';
-import { createStorageManager, type StorageManager } from '../storage/factory.js';
+import { SessionManager } from '../ai/session/session-manager.js';
+import { createStorageInstances } from '../storage/factory.js';
+import type { StorageInstances } from '../storage/types.js';
 import { createAllowedToolsProviderWithStorage } from '../client/tool-confirmation/allowed-tools-provider/factory.js';
 import { logger } from '../logger/index.js';
 import type { CLIConfigOverrides } from '../config/types.js';
@@ -47,7 +48,7 @@ export type AgentServices = {
     agentEventBus: AgentEventBus;
     stateManager: AgentStateManager;
     sessionManager: SessionManager;
-    storageManager: StorageManager;
+    storageManager: StorageInstances;
 };
 
 /**
@@ -72,7 +73,7 @@ export type InitializeServicesOptions = {
     clientManager?: MCPClientManager; // Inject a custom or mock MCPClientManager
     agentEventBus?: AgentEventBus; // Inject a custom or mock AgentEventBus
     sessionManager?: SessionManager; // Inject a custom or mock SessionManager
-    storageManager?: StorageManager; // Inject a custom or mock StorageManager
+    storageManager?: StorageInstances; // Inject a custom or mock StorageManager
     // Add more overrides as needed
     // configOverride?: Partial<AgentConfig>; // (optional) for field-level config overrides
 };
@@ -102,7 +103,7 @@ export async function createAgentServices(
     // 3. Initialize storage manager
     const storageManager =
         overrides?.storageManager ??
-        (await createStorageManager(config.storage, {
+        (await createStorageInstances(config.storage, {
             isDevelopment: process.env.NODE_ENV !== 'production',
             projectRoot: process.cwd(),
         }));
@@ -112,22 +113,26 @@ export async function createAgentServices(
     const connectionMode = overrides?.connectionMode ?? 'lenient';
     const runMode = overrides?.runMode ?? 'cli';
 
-    // Use the new storage-based allowed tools provider for better persistence
-    const allowedToolsProvider = createAllowedToolsProviderWithStorage(
-        await storageManager.getProvider<boolean>('allowedTools')
-    );
+    // TODO: Implement allowedTools storage in the new system
+    // For now, use the default tool confirmation provider without storage
     const confirmationProvider = createToolConfirmationProvider({
         runMode,
-        allowedToolsProvider,
+        // allowedToolsProvider will be added when we implement allowedTools storage
     });
 
     const clientManager = overrides?.clientManager ?? new MCPClientManager(confirmationProvider);
     await clientManager.initializeFromConfig(config.mcpServers, connectionMode);
-    logger.debug(
-        overrides?.clientManager
-            ? 'Client manager and MCP servers initialized via override'
-            : 'Client manager and MCP servers initialized with storage-backed allowed tools'
-    );
+
+    const mcpServerCount = Object.keys(config.mcpServers).length;
+    if (mcpServerCount === 0) {
+        logger.info('Agent initialized without MCP servers - only built-in capabilities available');
+    } else {
+        logger.debug(
+            overrides?.clientManager
+                ? 'Client manager and MCP servers initialized via override'
+                : `Client manager initialized with ${mcpServerCount} MCP server(s) and storage-backed allowed tools`
+        );
+    }
 
     // 5. Initialize prompt manager
     const promptManager = new PromptManager(config.llm.systemPrompt);

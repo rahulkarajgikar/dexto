@@ -1,47 +1,43 @@
 import type { IConversationHistoryProvider } from './types.js';
-import { InMemoryHistoryProvider } from './in-memory.js';
-import { HistoryProvider } from './default.js';
-import { FileHistoryProvider } from './file.js';
-import type { CollectionStorageProvider } from '../../../../storage/index.js';
 import type { InternalMessage } from '../types.js';
-
-export interface HistoryProviderConfig {
-    type: 'storage' | 'memory' | 'file';
-    storageProvider?: CollectionStorageProvider<InternalMessage & { sessionId: string }>;
-    filePath?: string;
-}
+import { logger } from '../../../../logger/index.js';
+import type { HistoryStorage } from '../../../../storage/types.js';
 
 /**
- * Create a ConversationHistoryProvider based on configuration.
- *
- * The default is now storage-based for persistence.
- * Other providers are available for specific use cases.
+ * Universal history provider that works with any HistoryStorage implementation.
+ * The storage layer handles the specifics of memory vs file vs database storage.
  */
-export function createHistoryProvider(config: HistoryProviderConfig): IConversationHistoryProvider {
-    switch (config.type) {
-        case 'storage':
-            if (!config.storageProvider) {
-                throw new Error('Storage provider is required for storage-based HistoryProvider');
-            }
-            return new HistoryProvider(config.storageProvider);
+export class HistoryProvider implements IConversationHistoryProvider {
+    constructor(
+        private sessionId: string,
+        private storage: HistoryStorage
+    ) {}
 
-        case 'memory':
-            return new InMemoryHistoryProvider();
+    async getHistory(): Promise<InternalMessage[]> {
+        const messages = await this.storage.getMessages(this.sessionId);
+        logger.debug(
+            `HistoryProvider: Retrieved ${messages.length} messages for session ${this.sessionId}`
+        );
+        return messages;
+    }
 
-        case 'file':
-            return new FileHistoryProvider(config.filePath);
+    async saveMessage(message: InternalMessage): Promise<void> {
+        await this.storage.addMessage(this.sessionId, message);
+        logger.debug(`HistoryProvider: Saved message for session ${this.sessionId}`);
+    }
 
-        default:
-            throw new Error(`Unknown HistoryProvider type: ${(config as any).type}`);
+    async clearHistory(): Promise<void> {
+        await this.storage.clearSession(this.sessionId);
+        logger.debug(`HistoryProvider: Cleared history for session ${this.sessionId}`);
     }
 }
 
 /**
- * Create a HistoryProvider with a storage provider.
- * This is the recommended approach for production use.
+ * Create a history provider with storage instance
  */
 export function createHistoryProviderWithStorage(
-    storageProvider: CollectionStorageProvider<InternalMessage & { sessionId: string }>
+    storage: HistoryStorage,
+    sessionId: string
 ): IConversationHistoryProvider {
-    return new HistoryProvider(storageProvider);
+    return new HistoryProvider(sessionId, storage);
 }

@@ -1,17 +1,16 @@
 import { randomUUID } from 'crypto';
-import { ChatSession } from './ChatSession.js';
+import { ChatSession } from './chat-session.js';
 import { PromptManager } from '../systemPrompt/manager.js';
 import { MCPClientManager } from '../../client/manager.js';
 import { AgentEventBus } from '../../events/index.js';
 import { logger } from '../../logger/index.js';
 import type { AgentStateManager } from '../../config/agent-state-manager.js';
 import type { LLMConfig } from '../../config/schemas.js';
-import type { StorageManager } from '../../storage/factory.js';
-import type { SessionStorageProvider } from '../../storage/types.js';
+import type { StorageInstances, SessionData } from '../../storage/types.js';
 
 export interface SessionMetadata {
-    createdAt: Date;
-    lastActivity: Date;
+    createdAt: number;
+    lastActivity: number;
     messageCount: number;
     // Additional metadata for session management
     maxSessions?: number;
@@ -26,11 +25,10 @@ export interface SessionMetadata {
  * - Enforcing session limits and TTL policies
  * - Cleaning up expired sessions
  * - Providing session lifecycle management
- * - Persisting session data using SessionStorageProvider
+ * - Persisting session data using SessionStorage
  */
 export class SessionManager {
     private sessions: Map<string, ChatSession> = new Map();
-    private sessionStorage: SessionStorageProvider<SessionMetadata>;
     private readonly maxSessions: number;
     private readonly sessionTTL: number;
     private initialized = false;
@@ -41,7 +39,7 @@ export class SessionManager {
             promptManager: PromptManager;
             clientManager: MCPClientManager;
             agentEventBus: AgentEventBus;
-            storageManager: StorageManager;
+            storageManager: StorageInstances;
         },
         options: {
             maxSessions?: number;
@@ -61,9 +59,6 @@ export class SessionManager {
             return;
         }
 
-        // Get session storage provider with TTL matching our session TTL
-        this.sessionStorage = await this.services.storageManager.getSessionProvider('sessions');
-
         // Restore any existing sessions from storage
         await this.restoreSessionsFromStorage();
 
@@ -77,22 +72,23 @@ export class SessionManager {
      */
     private async restoreSessionsFromStorage(): Promise<void> {
         try {
-            const sessionIds = await this.sessionStorage.getActiveSessions();
+            const sessionIds = await this.services.storageManager.sessions.getActiveSessions();
             logger.debug(`Found ${sessionIds.length} persisted sessions to restore`);
 
             for (const sessionId of sessionIds) {
-                const metadata = await this.sessionStorage.getSession(sessionId);
-                if (metadata) {
+                const sessionData =
+                    await this.services.storageManager.sessions.getSession(sessionId);
+                if (sessionData) {
                     // Check if session is still valid (not expired)
                     const now = Date.now();
-                    const lastActivity = new Date(metadata.lastActivity).getTime();
+                    const lastActivity = sessionData.lastActivity;
 
                     if (now - lastActivity <= this.sessionTTL) {
                         // Session is still valid, but don't create ChatSession until requested
                         logger.debug(`Session ${sessionId} restored from storage`);
                     } else {
                         // Session expired, clean it up
-                        await this.sessionStorage.deleteSession(sessionId);
+                        await this.services.storageManager.sessions.deleteSession(sessionId);
                         logger.debug(`Expired session ${sessionId} cleaned up during restore`);
                     }
                 }
@@ -133,7 +129,7 @@ export class SessionManager {
         }
 
         // Check if session exists in storage
-        const existingMetadata = await this.sessionStorage.getSession(id);
+        const existingMetadata = await this.services.storageManager.sessions.getSession(id);
         if (existingMetadata) {
             // Session exists in storage, restore it
             await this.updateSessionActivity(id);
@@ -145,7 +141,7 @@ export class SessionManager {
         }
 
         // Check session limits
-        const activeSessions = await this.sessionStorage.getActiveSessions();
+        const activeSessions = await this.services.storageManager.sessions.getActiveSessions();
         if (activeSessions.length >= this.maxSessions) {
             throw new Error(`Maximum sessions (${this.maxSessions}) reached`);
         }
@@ -157,15 +153,18 @@ export class SessionManager {
         this.sessions.set(id, session);
 
         // Store session metadata in persistent storage
-        const metadata: SessionMetadata = {
-            createdAt: new Date(),
-            lastActivity: new Date(),
+        const sessionData: SessionData = {
+            id,
+            createdAt: Date.now(),
+            lastActivity: Date.now(),
             messageCount: 0,
-            maxSessions: this.maxSessions,
-            sessionTTL: this.sessionTTL,
         };
 
-        await this.sessionStorage.setSession(id, metadata, this.sessionTTL);
+        await this.services.storageManager.sessions.setSessionWithTTL(
+            id,
+            sessionData,
+            this.sessionTTL
+        );
 
         logger.debug(`Created new session: ${id}`);
         return session;
@@ -199,7 +198,7 @@ export class SessionManager {
         }
 
         // Check if session exists in storage
-        const metadata = await this.sessionStorage.getSession(sessionId);
+        const metadata = await this.services.storageManager.sessions.getSession(sessionId);
         if (metadata) {
             // Session exists in storage, restore it to memory
             session = new ChatSession(this.services, sessionId);
@@ -233,7 +232,7 @@ export class SessionManager {
         }
 
         // Remove from persistent storage
-        await this.sessionStorage.deleteSession(sessionId);
+        await this.services.storageManager.sessions.deleteSession(sessionId);
         logger.debug(`Ended session: ${sessionId}`);
     }
 
@@ -244,28 +243,29 @@ export class SessionManager {
      */
     public async listSessions(): Promise<string[]> {
         await this.ensureInitialized();
-        return await this.sessionStorage.getActiveSessions();
+        return await this.services.storageManager.sessions.getActiveSessions();
     }
 
     /**
      * Gets metadata for a specific session.
-     *
-     * @param sessionId The session ID
-     * @returns Session metadata if found, undefined otherwise
      */
     public async getSessionMetadata(sessionId: string): Promise<SessionMetadata | undefined> {
         await this.ensureInitialized();
-        return await this.sessionStorage.getSession(sessionId);
+        return await this.services.storageManager.sessions.getSession(sessionId);
     }
 
     /**
      * Updates the last activity timestamp for a session.
      */
     private async updateSessionActivity(sessionId: string): Promise<void> {
-        const metadata = await this.sessionStorage.getSession(sessionId);
-        if (metadata) {
-            metadata.lastActivity = new Date();
-            await this.sessionStorage.setSession(sessionId, metadata, this.sessionTTL);
+        const sessionData = await this.services.storageManager.sessions.getSession(sessionId);
+        if (sessionData) {
+            sessionData.lastActivity = Date.now();
+            await this.services.storageManager.sessions.setSessionWithTTL(
+                sessionId,
+                sessionData,
+                this.sessionTTL
+            );
         }
     }
 
@@ -276,27 +276,32 @@ export class SessionManager {
     public async incrementMessageCount(sessionId: string): Promise<void> {
         await this.ensureInitialized();
 
-        const metadata = await this.sessionStorage.getSession(sessionId);
-        if (metadata) {
-            metadata.messageCount += 1;
-            metadata.lastActivity = new Date();
-            await this.sessionStorage.setSession(sessionId, metadata, this.sessionTTL);
+        const sessionData = await this.services.storageManager.sessions.getSession(sessionId);
+        if (sessionData) {
+            sessionData.messageCount += 1;
+            sessionData.lastActivity = Date.now();
+            await this.services.storageManager.sessions.setSessionWithTTL(
+                sessionId,
+                sessionData,
+                this.sessionTTL
+            );
 
             logger.debug(
-                `Session ${sessionId}: Message count incremented to ${metadata.messageCount}`
+                `Session ${sessionId}: Message count incremented to ${sessionData.messageCount}`
             );
         }
     }
 
     /**
      * Cleans up expired sessions based on TTL.
-     * The SessionStorageProvider handles automatic TTL expiration,
+     * The SessionStorage handles automatic TTL expiration,
      * but we also clean up in-memory sessions here.
      */
     private async cleanupExpiredSessions(): Promise<void> {
         try {
-            // Get all sessions from storage (expired ones are automatically cleaned up by storage provider)
-            const activeSessionIds = await this.sessionStorage.getActiveSessions();
+            // Get all sessions from storage (expired ones are automatically cleaned up by storage)
+            const activeSessionIds =
+                await this.services.storageManager.sessions.getActiveSessions();
             const activeSessionSet = new Set(activeSessionIds);
 
             // Clean up in-memory sessions that are no longer in storage

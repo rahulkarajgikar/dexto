@@ -332,9 +332,6 @@ export type McpServerConfig = z.infer<typeof McpServerConfigSchema>;
 
 export const ServerConfigsSchema = z
     .record(McpServerConfigSchema)
-    .refine((obj) => Object.keys(obj).length > 0, {
-        message: 'At least one MCP server configuration is required.',
-    })
     .describe('A dictionary of server configurations, keyed by server name');
 export type ServerConfigs = z.infer<typeof ServerConfigsSchema>;
 
@@ -359,16 +356,15 @@ const MemoryStorageSchema = z.object({
 
 const FileStorageSchema = z.object({
     type: z.literal('file'),
-    path: z.string().describe('File path for storage'),
     format: z.enum(['json', 'jsonl', 'csv']).optional().default('json').describe('File format'),
     maxSize: z.string().optional().describe('Maximum file size (e.g., "10MB", "1GB")'),
     backup: z.boolean().optional().default(false).describe('Whether to create backup files'),
     compression: z.boolean().optional().default(false).describe('Whether to compress the file'),
+    // Path is auto-generated based on storage type directory
 });
 
 const SQLiteStorageSchema = z.object({
     type: z.literal('sqlite'),
-    path: z.string().optional().describe('SQLite database file path (defaults to auto-generated)'),
     table: z.string().optional().describe('Table name (defaults to storage type)'),
     ttl: z
         .number()
@@ -376,6 +372,7 @@ const SQLiteStorageSchema = z.object({
         .positive()
         .optional()
         .describe('Default time-to-live in milliseconds for stored items'),
+    // Path is auto-generated based on storage type directory
 });
 
 const DatabaseStorageSchema = z.object({
@@ -434,17 +431,11 @@ const StorageProviderSchema = z.discriminatedUnion('type', [
     S3StorageSchema,
 ]);
 
-// Default memory storage config
-const defaultMemoryConfig = { type: 'memory' as const };
+export type StorageProviderConfig = z.infer<typeof StorageProviderSchema>;
 
 export const StorageSchema = z
     .object({
-        // Global storage defaults
-        default: StorageProviderSchema.optional()
-            .default(defaultMemoryConfig)
-            .describe('Default storage configuration for all types'),
-
-        // Specific storage configurations - all optional in input
+        // Specific storage configurations - all optional, default to memory
         history: StorageProviderSchema.optional().describe('Storage for conversation history'),
         allowedTools: StorageProviderSchema.optional().describe(
             'Storage for allowed tools configuration'
@@ -461,15 +452,15 @@ export const StorageSchema = z
             .describe('Custom storage configurations'),
     })
     .transform((data) => {
-        // Apply defaults: if a specific storage type isn't configured, use the default
-        const defaultConfig = data.default;
+        // Each storage type defaults to memory if not specified
+        const defaultMemoryConfig = { type: 'memory' as const };
+
         return {
-            default: defaultConfig,
-            history: data.history ?? defaultConfig,
-            allowedTools: data.allowedTools ?? defaultConfig,
-            userInfo: data.userInfo ?? defaultConfig,
-            toolCache: data.toolCache ?? defaultConfig,
-            sessions: data.sessions ?? defaultConfig,
+            history: data.history ?? defaultMemoryConfig,
+            allowedTools: data.allowedTools ?? defaultMemoryConfig,
+            userInfo: data.userInfo ?? defaultMemoryConfig,
+            toolCache: data.toolCache ?? defaultMemoryConfig,
+            sessions: data.sessions ?? defaultMemoryConfig,
             custom: data.custom ?? {},
         };
     });
@@ -479,9 +470,9 @@ export type StorageConfig = z.infer<typeof StorageSchema>;
 export const AgentConfigSchema = z
     .object({
         agentCard: AgentCardSchema.describe('Configuration for the agent card').optional(),
-        mcpServers: ServerConfigsSchema.describe(
-            'Configurations for MCP (Model Context Protocol) servers used by the agent'
-        ),
+        mcpServers: ServerConfigsSchema.optional()
+            .default({})
+            .describe('Configurations for MCP (Model Context Protocol) servers used by the agent'),
         llm: LLMConfigSchema.describe('Core LLM configuration for the agent'),
         storage: StorageSchema.optional().describe('Storage configuration for the agent'),
         sessions: z
