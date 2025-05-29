@@ -3,6 +3,7 @@ import type {
     CollectionStorageProvider,
     SessionStorageProvider,
     StorageContext,
+    AnyStorageProviderConfig,
 } from '../types.js';
 
 /**
@@ -13,12 +14,16 @@ export class MemoryStorageProvider<T = any> implements StorageProvider<T> {
     private cleanupInterval?: NodeJS.Timeout;
 
     constructor(
-        private config: any,
+        private config: AnyStorageProviderConfig,
         private context: StorageContext,
         private namespace: string
     ) {
-        const options = config || {};
-        if (options.ttl) {
+        // Type guard to ensure we have a memory config
+        if (config.type !== 'memory') {
+            throw new Error(`MemoryStorageProvider requires memory config, got ${config.type}`);
+        }
+
+        if (config.ttl) {
             // Clean up expired entries every minute
             this.cleanupInterval = setInterval(() => this.cleanup(), 60000);
         }
@@ -38,7 +43,7 @@ export class MemoryStorageProvider<T = any> implements StorageProvider<T> {
 
     async set(key: string, value: T, ttl?: number): Promise<void> {
         // Enforce max size if specified
-        const maxSize = this.config?.maxSize;
+        const maxSize = this.config.type === 'memory' ? this.config.maxSize : undefined;
         if (maxSize && this.store.size >= maxSize) {
             // Remove oldest entry (simple LRU)
             const firstKey = this.store.keys().next().value;
@@ -47,7 +52,7 @@ export class MemoryStorageProvider<T = any> implements StorageProvider<T> {
             }
         }
 
-        const defaultTTL = this.config?.ttl;
+        const defaultTTL = this.config.type === 'memory' ? this.config.ttl : undefined;
         const effectiveTTL = ttl ?? defaultTTL;
         const expires = effectiveTTL ? Date.now() + effectiveTTL : undefined;
         this.store.set(key, { value, expires });

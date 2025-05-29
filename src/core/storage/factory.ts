@@ -15,13 +15,16 @@ import { FileStorageProvider } from './providers/file.js';
 import { SQLiteStorageProvider } from './providers/sqlite.js';
 import { StoragePathResolver } from './path-resolver.js';
 import { logger } from '../logger/index.js';
-import type {
-    StorageProvider,
+import { StorageSchema } from '../config/schemas.js';
+import {
+    StorageProvider as KeyValueStorageProvider,
     CollectionStorageProvider,
     SessionStorageProvider,
     StorageContext,
+    StorageConfig,
+    StorageKey,
+    AnyStorageProviderConfig,
 } from './types.js';
-import type { StorageConfig } from '../config/schemas.js';
 
 export interface StorageInfo {
     type: 'memory' | 'file' | 'sqlite' | 'redis' | 'database' | 's3';
@@ -32,10 +35,29 @@ export interface StorageInfo {
 /**
  * Central manager for all storage providers in Saiki.
  * Provides type-safe access to different storage backends configured per use case.
+ 
  */
 export class StorageManager {
-    private providers: Map<string, StorageProvider> = new Map();
+    /**
+     * Map of simple key,value storage providers for each type of storage
+     * Key: storage type (memory, file, sqlite, redis, database, s3, etc.)
+     * example: user preferences
+     */
+    private providers: Map<string, KeyValueStorageProvider> = new Map();
+    /**
+     * Map of collection storage providers for each type of storage
+     * Key: storage type (memory, file, sqlite, redis, database, s3, etc.)
+     * Value: CollectionStorageProvider instance which can store arrays of any type T
+     * example: conversation history
+     */
     private collectionProviders: Map<string, CollectionStorageProvider> = new Map();
+
+    /**
+     * Map of session storage providers for each type of storage
+     * Key: storage type (memory, file, sqlite, redis, database, s3, etc.)
+     * Value: SessionStorageProvider instance which can store data of any type T
+     * example: session data/metadata
+     */
     private sessionProviders: Map<string, SessionStorageProvider> = new Map();
 
     constructor(
@@ -46,19 +68,19 @@ export class StorageManager {
     /**
      * Get a storage provider for key-value storage
      */
-    async getProvider<T = any>(key: string): Promise<StorageProvider<T>> {
+    async getProvider<T = any>(key: StorageKey): Promise<KeyValueStorageProvider<T>> {
         if (!this.providers.has(key)) {
             const providerConfig = this.getStorageConfigForKey(key);
             const provider = await createStorageProvider<T>(providerConfig, this.context, key);
-            this.providers.set(key, provider as StorageProvider);
+            this.providers.set(key, provider as KeyValueStorageProvider);
         }
-        return this.providers.get(key) as StorageProvider<T>;
+        return this.providers.get(key) as KeyValueStorageProvider<T>;
     }
 
     /**
      * Get a collection storage provider for array/list storage
      */
-    async getCollectionProvider<T = any>(key: string): Promise<CollectionStorageProvider<T>> {
+    async getCollectionProvider<T = any>(key: StorageKey): Promise<CollectionStorageProvider<T>> {
         if (!this.collectionProviders.has(key)) {
             const providerConfig = this.getStorageConfigForKey(key);
             const provider = await createCollectionStorageProvider<T>(
@@ -74,7 +96,7 @@ export class StorageManager {
     /**
      * Get a session storage provider for TTL-based storage
      */
-    async getSessionProvider<T = any>(key: string): Promise<SessionStorageProvider<T>> {
+    async getSessionProvider<T = any>(key: StorageKey): Promise<SessionStorageProvider<T>> {
         if (!this.sessionProviders.has(key)) {
             const providerConfig = this.getStorageConfigForKey(key);
             const provider = await createSessionStorageProvider<T>(
@@ -90,7 +112,7 @@ export class StorageManager {
     /**
      * Get storage configuration for a specific key
      */
-    private getStorageConfigForKey(key: string): NonNullable<StorageConfig[keyof StorageConfig]> {
+    private getStorageConfigForKey(key: StorageKey): AnyStorageProviderConfig {
         // Try exact key match first
         if (this.config[key]) {
             return this.config[key];
@@ -142,14 +164,7 @@ export class StorageManager {
  * Create a storage manager with automatic context detection
  */
 export async function createStorageManager(
-    storageConfig: StorageConfig = {
-        default: { type: 'memory' },
-        history: { type: 'memory' },
-        allowedTools: { type: 'memory' },
-        userInfo: { type: 'memory' },
-        toolCache: { type: 'memory' },
-        sessions: { type: 'memory' },
-    },
+    storageConfig?: Partial<StorageConfig>,
     contextOptions: {
         isDevelopment?: boolean;
         projectRoot?: string;
@@ -159,13 +174,16 @@ export async function createStorageManager(
         connectionOptions?: Record<string, any>;
     } = {}
 ): Promise<StorageManager> {
+    // Process config through Zod to apply defaults and transformations
+    const config = StorageSchema.parse(storageConfig || {});
+
     let context: StorageContext;
 
     // Check if any storage config needs remote connection
-    const needsRemoteConnection = Object.values(storageConfig).some((config) => {
-        if (config && typeof config === 'object' && 'type' in config) {
+    const needsRemoteConnection = Object.values(config).some((configValue) => {
+        if (configValue && typeof configValue === 'object' && 'type' in configValue) {
             // Extract the type from the config object
-            const configType = typeof config.type === 'string' ? config.type : 'memory';
+            const configType = typeof configValue.type === 'string' ? configValue.type : 'memory';
             return !StoragePathResolver.needsPathResolution(configType);
         }
         return false;
@@ -189,12 +207,12 @@ export async function createStorageManager(
     }
 
     logger.debug('Creating storage manager', {
-        storageConfig,
+        storageConfig: config,
         context,
         needsRemoteConnection,
     });
 
-    return new StorageManager(storageConfig, context);
+    return new StorageManager(config, context);
 }
 
 /**
@@ -204,7 +222,7 @@ export async function createSimpleStorageProvider<T = any>(
     type: 'memory' | 'file' | 'sqlite' | 'redis' | 'database' | 's3',
     namespace: string,
     options: any = {}
-): Promise<StorageProvider<T>> {
+): Promise<KeyValueStorageProvider<T>> {
     let context: StorageContext;
 
     if (StoragePathResolver.needsPathResolution(type)) {
@@ -222,21 +240,17 @@ export async function createSimpleStorageProvider<T = any>(
     }
 
     const config = { type, ...options };
-    return createStorageProvider<T>(
-        config as NonNullable<StorageConfig[keyof StorageConfig]>,
-        context,
-        namespace
-    );
+    return createStorageProvider<T>(config as AnyStorageProviderConfig, context, namespace);
 }
 
 /**
  * Create a storage provider based on configuration
  */
 async function createStorageProvider<T>(
-    config: NonNullable<StorageConfig[keyof StorageConfig]>,
+    config: AnyStorageProviderConfig,
     context: StorageContext,
     namespace: string
-): Promise<StorageProvider<T>> {
+): Promise<KeyValueStorageProvider<T>> {
     // Extract type from config (Zod has already normalized it)
     if (typeof config !== 'object' || !config || !('type' in config)) {
         throw new Error('Invalid storage configuration - missing type');
@@ -267,7 +281,7 @@ async function createStorageProvider<T>(
  * Create a collection storage provider based on configuration
  */
 async function createCollectionStorageProvider<T>(
-    config: NonNullable<StorageConfig[keyof StorageConfig]>,
+    config: AnyStorageProviderConfig,
     context: StorageContext,
     namespace: string
 ): Promise<CollectionStorageProvider<T>> {
@@ -279,7 +293,7 @@ async function createCollectionStorageProvider<T>(
  * Create a session storage provider based on configuration
  */
 async function createSessionStorageProvider<T>(
-    config: NonNullable<StorageConfig[keyof StorageConfig]>,
+    config: AnyStorageProviderConfig,
     context: StorageContext,
     namespace: string
 ): Promise<SessionStorageProvider<T>> {
@@ -295,7 +309,7 @@ async function createSessionStorageProvider<T>(
  * Adapter that wraps a StorageProvider to provide CollectionStorageProvider interface
  */
 class CollectionStorageAdapter<T> implements CollectionStorageProvider<T> {
-    constructor(private provider: StorageProvider<T[]>) {}
+    constructor(private provider: KeyValueStorageProvider<T[]>) {}
 
     async add(item: T): Promise<void> {
         const items = await this.getAll();
@@ -338,7 +352,7 @@ class CollectionStorageAdapter<T> implements CollectionStorageProvider<T> {
  * Adapter that wraps a StorageProvider to provide SessionStorageProvider interface
  */
 class SessionStorageAdapter<T> implements SessionStorageProvider<T> {
-    constructor(private provider: StorageProvider<{ data: T; expires?: number }>) {}
+    constructor(private provider: KeyValueStorageProvider<{ data: T; expires?: number }>) {}
 
     async setSession(sessionId: string, data: T, ttl?: number): Promise<void> {
         const expires = ttl ? Date.now() + ttl : undefined;

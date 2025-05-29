@@ -9,9 +9,101 @@ The Saiki storage system provides a unified, flexible storage layer that abstrac
 1. **Three Storage Patterns**: Different interfaces for different data access patterns
 2. **Backend Abstraction**: Same API works with memory, file, SQLite, and future backends
 3. **Smart Path Resolution**: Automatic `.saiki/` vs `~/.saiki/` selection based on context
-4. **Type Safety**: Full TypeScript support with generics
+4. **Type Safety**: Full TypeScript support with generics for compile-time validation
 5. **Resource Management**: Centralized lifecycle management with proper cleanup
 6. **Configuration-Driven**: Declarative configuration with sensible defaults
+7. **Adapter Pattern**: Higher-level interfaces built on basic key-value storage
+
+### Why Generic Types?
+
+The storage system uses TypeScript generics (`<T>`) to provide **compile-time type safety** and **better developer experience**:
+
+```typescript
+// ✅ Type-safe: Knows you're storing UserSettings
+const userStore = await storageManager.getProvider<UserSettings>('userInfo');
+const settings = await userStore.get('theme'); // TypeScript knows this is UserSettings | undefined
+await userStore.set('theme', { mode: 'dark' }); // TypeScript validates the object structure
+
+// ✅ Type-safe: Knows you're storing Message objects in a collection  
+const history = await storageManager.getCollectionProvider<Message>('history');
+await history.add({ role: 'user', content: 'Hello' }); // TypeScript validates Message structure
+const messages = await history.getAll(); // TypeScript knows this is Message[]
+
+// ❌ Without generics, you'd lose type safety:
+const anyStore = await storageManager.getProvider('userInfo'); // Returns any
+const data = await anyStore.get('theme'); // No type checking, runtime errors possible
+```
+
+**Benefits of Generic Types:**
+- **IntelliSense**: Auto-completion for your data structures
+- **Compile-time validation**: Catch type errors before runtime
+- **Refactoring safety**: TypeScript tracks type changes across codebase
+- **Self-documenting**: Interface signatures show what data types are expected
+
+### Why Adapters?
+
+The adapter pattern allows us to **build complex storage interfaces on top of simple key-value storage**:
+
+#### The Problem
+All storage backends (memory, file, SQLite) only implement basic key-value operations:
+```typescript
+interface BasicStorage<T> {
+    get(key: string): Promise<T | undefined>;
+    set(key: string, value: T): Promise<void>;
+    // ... other basic operations
+}
+```
+
+#### The Solution: Adapters
+We use adapters to **transform** basic key-value storage into specialized interfaces:
+
+```typescript
+// CollectionStorageAdapter wraps StorageProvider<T[]> 
+// to provide array/list operations
+class CollectionStorageAdapter<T> {
+    constructor(private provider: StorageProvider<T[]>) {}
+    
+    async add(item: T): Promise<void> {
+        const items = await this.provider.get('items') ?? [];
+        items.push(item);
+        await this.provider.set('items', items);
+    }
+    
+    async getAll(): Promise<T[]> {
+        return await this.provider.get('items') ?? [];
+    }
+}
+
+// SessionStorageAdapter wraps StorageProvider<{data: T, expires?: number}>
+// to provide TTL (time-to-live) functionality  
+class SessionStorageAdapter<T> {
+    constructor(private provider: StorageProvider<{data: T, expires?: number}>) {}
+    
+    async setSession(id: string, data: T, ttl?: number): Promise<void> {
+        const expires = ttl ? Date.now() + ttl : undefined;
+        await this.provider.set(id, { data, expires });
+    }
+    
+    async getSession(id: string): Promise<T | undefined> {
+        const stored = await this.provider.get(id);
+        if (!stored) return undefined;
+        
+        // Check if expired
+        if (stored.expires && Date.now() > stored.expires) {
+            await this.provider.delete(id);
+            return undefined;
+        }
+        
+        return stored.data;
+    }
+}
+```
+
+**Benefits of Adapters:**
+- **Code reuse**: One storage backend supports multiple interfaces
+- **Separation of concerns**: Business logic (TTL, collections) separate from storage implementation
+- **Consistency**: All backends provide the same high-level interfaces
+- **Extensibility**: Easy to add new specialized interfaces (e.g., graph storage, queue storage)
 
 ### Storage Interfaces
 
@@ -829,4 +921,55 @@ const prodConfig: StorageConfig = {
 
 // Use appropriate config based on environment
 const config = process.env.NODE_ENV === 'production' ? prodConfig : devConfig;
-``` 
+```
+
+## Type-Safe Storage Keys
+
+The storage system now provides compile-time validation for storage keys to prevent typos and ensure consistency with the configured storage schema.
+
+### Valid Storage Keys
+
+Storage keys are automatically derived from your `StorageConfig` and include:
+
+```typescript
+// ✅ Predefined keys (from StorageConfig schema)
+const userSettings = await storageManager.getProvider<UserSettings>('userInfo');
+const chatHistory = await storageManager.getCollectionProvider<Message>('history');
+const toolPermissions = await storageManager.getProvider<boolean>('allowedTools');
+const cache = await storageManager.getProvider<any>('toolCache');
+const sessions = await storageManager.getSessionProvider<SessionData>('sessions');
+
+// ✅ Custom keys (extensible)
+const customData = await storageManager.getProvider<MyData>('custom.myFeature');
+const analytics = await storageManager.getCollectionProvider<Event>('custom.analytics');
+```
+
+### Compile-Time Validation
+
+Invalid keys are caught at build time:
+
+```typescript
+// ❌ TypeScript Error: Argument of type '"user-settings"' is not assignable to parameter of type 'StorageKey'
+const badKey1 = await storageManager.getProvider('user-settings'); // hyphen instead of camelCase
+
+// ❌ TypeScript Error: Argument of type '"invalidKey"' is not assignable to parameter of type 'StorageKey'  
+const badKey2 = await storageManager.getProvider('invalidKey'); // not in schema
+
+// ❌ TypeScript Error: Must use 'custom.' prefix for extensions
+const badKey3 = await storageManager.getProvider('myCustomKey'); // should be 'custom.myCustomKey'
+```
+
+### Adding New Storage Keys
+
+To add new storage keys, update the `StorageSchema` in `src/core/config/schemas.ts`:
+
+```typescript
+export const StorageSchema = z.object({
+    // ... existing keys ...
+    myNewKey: StorageConfigSchema.optional().describe('My new storage type'),
+});
+```
+
+The `StorageKey` type automatically includes any new keys you add to the schema.
+
+## Integration Examples 

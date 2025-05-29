@@ -41,3 +41,6 @@ logs/
 # Coverage directory
 public/
 
+# Test temporary files
+test-temp/
+

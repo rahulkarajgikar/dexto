@@ -13,7 +13,7 @@ describe('MemoryStorageProvider', () => {
             storageRoot: '/tmp/test',
             forceGlobal: false,
         };
-        provider = new MemoryStorageProvider({}, context, 'test');
+        provider = new MemoryStorageProvider({ type: 'memory' }, context, 'test');
     });
 
     describe('basic operations', () => {
@@ -69,7 +69,7 @@ describe('MemoryStorageProvider', () => {
     describe('TTL functionality', () => {
         it('should handle TTL expiration', async () => {
             const providerWithTTL = new MemoryStorageProvider(
-                { ttl: 100 }, // 100ms TTL
+                { type: 'memory', ttl: 100 }, // 100ms TTL
                 context,
                 'test-ttl'
             );

@@ -7,11 +7,15 @@ import { logger } from '../../logger/index.js';
 import type { AgentStateManager } from '../../config/agent-state-manager.js';
 import type { LLMConfig } from '../../config/schemas.js';
 import type { StorageManager } from '../../storage/factory.js';
+import type { SessionStorageProvider } from '../../storage/types.js';
 
 export interface SessionMetadata {
     createdAt: Date;
     lastActivity: Date;
     messageCount: number;
+    // Additional metadata for session management
+    maxSessions?: number;
+    sessionTTL?: number;
 }
 
 /**
@@ -22,12 +26,14 @@ export interface SessionMetadata {
  * - Enforcing session limits and TTL policies
  * - Cleaning up expired sessions
  * - Providing session lifecycle management
+ * - Persisting session data using SessionStorageProvider
  */
 export class SessionManager {
     private sessions: Map<string, ChatSession> = new Map();
-    private sessionMetadata: Map<string, SessionMetadata> = new Map();
+    private sessionStorage: SessionStorageProvider<SessionMetadata>;
     private readonly maxSessions: number;
     private readonly sessionTTL: number;
+    private initialized = false;
 
     constructor(
         private services: {
@@ -47,6 +53,65 @@ export class SessionManager {
     }
 
     /**
+     * Initialize the SessionManager with persistent storage.
+     * This must be called before using any session operations.
+     */
+    public async init(): Promise<void> {
+        if (this.initialized) {
+            return;
+        }
+
+        // Get session storage provider with TTL matching our session TTL
+        this.sessionStorage = await this.services.storageManager.getSessionProvider('sessions');
+
+        // Restore any existing sessions from storage
+        await this.restoreSessionsFromStorage();
+
+        this.initialized = true;
+        logger.debug('SessionManager initialized with persistent storage');
+    }
+
+    /**
+     * Restore sessions from persistent storage on startup.
+     * This allows sessions to survive application restarts.
+     */
+    private async restoreSessionsFromStorage(): Promise<void> {
+        try {
+            const sessionIds = await this.sessionStorage.getActiveSessions();
+            logger.debug(`Found ${sessionIds.length} persisted sessions to restore`);
+
+            for (const sessionId of sessionIds) {
+                const metadata = await this.sessionStorage.getSession(sessionId);
+                if (metadata) {
+                    // Check if session is still valid (not expired)
+                    const now = Date.now();
+                    const lastActivity = new Date(metadata.lastActivity).getTime();
+
+                    if (now - lastActivity <= this.sessionTTL) {
+                        // Session is still valid, but don't create ChatSession until requested
+                        logger.debug(`Session ${sessionId} restored from storage`);
+                    } else {
+                        // Session expired, clean it up
+                        await this.sessionStorage.deleteSession(sessionId);
+                        logger.debug(`Expired session ${sessionId} cleaned up during restore`);
+                    }
+                }
+            }
+        } catch (error) {
+            logger.error('Failed to restore sessions from storage:', error);
+        }
+    }
+
+    /**
+     * Ensures the SessionManager is initialized before operations.
+     */
+    private async ensureInitialized(): Promise<void> {
+        if (!this.initialized) {
+            await this.init();
+        }
+    }
+
+    /**
      * Creates a new chat session or returns an existing one.
      *
      * @param sessionId Optional session ID. If not provided, a UUID will be generated.
@@ -54,29 +119,53 @@ export class SessionManager {
      * @throws Error if maximum sessions limit is reached
      */
     public async createSession(sessionId?: string): Promise<ChatSession> {
+        await this.ensureInitialized();
+
         const id = sessionId ?? randomUUID();
 
-        this.cleanupExpiredSessions();
+        // Clean up expired sessions first
+        await this.cleanupExpiredSessions();
 
+        // Check if session already exists in memory
         if (this.sessions.has(id)) {
-            this.updateSessionActivity(id);
+            await this.updateSessionActivity(id);
             return this.sessions.get(id)!;
         }
 
-        if (this.sessions.size >= this.maxSessions) {
+        // Check if session exists in storage
+        const existingMetadata = await this.sessionStorage.getSession(id);
+        if (existingMetadata) {
+            // Session exists in storage, restore it
+            await this.updateSessionActivity(id);
+            const session = new ChatSession(this.services, id);
+            await session.init();
+            this.sessions.set(id, session);
+            logger.debug(`Restored session from storage: ${id}`);
+            return session;
+        }
+
+        // Check session limits
+        const activeSessions = await this.sessionStorage.getActiveSessions();
+        if (activeSessions.length >= this.maxSessions) {
             throw new Error(`Maximum sessions (${this.maxSessions}) reached`);
         }
 
-        // Create and initialize session with storage support
+        // Create new session
         const session = new ChatSession(this.services, id);
-        await session.init(); // Initialize the async services
+        await session.init();
 
         this.sessions.set(id, session);
-        this.sessionMetadata.set(id, {
+
+        // Store session metadata in persistent storage
+        const metadata: SessionMetadata = {
             createdAt: new Date(),
             lastActivity: new Date(),
             messageCount: 0,
-        });
+            maxSessions: this.maxSessions,
+            sessionTTL: this.sessionTTL,
+        };
+
+        await this.sessionStorage.setSession(id, metadata, this.sessionTTL);
 
         logger.debug(`Created new session: ${id}`);
         return session;
@@ -90,13 +179,7 @@ export class SessionManager {
      */
     public async getDefaultSession(): Promise<ChatSession> {
         const defaultSessionId = 'default';
-
-        if (!this.sessions.has(defaultSessionId)) {
-            return await this.createSession(defaultSessionId);
-        }
-
-        this.updateSessionActivity(defaultSessionId);
-        return this.sessions.get(defaultSessionId)!;
+        return await this.createSession(defaultSessionId);
     }
 
     /**
@@ -105,12 +188,29 @@ export class SessionManager {
      * @param sessionId The session ID to retrieve
      * @returns The ChatSession if found, undefined otherwise
      */
-    public getSession(sessionId: string): ChatSession | undefined {
-        const session = this.sessions.get(sessionId);
+    public async getSession(sessionId: string): Promise<ChatSession | undefined> {
+        await this.ensureInitialized();
+
+        // Check if session is in memory
+        let session = this.sessions.get(sessionId);
         if (session) {
-            this.updateSessionActivity(sessionId);
+            await this.updateSessionActivity(sessionId);
+            return session;
         }
-        return session;
+
+        // Check if session exists in storage
+        const metadata = await this.sessionStorage.getSession(sessionId);
+        if (metadata) {
+            // Session exists in storage, restore it to memory
+            session = new ChatSession(this.services, sessionId);
+            await session.init();
+            this.sessions.set(sessionId, session);
+            await this.updateSessionActivity(sessionId);
+            logger.debug(`Restored session from storage: ${sessionId}`);
+            return session;
+        }
+
+        return undefined;
     }
 
     /**
@@ -119,6 +219,8 @@ export class SessionManager {
      * @param sessionId The session ID to end
      */
     public async endSession(sessionId: string): Promise<void> {
+        await this.ensureInitialized();
+
         const session = this.sessions.get(sessionId);
         if (session) {
             try {
@@ -127,10 +229,12 @@ export class SessionManager {
                 session.dispose();
             } finally {
                 this.sessions.delete(sessionId);
-                this.sessionMetadata.delete(sessionId);
-                logger.debug(`Ended session: ${sessionId}`);
             }
         }
+
+        // Remove from persistent storage
+        await this.sessionStorage.deleteSession(sessionId);
+        logger.debug(`Ended session: ${sessionId}`);
     }
 
     /**
@@ -138,8 +242,9 @@ export class SessionManager {
      *
      * @returns Array of session IDs
      */
-    public listSessions(): string[] {
-        return Array.from(this.sessions.keys());
+    public async listSessions(): Promise<string[]> {
+        await this.ensureInitialized();
+        return await this.sessionStorage.getActiveSessions();
     }
 
     /**
@@ -148,17 +253,19 @@ export class SessionManager {
      * @param sessionId The session ID
      * @returns Session metadata if found, undefined otherwise
      */
-    public getSessionMetadata(sessionId: string): SessionMetadata | undefined {
-        return this.sessionMetadata.get(sessionId);
+    public async getSessionMetadata(sessionId: string): Promise<SessionMetadata | undefined> {
+        await this.ensureInitialized();
+        return await this.sessionStorage.getSession(sessionId);
     }
 
     /**
      * Updates the last activity timestamp for a session.
      */
-    private updateSessionActivity(sessionId: string): void {
-        const metadata = this.sessionMetadata.get(sessionId);
+    private async updateSessionActivity(sessionId: string): Promise<void> {
+        const metadata = await this.sessionStorage.getSession(sessionId);
         if (metadata) {
             metadata.lastActivity = new Date();
+            await this.sessionStorage.setSession(sessionId, metadata, this.sessionTTL);
         }
     }
 
@@ -166,11 +273,15 @@ export class SessionManager {
      * Increments the message count for a session and updates activity.
      * This should be called whenever a message is sent in the session.
      */
-    public incrementMessageCount(sessionId: string): void {
-        const metadata = this.sessionMetadata.get(sessionId);
+    public async incrementMessageCount(sessionId: string): Promise<void> {
+        await this.ensureInitialized();
+
+        const metadata = await this.sessionStorage.getSession(sessionId);
         if (metadata) {
             metadata.messageCount += 1;
             metadata.lastActivity = new Date();
+            await this.sessionStorage.setSession(sessionId, metadata, this.sessionTTL);
+
             logger.debug(
                 `Session ${sessionId}: Message count incremented to ${metadata.messageCount}`
             );
@@ -179,15 +290,30 @@ export class SessionManager {
 
     /**
      * Cleans up expired sessions based on TTL.
+     * The SessionStorageProvider handles automatic TTL expiration,
+     * but we also clean up in-memory sessions here.
      */
-    private cleanupExpiredSessions(): void {
-        const now = Date.now();
-        for (const [id, metadata] of this.sessionMetadata.entries()) {
-            if (now - metadata.lastActivity.getTime() > this.sessionTTL) {
-                this.endSession(id).catch((err) =>
-                    logger.error(`Failed to cleanup expired session ${id}:`, err)
-                );
+    private async cleanupExpiredSessions(): Promise<void> {
+        try {
+            // Get all sessions from storage (expired ones are automatically cleaned up by storage provider)
+            const activeSessionIds = await this.sessionStorage.getActiveSessions();
+            const activeSessionSet = new Set(activeSessionIds);
+
+            // Clean up in-memory sessions that are no longer in storage
+            for (const [sessionId, session] of this.sessions.entries()) {
+                if (!activeSessionSet.has(sessionId)) {
+                    try {
+                        await session.reset();
+                        session.dispose();
+                        this.sessions.delete(sessionId);
+                        logger.debug(`Cleaned up expired in-memory session: ${sessionId}`);
+                    } catch (error) {
+                        logger.error(`Failed to cleanup in-memory session ${sessionId}:`, error);
+                    }
+                }
             }
+        } catch (error) {
+            logger.error('Failed to cleanup expired sessions:', error);
         }
     }
 
@@ -199,11 +325,13 @@ export class SessionManager {
     public async switchLLMForAllSessions(
         newLLMConfig: LLMConfig
     ): Promise<{ message: string; warnings: string[] }> {
-        const sessionIds = this.listSessions();
+        await this.ensureInitialized();
+
+        const sessionIds = await this.listSessions();
         const failedSessions: string[] = [];
 
         for (const sId of sessionIds) {
-            const session = this.getSession(sId);
+            const session = await this.getSession(sId);
             if (session) {
                 try {
                     // Validate for this specific session
@@ -257,7 +385,7 @@ export class SessionManager {
         newLLMConfig: LLMConfig,
         sessionId: string
     ): Promise<{ message: string; warnings: string[] }> {
-        const session = this.getSession(sessionId);
+        const session = await this.getSession(sessionId);
         if (!session) {
             throw new Error(`Session ${sessionId} not found`);
         }
@@ -298,5 +426,51 @@ export class SessionManager {
         const message = `Successfully switched to ${newLLMConfig.provider}/${newLLMConfig.model} using ${newLLMConfig.router} router`;
 
         return { message, warnings: [] };
+    }
+
+    /**
+     * Get session statistics for monitoring and debugging.
+     */
+    public async getSessionStats(): Promise<{
+        totalSessions: number;
+        inMemorySessions: number;
+        maxSessions: number;
+        sessionTTL: number;
+    }> {
+        await this.ensureInitialized();
+
+        const totalSessions = (await this.listSessions()).length;
+        const inMemorySessions = this.sessions.size;
+
+        return {
+            totalSessions,
+            inMemorySessions,
+            maxSessions: this.maxSessions,
+            sessionTTL: this.sessionTTL,
+        };
+    }
+
+    /**
+     * Cleanup method to be called when shutting down the SessionManager.
+     * Properly closes all sessions and cleans up resources.
+     */
+    public async cleanup(): Promise<void> {
+        if (!this.initialized) {
+            return;
+        }
+
+        // Close all in-memory sessions
+        const sessionIds = Array.from(this.sessions.keys());
+        for (const sessionId of sessionIds) {
+            try {
+                await this.endSession(sessionId);
+            } catch (error) {
+                logger.error(`Failed to cleanup session ${sessionId}:`, error);
+            }
+        }
+
+        this.sessions.clear();
+        this.initialized = false;
+        logger.debug('SessionManager cleanup completed');
     }
 }

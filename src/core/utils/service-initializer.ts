@@ -114,7 +114,7 @@ export async function createAgentServices(
 
     // Use the new storage-based allowed tools provider for better persistence
     const allowedToolsProvider = createAllowedToolsProviderWithStorage(
-        await storageManager.getProvider<boolean>('allowed-tools')
+        await storageManager.getProvider<boolean>('allowedTools')
     );
     const confirmationProvider = createToolConfirmationProvider({
         runMode,
@@ -152,6 +152,12 @@ export async function createAgentServices(
                 sessionTTL: config.sessions?.sessionTTL,
             }
         );
+
+    // Initialize the session manager with persistent storage
+    if (!overrides?.sessionManager) {
+        await sessionManager.init();
+    }
+
     logger.debug(
         overrides?.sessionManager
             ? 'Session manager provided via override'

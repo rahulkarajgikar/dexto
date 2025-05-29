@@ -17,6 +17,26 @@ import type { StorageConfig } from '../config/schemas.js';
 export type { StorageConfig };
 
 /**
+ * Type-safe storage keys extracted from StorageConfig
+ * Automatically includes all keys defined in the StorageConfig schema plus custom.* pattern
+ */
+export type StorageKey =
+    | keyof Omit<StorageConfig, 'custom'> // All predefined keys except 'custom'
+    | `custom.${string}`; // Custom keys pattern
+
+/**
+ * Helper type to validate storage keys at compile time
+ */
+export type ValidateStorageKey<T extends string> = T extends StorageKey ? T : never;
+
+/**
+ * Individual storage provider configuration for a specific functionality
+ * This represents the actual storage mechanism for a specific functionality like conversation history, etc.
+ * Whereas StorageConfig is the overall configuration for the entire application, AnyStorageProviderConfig is the configuration for a specific functionality.
+ */
+export type AnyStorageProviderConfig = NonNullable<StorageConfig[keyof StorageConfig]>;
+
+/**
  * Context information for storage path resolution and configuration.
  * For local storage providers (memory, file, sqlite), includes path resolution.
  * For remote storage providers (redis, database), includes connection info.
@@ -99,6 +119,7 @@ export interface CollectionStorageProvider<T = any> {
 /**
  * Session-specific storage interface.
  * Use this for session data with automatic cleanup and TTL support.
+ * Useful for storing session data. Defining T defines the type of data this object will help you store.
  */
 export interface SessionStorageProvider<T = any> {
     /** Set session data */
@@ -131,19 +152,19 @@ export interface SessionStorageProvider<T = any> {
  */
 export interface StorageFactory {
     createProvider<T>(
-        config: NonNullable<StorageConfig[keyof StorageConfig]>,
+        config: AnyStorageProviderConfig,
         context: StorageContext,
         namespace?: string
     ): Promise<StorageProvider<T>>;
 
     createCollectionProvider<T>(
-        config: NonNullable<StorageConfig[keyof StorageConfig]>,
+        config: AnyStorageProviderConfig,
         context: StorageContext,
         namespace?: string
     ): Promise<CollectionStorageProvider<T>>;
 
     createSessionProvider<T>(
-        config: NonNullable<StorageConfig[keyof StorageConfig]>,
+        config: AnyStorageProviderConfig,
         context: StorageContext,
         namespace?: string
     ): Promise<SessionStorageProvider<T>>;

@@ -121,7 +121,7 @@ export class SaikiAgent {
             if (sessionId) {
                 // Use specific session or create it if it doesn't exist
                 session =
-                    this.sessionManager.getSession(sessionId) ||
+                    (await this.sessionManager.getSession(sessionId)) ||
                     (await this.sessionManager.createSession(sessionId));
             } else {
                 // Use default session for backward compatibility
@@ -140,7 +140,7 @@ export class SaikiAgent {
             const response = await session.run(userInput, imageDataInput);
 
             // Increment message count for this session (user message + assistant response = 2 messages)
-            this.sessionManager.incrementMessageCount(session.id);
+            await this.sessionManager.incrementMessageCount(session.id);
 
             // If response is an empty string, treat it as no significant response.
             if (response && response.trim() !== '') {
@@ -171,16 +171,16 @@ export class SaikiAgent {
      * @param sessionId The session ID to retrieve
      * @returns The ChatSession if found, undefined otherwise
      */
-    public getSession(sessionId: string): ChatSession | undefined {
-        return this.sessionManager.getSession(sessionId);
+    public async getSession(sessionId: string): Promise<ChatSession | undefined> {
+        return await this.sessionManager.getSession(sessionId);
     }
 
     /**
      * Lists all active session IDs.
      * @returns Array of session IDs
      */
-    public listSessions(): string[] {
-        return this.sessionManager.listSessions();
+    public async listSessions(): Promise<string[]> {
+        return await this.sessionManager.listSessions();
     }
 
     /**
@@ -200,8 +200,8 @@ export class SaikiAgent {
      * @param sessionId The session ID
      * @returns The session metadata or undefined if session doesn't exist
      */
-    public getSessionMetadata(sessionId: string): SessionMetadata | undefined {
-        return this.sessionManager.getSessionMetadata(sessionId);
+    public async getSessionMetadata(sessionId: string): Promise<SessionMetadata | undefined> {
+        return await this.sessionManager.getSessionMetadata(sessionId);
     }
 
     /**
@@ -211,7 +211,7 @@ export class SaikiAgent {
      * @throws Error if session doesn't exist
      */
     public async getSessionHistory(sessionId: string) {
-        const session = this.sessionManager.getSession(sessionId);
+        const session = await this.sessionManager.getSession(sessionId);
         if (!session) {
             throw new Error(`Session '${sessionId}' not found`);
         }
@@ -227,7 +227,7 @@ export class SaikiAgent {
             let session: ChatSession;
 
             if (sessionId) {
-                session = this.sessionManager.getSession(sessionId);
+                session = await this.sessionManager.getSession(sessionId);
                 if (!session) {
                     throw new Error(`Session '${sessionId}' not found`);
                 }
@@ -421,7 +421,7 @@ export class SaikiAgent {
             switchResult = await this.sessionManager.switchLLMForAllSessions(validatedConfig);
         } else if (sessionScope) {
             // Verify session exists
-            if (!this.sessionManager.getSession(sessionScope)) {
+            if (!(await this.sessionManager.getSession(sessionScope))) {
                 return {
                     success: false,
                     errors: [

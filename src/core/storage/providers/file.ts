@@ -6,6 +6,7 @@ import type {
     CollectionStorageProvider,
     SessionStorageProvider,
     StorageContext,
+    AnyStorageProviderConfig,
 } from '../types.js';
 import { StoragePathResolver } from '../path-resolver.js';
 
@@ -15,19 +16,26 @@ import { StoragePathResolver } from '../path-resolver.js';
 export class FileStorageProvider<T = any> implements StorageProvider<T> {
     private filePath: string;
     private writeQueue: Promise<void> = Promise.resolve();
+    private initPromise: Promise<void> | null = null;
 
     constructor(
-        private config: any,
+        private config: AnyStorageProviderConfig,
         private context: StorageContext,
         private namespace: string
     ) {
+        // Type guard to ensure we have a file config
+        if (config.type !== 'file') {
+            throw new Error(`FileStorageProvider requires file config, got ${config.type}`);
+        }
+
         this.filePath = '';
-        this.initialize();
+        // Don't call initialize() here - it's async and can't be awaited in constructor
     }
 
     private async initialize(): Promise<void> {
-        const options = this.config || {};
-        const filename = `${this.namespace}.${options.format || 'json'}`;
+        if (this.config.type !== 'file') return; // Type guard
+
+        const filename = `${this.namespace}.${this.config.format || 'json'}`;
         this.filePath = await StoragePathResolver.resolveStoragePath(
             this.context,
             'data',
@@ -121,7 +129,10 @@ export class FileStorageProvider<T = any> implements StorageProvider<T> {
 
     private async ensureInitialized(): Promise<void> {
         if (!this.filePath) {
-            await this.initialize();
+            if (!this.initPromise) {
+                this.initPromise = this.initialize();
+            }
+            await this.initPromise;
         }
     }
 
@@ -139,8 +150,7 @@ export class FileStorageProvider<T = any> implements StorageProvider<T> {
 
     private async writeData(data: Record<string, T>): Promise<void> {
         // Create backup if enabled
-        const options = this.config || {};
-        if (options.backup) {
+        if (this.config.type === 'file' && this.config.backup) {
             try {
                 await fs.access(this.filePath);
                 await fs.copyFile(this.filePath, `${this.filePath}.backup`);
@@ -169,6 +179,7 @@ export class FileStorageProvider<T = any> implements StorageProvider<T> {
 export class FileCollectionStorageProvider<T = any> implements CollectionStorageProvider<T> {
     private filePath: string;
     private writeQueue: Promise<void> = Promise.resolve();
+    private initPromise: Promise<void> | null = null;
 
     constructor(
         private context: StorageContext,
@@ -179,7 +190,7 @@ export class FileCollectionStorageProvider<T = any> implements CollectionStorage
         } = {}
     ) {
         this.filePath = '';
-        this.initialize();
+        // Don't call initialize() here - it's async and can't be awaited in constructor
     }
 
     private async initialize(): Promise<void> {
@@ -274,7 +285,10 @@ export class FileCollectionStorageProvider<T = any> implements CollectionStorage
 
     private async ensureInitialized(): Promise<void> {
         if (!this.filePath) {
-            await this.initialize();
+            if (!this.initPromise) {
+                this.initPromise = this.initialize();
+            }
+            await this.initPromise;
         }
     }
 
@@ -309,6 +323,7 @@ export class FileCollectionStorageProvider<T = any> implements CollectionStorage
  */
 export class FileSessionStorageProvider<T = any> implements SessionStorageProvider<T> {
     private basePath: string;
+    private initPromise: Promise<void> | null = null;
 
     constructor(
         private context: StorageContext,
@@ -319,7 +334,7 @@ export class FileSessionStorageProvider<T = any> implements SessionStorageProvid
         } = {}
     ) {
         this.basePath = '';
-        this.initialize();
+        // Don't call initialize() here - it's async and can't be awaited in constructor
     }
 
     private async initialize(): Promise<void> {
@@ -478,7 +493,10 @@ export class FileSessionStorageProvider<T = any> implements SessionStorageProvid
 
     private async ensureInitialized(): Promise<void> {
         if (!this.basePath) {
-            await this.initialize();
+            if (!this.initPromise) {
+                this.initPromise = this.initialize();
+            }
+            await this.initPromise;
         }
     }
 }

@@ -1,7 +1,7 @@
 import path from 'path';
 import fs from 'fs/promises';
 import { logger } from '../../logger/index.js';
-import type { StorageProvider, StorageContext } from '../types.js';
+import type { StorageProvider, StorageContext, AnyStorageProviderConfig } from '../types.js';
 
 // SQLite interface abstraction
 interface SQLiteDatabase {
@@ -34,6 +34,28 @@ async function getSQLiteModule(): Promise<any> {
  * Provides persistent storage using SQLite databases with support for TTL,
  * multiple tables, and automatic cleanup. Uses better-sqlite3 for reliable
  * SQLite functionality.
+ *
+ * ## Prepared Statement Convention
+ *
+ * This class uses SQLite prepared statements for all database operations.
+ * Prepared statements (abbreviated as "stmt") are pre-compiled SQL queries that:
+ *
+ * - Are compiled once during initialization for better performance
+ * - Can be executed multiple times with different parameters
+ * - Provide protection against SQL injection through parameterization
+ * - Use `?` placeholders for safe parameter binding
+ *
+ * Example pattern:
+ * ```typescript
+ * // During init: compile the statement once
+ * this.getStmt = this.db.prepare("SELECT value FROM table WHERE key = ?");
+ *
+ * // During operation: execute with parameters
+ * const result = this.getStmt.get(userKey);
+ * ```
+ *
+ * All private `*Stmt` properties follow this pattern for optimal performance
+ * in high-frequency storage operations.
  */
 export class SQLiteStorageProvider<T = any> implements StorageProvider<T> {
     private db: SQLiteDatabase | null = null;
@@ -49,16 +71,24 @@ export class SQLiteStorageProvider<T = any> implements StorageProvider<T> {
     private defaultTTL?: number;
 
     constructor(
-        private config: any,
+        private config: AnyStorageProviderConfig,
         private context: StorageContext,
         private namespace: string
     ) {
-        this.tableName = config.table || `storage_${namespace}`;
+        // Type guard to ensure we have a sqlite config
+        if (config.type !== 'sqlite') {
+            throw new Error(`SQLiteStorageProvider requires sqlite config, got ${config.type}`);
+        }
+
+        // Sanitize table name by replacing invalid characters with underscores
+        const sanitizedNamespace = namespace.replace(/[^a-zA-Z0-9_]/g, '_');
+        this.tableName = config.table || `storage_${sanitizedNamespace}`;
+        // Use TTL from config if provided
         this.defaultTTL = config.ttl;
 
         // Create database path
-        const dbDir = path.join(context.storageRoot, 'sqlite');
-        this.dbPath = path.join(dbDir, `${namespace}.db`);
+        const dbDir = path.join(context.storageRoot || '', 'sqlite');
+        this.dbPath = config.path || path.join(dbDir, `${namespace}.db`);
     }
 
     /**

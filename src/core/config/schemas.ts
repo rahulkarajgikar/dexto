@@ -72,6 +72,8 @@ export const AgentCardSchema = z
     })
     .strict();
 
+export type AgentCard = z.infer<typeof AgentCardSchema>;
+
 // Define a base schema for common fields
 const BaseContributorSchema = z
     .object({
@@ -368,6 +370,12 @@ const SQLiteStorageSchema = z.object({
     type: z.literal('sqlite'),
     path: z.string().optional().describe('SQLite database file path (defaults to auto-generated)'),
     table: z.string().optional().describe('Table name (defaults to storage type)'),
+    ttl: z
+        .number()
+        .int()
+        .positive()
+        .optional()
+        .describe('Default time-to-live in milliseconds for stored items'),
 });
 
 const DatabaseStorageSchema = z.object({
@@ -416,7 +424,7 @@ const S3StorageSchema = z.object({
         .default('STANDARD'),
 });
 
-// Union of all storage provider types
+// Union of all storage provider types - much simpler now!
 const StorageProviderSchema = z.discriminatedUnion('type', [
     MemoryStorageSchema,
     FileStorageSchema,
@@ -426,50 +434,28 @@ const StorageProviderSchema = z.discriminatedUnion('type', [
     S3StorageSchema,
 ]);
 
-// Storage configuration can be:
-// 1. A simple string (defaults to memory)
-// 2. A storage provider object
-// 3. An object with provider + custom options
-const StorageConfigSchema = z.union([
-    z.string().transform((val) => {
-        // Handle simple string configurations
-        if (val === 'memory') return { type: 'memory' as const };
-        if (val === 'file') return { type: 'file' as const, path: './storage' };
-        if (val === 'sqlite') return { type: 'sqlite' as const };
-        if (val.startsWith('file:')) return { type: 'file' as const, path: val.slice(5) };
-        if (val.startsWith('sqlite:')) return { type: 'sqlite' as const, path: val.slice(7) };
-        if (val.startsWith('redis:')) return { type: 'redis' as const, url: val };
-        if (val.startsWith('postgres:') || val.startsWith('mysql:') || val.startsWith('mongodb:')) {
-            return { type: 'database' as const, url: val };
-        }
-        if (val.startsWith('s3:')) {
-            const [, bucket, region] = val.split(':');
-            return { type: 's3' as const, bucket, region: region || 'us-east-1' };
-        }
-        throw new Error(`Invalid storage configuration: ${val}`);
-    }),
-    StorageProviderSchema,
-]);
+// Default memory storage config
+const defaultMemoryConfig = { type: 'memory' as const };
 
 export const StorageSchema = z
     .object({
         // Global storage defaults
-        default: StorageConfigSchema.optional()
-            .default('memory')
+        default: StorageProviderSchema.optional()
+            .default(defaultMemoryConfig)
             .describe('Default storage configuration for all types'),
 
-        // Specific storage configurations
-        history: StorageConfigSchema.optional().describe('Storage for conversation history'),
-        allowedTools: StorageConfigSchema.optional().describe(
+        // Specific storage configurations - all optional in input
+        history: StorageProviderSchema.optional().describe('Storage for conversation history'),
+        allowedTools: StorageProviderSchema.optional().describe(
             'Storage for allowed tools configuration'
         ),
-        userInfo: StorageConfigSchema.optional().describe('Storage for user information'),
-        toolCache: StorageConfigSchema.optional().describe('Storage for tool response caching'),
-        sessions: StorageConfigSchema.optional().describe('Storage for session data'),
+        userInfo: StorageProviderSchema.optional().describe('Storage for user information'),
+        toolCache: StorageProviderSchema.optional().describe('Storage for tool response caching'),
+        sessions: StorageProviderSchema.optional().describe('Storage for session data'),
 
         // Custom storage types (extensible)
         custom: z
-            .record(StorageConfigSchema)
+            .record(StorageProviderSchema)
             .optional()
             .default({})
             .describe('Custom storage configurations'),
@@ -478,12 +464,13 @@ export const StorageSchema = z
         // Apply defaults: if a specific storage type isn't configured, use the default
         const defaultConfig = data.default;
         return {
-            ...data,
+            default: defaultConfig,
             history: data.history ?? defaultConfig,
             allowedTools: data.allowedTools ?? defaultConfig,
             userInfo: data.userInfo ?? defaultConfig,
             toolCache: data.toolCache ?? defaultConfig,
             sessions: data.sessions ?? defaultConfig,
+            custom: data.custom ?? {},
         };
     });
 
@@ -493,7 +480,7 @@ export const AgentConfigSchema = z
     .object({
         agentCard: AgentCardSchema.describe('Configuration for the agent card').optional(),
         mcpServers: ServerConfigsSchema.describe(
-            'Configurations for MCP (Multi-Capability Peer) servers used by the agent'
+            'Configurations for MCP (Model Context Protocol) servers used by the agent'
         ),
         llm: LLMConfigSchema.describe('Core LLM configuration for the agent'),
         storage: StorageSchema.optional().describe('Storage configuration for the agent'),
