@@ -64,10 +64,19 @@ export class FileHistoryStorage implements HistoryStorage {
                 .trim()
                 .split('\n')
                 .filter((line) => line.trim())
-                .map((line) => {
-                    const parsed = JSON.parse(line);
-                    return parsed.message;
-                });
+                .map((line, index) => {
+                    try {
+                        const parsed = JSON.parse(line);
+                        return parsed.message;
+                    } catch (parseError) {
+                        logger.warn(
+                            `FileHistoryStorage: Skipping corrupted message at line ${index + 1} in session ${sessionId}: ${parseError.message}`,
+                            { line: line.substring(0, 100) + (line.length > 100 ? '...' : '') }
+                        );
+                        return null;
+                    }
+                })
+                .filter((message): message is InternalMessage => message !== null);
 
             logger.debug(
                 `FileHistoryStorage: Retrieved ${messages.length} messages for session ${sessionId}`
