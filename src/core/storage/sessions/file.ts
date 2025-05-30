@@ -170,41 +170,69 @@ export class FileSessionStorage implements SessionStorage {
     async cleanupExpiredSessions(): Promise<number> {
         await this.ensureInitialized();
 
-        try {
-            const files = await fs.readdir(this.directoryPath);
-            const sessionFiles = files.filter(
-                (file) => file.endsWith('.json') && file !== 'index.json'
-            );
+        // Wrap the entire cleanup operation in the write queue to prevent race conditions
+        const cleanupPromise = this.writeQueue.then(async () => {
+            try {
+                const files = await fs.readdir(this.directoryPath);
+                const sessionFiles = files.filter(
+                    (file) => file.endsWith('.json') && file !== 'index.json'
+                );
 
-            let cleanedCount = 0;
-            const now = Date.now();
+                let cleanedCount = 0;
+                const now = Date.now();
 
-            for (const file of sessionFiles) {
-                try {
-                    const content = await fs.readFile(path.join(this.directoryPath, file), 'utf-8');
-                    const sessionFileData: SessionFileData = JSON.parse(content);
+                for (const file of sessionFiles) {
+                    try {
+                        const content = await fs.readFile(
+                            path.join(this.directoryPath, file),
+                            'utf-8'
+                        );
+                        const sessionFileData: SessionFileData = JSON.parse(content);
 
-                    if (sessionFileData.expiresAt && now > sessionFileData.expiresAt) {
-                        const sessionId = path.basename(file, '.json');
-                        await this.deleteSession(sessionId);
-                        cleanedCount++;
+                        if (sessionFileData.expiresAt && now > sessionFileData.expiresAt) {
+                            const sessionId = path.basename(file, '.json');
+                            const sessionFile = path.join(this.directoryPath, `${sessionId}.json`);
+
+                            try {
+                                await fs.unlink(sessionFile);
+                                // Update index to remove this session
+                                await this.updateIndex(sessionId, true); // true = remove from index
+                                logger.debug(
+                                    `FileSessionStorage: Deleted expired session ${sessionId}`
+                                );
+                                cleanedCount++;
+                            } catch (error: any) {
+                                if (error.code !== 'ENOENT') {
+                                    logger.warn(
+                                        `Failed to delete expired session ${sessionId}: ${error}`
+                                    );
+                                }
+                            }
+                        }
+                    } catch (error) {
+                        logger.warn(
+                            `Failed to check expiration for session file ${file}: ${error}`
+                        );
                     }
-                } catch (error) {
-                    logger.warn(`Failed to check expiration for session file ${file}: ${error}`);
                 }
-            }
 
-            if (cleanedCount > 0) {
-                logger.debug(`FileSessionStorage: Cleaned up ${cleanedCount} expired sessions`);
-            }
+                if (cleanedCount > 0) {
+                    logger.debug(`FileSessionStorage: Cleaned up ${cleanedCount} expired sessions`);
+                }
 
-            return cleanedCount;
-        } catch (error: any) {
-            if (error.code === 'ENOENT') {
-                return 0;
+                return cleanedCount;
+            } catch (error: any) {
+                if (error.code === 'ENOENT') {
+                    return 0;
+                }
+                throw error;
             }
-            throw error;
-        }
+        });
+
+        // Update the write queue to maintain proper serialization (void return)
+        this.writeQueue = cleanupPromise.then(() => {});
+
+        return cleanupPromise;
     }
 
     async close(): Promise<void> {
