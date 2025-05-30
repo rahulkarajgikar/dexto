@@ -657,4 +657,68 @@ describe('SessionManager', () => {
             // This is tested indirectly through the cleanup process
         });
     });
+
+    describe('Periodic Cleanup', () => {
+        test('should start periodic cleanup timer during initialization', async () => {
+            const setIntervalSpy = vi.spyOn(global, 'setInterval');
+
+            await sessionManager.init();
+
+            expect(setIntervalSpy).toHaveBeenCalledWith(expect.any(Function), expect.any(Number));
+
+            // Verify the interval is calculated correctly (min of TTL/4 or 15 minutes)
+            // Test setup uses 30 minutes TTL, so TTL/4 = 7.5 minutes = 450000ms
+            const expectedInterval = Math.min(1800000 / 4, 15 * 60 * 1000); // 7.5 minutes since TTL/4 < 15 minutes
+            expect(setIntervalSpy).toHaveBeenCalledWith(expect.any(Function), expectedInterval);
+
+            setIntervalSpy.mockRestore();
+        });
+
+        test('should stop periodic cleanup timer during cleanup', async () => {
+            const clearIntervalSpy = vi.spyOn(global, 'clearInterval');
+
+            await sessionManager.init();
+            await sessionManager.cleanup();
+
+            expect(clearIntervalSpy).toHaveBeenCalled();
+            clearIntervalSpy.mockRestore();
+        });
+
+        test('should handle periodic cleanup errors gracefully', async () => {
+            const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+            const setIntervalSpy = vi.spyOn(global, 'setInterval');
+            mockSessionStorage.getActiveSessions.mockRejectedValue(new Error('Storage error'));
+
+            await sessionManager.init();
+
+            // Access the interval function and call it directly to test error handling
+            const setIntervalCall = setIntervalSpy.mock.calls[0];
+            const cleanupFunction = setIntervalCall[0] as Function;
+
+            // This should not throw
+            await expect(cleanupFunction()).resolves.toBeUndefined();
+
+            consoleSpy.mockRestore();
+            setIntervalSpy.mockRestore();
+        });
+
+        test('should use correct cleanup interval based on session TTL', async () => {
+            // Create SessionManager with different TTL
+            const shortTTLSessionManager = new SessionManager(mockServices, {
+                sessionTTL: 60000, // 1 minute
+            });
+
+            const setIntervalSpy = vi.spyOn(global, 'setInterval');
+
+            await shortTTLSessionManager.init();
+
+            // Should use TTL/4 (15 seconds) since it's less than 15 minutes
+            const expectedInterval = Math.min(60000 / 4, 15 * 60 * 1000);
+            expect(expectedInterval).toBe(15000); // 15 seconds
+            expect(setIntervalSpy).toHaveBeenCalledWith(expect.any(Function), 15000);
+
+            setIntervalSpy.mockRestore();
+            await shortTTLSessionManager.cleanup();
+        });
+    });
 });

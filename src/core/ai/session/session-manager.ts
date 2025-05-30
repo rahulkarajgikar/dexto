@@ -32,6 +32,7 @@ export class SessionManager {
     private readonly maxSessions: number;
     private readonly sessionTTL: number;
     private initialized = false;
+    private cleanupInterval?: NodeJS.Timeout;
 
     constructor(
         private services: {
@@ -62,8 +63,21 @@ export class SessionManager {
         // Restore any existing sessions from storage
         await this.restoreSessionsFromStorage();
 
+        // Start periodic cleanup to prevent memory leaks from long-lived sessions
+        // Clean up every 15 minutes or 1/4 of session TTL, whichever is smaller
+        const cleanupIntervalMs = Math.min(this.sessionTTL / 4, 15 * 60 * 1000);
+        this.cleanupInterval = setInterval(
+            () =>
+                this.cleanupExpiredSessions().catch((err) =>
+                    logger.error('Periodic session cleanup failed:', err)
+                ),
+            cleanupIntervalMs
+        );
+
         this.initialized = true;
-        logger.debug('SessionManager initialized with persistent storage');
+        logger.debug(
+            `SessionManager initialized with periodic cleanup every ${Math.round(cleanupIntervalMs / 1000 / 60)} minutes`
+        );
     }
 
     /**
@@ -272,6 +286,10 @@ export class SessionManager {
     /**
      * Increments the message count for a session and updates activity.
      * This should be called whenever a message is sent in the session.
+     *
+     * Note: This method is not thread-safe. Concurrent calls for the same
+     * session may overwrite each other. Consider using a lock or
+     * an atomic increment in the storage layer.
      */
     public async incrementMessageCount(sessionId: string): Promise<void> {
         await this.ensureInitialized();
@@ -456,12 +474,19 @@ export class SessionManager {
     }
 
     /**
-     * Cleanup method to be called when shutting down the SessionManager.
-     * Properly closes all sessions and cleans up resources.
+     * Cleanup all sessions and resources.
+     * This should be called when shutting down the application.
      */
     public async cleanup(): Promise<void> {
         if (!this.initialized) {
             return;
+        }
+
+        // Stop periodic cleanup
+        if (this.cleanupInterval) {
+            clearInterval(this.cleanupInterval);
+            this.cleanupInterval = undefined;
+            logger.debug('Periodic session cleanup stopped');
         }
 
         // Close all in-memory sessions
