@@ -139,7 +139,7 @@ export class SaikiAgent {
             );
             const response = await session.run(userInput, imageDataInput);
 
-            // Increment message count for this session (counts each turn)
+            // Increment message count for this session (counts each)
             await this.sessionManager.incrementMessageCount(session.id);
 
             // If response is an empty string, treat it as no significant response.
@@ -465,8 +465,13 @@ export class SaikiAgent {
      */
     public async connectMcpServer(name: string, config: McpServerConfig): Promise<void> {
         try {
-            // Add to runtime state first
-            this.stateManager.addMcpServer(name, config);
+            // Add to runtime state first with validation
+            const validation = this.stateManager.addMcpServer(name, config);
+
+            if (!validation.isValid) {
+                const errorMessages = validation.errors.map((e) => e.message).join(', ');
+                throw new Error(`Invalid MCP server configuration: ${errorMessages}`);
+            }
 
             // Then connect the server
             await this.clientManager.connectServer(name, config);
