@@ -332,12 +332,22 @@ export class MessageManager {
             `MessageManager: Adding message to history provider: ${JSON.stringify(message, null, 2)}`
         );
 
-        // Save to history provider
-        await this.historyProvider.saveMessage(message);
+        try {
+            // Save to history provider
+            await this.historyProvider.saveMessage(message);
 
-        // Get updated history for logging
-        const history = await this.historyProvider.getHistory();
-        logger.debug(`MessageManager: History now contains ${history.length} messages`);
+            // Get updated history for logging
+            const history = await this.historyProvider.getHistory();
+            logger.debug(`MessageManager: History now contains ${history.length} messages`);
+        } catch (error) {
+            logger.error(
+                `MessageManager: Failed to save message for session ${this.sessionId}:`,
+                error
+            );
+            throw new Error(
+                `Failed to save message: ${error instanceof Error ? error.message : String(error)}`
+            );
+        }
 
         // Note: Compression is currently handled lazily in getFormattedMessages
     }
@@ -452,7 +462,18 @@ export class MessageManager {
         history?: InternalMessage[]
     ): Promise<any[]> {
         // Use provided history or fetch from provider
-        const messageHistory = history ?? (await this.historyProvider.getHistory());
+        let messageHistory: InternalMessage[];
+        try {
+            messageHistory = history ?? (await this.historyProvider.getHistory());
+        } catch (error) {
+            logger.error(
+                `MessageManager: Failed to get history for session ${this.sessionId}:`,
+                error
+            );
+            throw new Error(
+                `Failed to get conversation history: ${error instanceof Error ? error.message : String(error)}`
+            );
+        }
 
         try {
             // Use pre-computed system prompt if provided
@@ -629,7 +650,15 @@ export class MessageManager {
     async processLLMResponse(response: any): Promise<void> {
         const msgs = this.formatter.parseResponse(response) ?? [];
         for (const msg of msgs) {
-            await this.addMessage(msg);
+            try {
+                await this.addMessage(msg);
+            } catch (error) {
+                logger.error(
+                    `MessageManager: Failed to process LLM response message for session ${this.sessionId}:`,
+                    error
+                );
+                // Continue processing other messages rather than failing completely
+            }
         }
     }
 }
