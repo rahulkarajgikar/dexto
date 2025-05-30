@@ -22,6 +22,8 @@ import { SessionEventBus } from '../../../events/index.js';
  *
  * Note: All conversation history is stored and retrieved via the injected ConversationHistoryProvider.
  * The MessageManager does not maintain an internal history cache.
+ * TOOD: clean up tokenizer logic if we are relying primarily on LLM API to give us token count.
+ * Right now its weaker because it doesn't account for tools and other non-text content in the prompt.
  */
 export class MessageManager {
     /**
