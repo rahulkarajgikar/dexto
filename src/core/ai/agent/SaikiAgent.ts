@@ -61,7 +61,7 @@ const requiredServices: (keyof AgentServices)[] = [
  * const response = await agent.run("Hello", undefined, 'user-123');
  *
  * // Connect MCP servers
- * await agent.addMcpServer('filesystem', { command: 'mcp-filesystem' });
+ * await agent.connectMcpServer('filesystem', { command: 'mcp-filesystem' });
  * ```
  */
 export class SaikiAgent {
@@ -458,14 +458,19 @@ export class SaikiAgent {
     // ============= MCP SERVER MANAGEMENT =============
 
     /**
-     * Connects a new MCP server dynamically.
-     * This is a lower-level method; consider using addMcpServer() instead.
+     * Connects a new MCP server and adds it to the runtime configuration.
+     * This method handles both adding the server to runtime state and establishing the connection.
      * @param name The name of the server to connect.
      * @param config The configuration object for the server.
      */
     public async connectMcpServer(name: string, config: McpServerConfig): Promise<void> {
         try {
+            // Add to runtime state first
+            this.stateManager.addMcpServer(name, config);
+
+            // Then connect the server
             await this.clientManager.connectServer(name, config);
+
             this.agentEventBus.emit('saiki:mcpServerConnected', {
                 name,
                 success: true,
@@ -474,10 +479,14 @@ export class SaikiAgent {
                 tools: Object.keys(await this.clientManager.getAllTools()),
                 source: 'mcp',
             });
-            logger.info(`SaikiAgent: Successfully connected to MCP server '${name}'.`);
+            logger.info(`SaikiAgent: Successfully added and connected to MCP server '${name}'.`);
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : String(error);
-            logger.error(`SaikiAgent: Failed to connect to MCP server '${name}': ${errorMessage}`);
+            logger.error(`SaikiAgent: Failed to add MCP server '${name}': ${errorMessage}`);
+
+            // Clean up state if connection failed
+            this.stateManager.removeMcpServer(name);
+
             this.agentEventBus.emit('saiki:mcpServerConnected', {
                 name,
                 success: false,
@@ -485,20 +494,6 @@ export class SaikiAgent {
             });
             throw error;
         }
-    }
-
-    /**
-     * Connects a new MCP server and adds it to the runtime configuration.
-     * This is the recommended method for adding MCP servers.
-     * @param name The name of the server to connect.
-     * @param config The configuration object for the server.
-     */
-    public async addMcpServer(name: string, config: McpServerConfig): Promise<void> {
-        // Add to runtime state first
-        this.stateManager.addMcpServer(name, config);
-
-        // Then connect the server
-        await this.connectMcpServer(name, config);
     }
 
     /**
@@ -584,5 +579,13 @@ export async function createSaikiAgent(
     overrides?: InitializeServicesOptions
 ): Promise<SaikiAgent> {
     const services = await createAgentServices(agentConfig, cliArgs, overrides);
+
+    // log model info for observability
+    logger.info(
+        `Agent using model config: ${JSON.stringify(services.stateManager.getRuntimeState().llm, null, 2)}`,
+        null,
+        'yellow'
+    );
+
     return new SaikiAgent(services);
 }

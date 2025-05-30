@@ -95,7 +95,7 @@ export async function initializeApi(agent: SaikiAgent, agentCardOverride?: Parti
             return res.status(400).send({ error: 'Missing or invalid server config object' });
         }
         try {
-            await agent.addMcpServer(name, config);
+            await agent.connectMcpServer(name, config);
             logger.info(`Successfully connected to new server '${name}' via API request.`);
             res.status(200).send({ status: 'connected', name });
         } catch (error) {
@@ -115,7 +115,7 @@ export async function initializeApi(agent: SaikiAgent, agentCardOverride?: Parti
             return res.status(400).json({ error: 'Missing name or config' });
         }
         try {
-            await agent.addMcpServer(name, config);
+            await agent.connectMcpServer(name, config);
             res.status(201).json({ status: 'connected', name });
         } catch (error: any) {
             logger.error(`Error connecting MCP server '${name}': ${error.message}`);
