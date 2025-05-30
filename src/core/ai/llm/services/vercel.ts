@@ -234,7 +234,11 @@ export class VercelLLMService implements ILLMService {
     }
 
     // returns AsyncIterable<string> & ReadableStream<string>
-    async streamText(messages: any[], tools: VercelToolSet, maxSteps: number = 10): Promise<any> {
+    async streamText(
+        messages: CoreMessage[],
+        tools: VercelToolSet,
+        maxSteps: number = 10
+    ): Promise<any> {
         let stepIteration = 0;
         // use vercel's streamText with mcp
         const response = streamText({
