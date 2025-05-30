@@ -1,5 +1,6 @@
+import * as path from 'path';
 import { promises as fs } from 'fs';
-import path from 'path';
+import { existsSync } from 'fs';
 import type { HistoryStorage, StorageContext, StorageProviderConfig } from '../types.js';
 import type { InternalMessage } from '../../ai/llm/messages/types.js';
 import { logger } from '../../logger/index.js';

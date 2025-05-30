@@ -1,8 +1,9 @@
+import * as path from 'path';
 import { promises as fs } from 'fs';
-import path from 'path';
+import { existsSync } from 'fs';
 import type {
-    SessionStorage,
     SessionData,
+    SessionStorage,
     StorageContext,
     StorageProviderConfig,
 } from '../types.js';

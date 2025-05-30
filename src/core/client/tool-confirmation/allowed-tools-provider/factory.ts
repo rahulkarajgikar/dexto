@@ -1,43 +1,25 @@
-import { AllowedToolsProvider } from './default.js';
 import { InMemoryAllowedToolsProvider } from './in-memory.js';
 import type { IAllowedToolsProvider as IAllowedToolsProvider } from './types.js';
-import type { StorageProvider } from '../../../storage/index.js';
+
+// TODO: Add proper storage backend for allowed tools persistence
+// This will require implementing a dedicated storage interface for tool permissions
 
 export interface AllowedToolsConfig {
-    type: 'storage' | 'memory';
-    storageProvider?: StorageProvider<boolean>;
+    type: 'memory';
 }
 
 /**
  * Create an AllowedToolsProvider based on configuration.
  *
- * The default is now storage-based for persistence.
- * Memory-based provider is available for testing or special cases.
+ * Currently only memory-based provider is available.
+ * TODO: Add storage-based provider for persistence across sessions.
  */
 export function createAllowedToolsProvider(config: AllowedToolsConfig): IAllowedToolsProvider {
     switch (config.type) {
-        case 'storage':
-            if (!config.storageProvider) {
-                throw new Error(
-                    'Storage provider is required for storage-based AllowedToolsProvider'
-                );
-            }
-            return new AllowedToolsProvider(config.storageProvider);
-
         case 'memory':
             return new InMemoryAllowedToolsProvider();
 
         default:
             throw new Error(`Unknown AllowedToolsProvider type: ${(config as any).type}`);
     }
-}
-
-/**
- * Create an AllowedToolsProvider with a storage provider.
- * This is the recommended approach for production use.
- */
-export function createAllowedToolsProviderWithStorage(
-    storageProvider: StorageProvider<boolean>
-): IAllowedToolsProvider {
-    return new AllowedToolsProvider(storageProvider);
 }

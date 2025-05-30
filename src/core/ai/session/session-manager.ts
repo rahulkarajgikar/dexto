@@ -323,7 +323,7 @@ export class SessionManager {
             const activeSessionSet = new Set(activeSessionIds);
 
             // Clean up in-memory sessions that are no longer in storage
-            for (const [sessionId, session] of this.sessions.entries()) {
+            for (const [sessionId, session] of Array.from(this.sessions.entries())) {
                 if (!activeSessionSet.has(sessionId)) {
                     try {
                         await session.reset();

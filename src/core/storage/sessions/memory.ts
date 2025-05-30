@@ -71,7 +71,7 @@ export class MemorySessionStorage implements SessionStorage {
         const now = Date.now();
         let cleanedCount = 0;
 
-        for (const [sessionId, sessionWithTTL] of this.sessions.entries()) {
+        for (const [sessionId, sessionWithTTL] of Array.from(this.sessions.entries())) {
             if (sessionWithTTL.expiresAt && now > sessionWithTTL.expiresAt) {
                 this.sessions.delete(sessionId);
                 cleanedCount++;

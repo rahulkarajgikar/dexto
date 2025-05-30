@@ -1,6 +1,6 @@
-import fs from 'fs/promises';
-import path from 'path';
-import os from 'os';
+import { promises as fs } from 'fs';
+import * as path from 'path';
+import { homedir } from 'os';
 import { logger } from '../logger/index.js';
 import { StorageContext } from './types.js';
 import {
@@ -128,7 +128,7 @@ export class StoragePathResolver {
 
         // 2. Force global if specified
         if (context.forceGlobal) {
-            const globalPath = path.join(os.homedir(), this.SAIKI_DIR);
+            const globalPath = path.join(homedir(), this.SAIKI_DIR);
             await this.ensureDirectory(globalPath);
             logger.debug(`Using forced global storage: ${globalPath}`);
             return globalPath;
@@ -143,7 +143,7 @@ export class StoragePathResolver {
         }
 
         // 4. Fall back to global storage
-        const globalPath = path.join(os.homedir(), this.SAIKI_DIR);
+        const globalPath = path.join(homedir(), this.SAIKI_DIR);
         await this.ensureDirectory(globalPath);
         logger.debug(`Falling back to global storage: ${globalPath}`);
         return globalPath;

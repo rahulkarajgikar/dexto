@@ -1,5 +1,6 @@
+import * as path from 'path';
 import { promises as fs } from 'fs';
-import path from 'path';
+import { existsSync } from 'fs';
 import type { UserInfoStorage, StorageContext, StorageProviderConfig } from '../types.js';
 import { logger } from '../../logger/index.js';
 import { StoragePathResolver } from '../path-resolver.js';
@@ -137,7 +138,7 @@ export class FileUserInfoStorage implements UserInfoStorage {
 
     private async saveToFile(): Promise<void> {
         const data: Record<string, any> = {};
-        for (const [key, value] of this.cache.entries()) {
+        for (const [key, value] of Array.from(this.cache.entries())) {
             data[key] = value;
         }
 

@@ -1,14 +1,11 @@
-import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, test, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
     buildLLMConfig,
     validateLLMSwitchRequest,
     validateRuntimeUpdate,
-    validateRuntimeState,
     validateMcpServerConfig,
-    validationErrorsToStrings,
 } from './validation-utils.js';
 import type { LLMConfig, McpServerConfig } from './schemas.js';
-import type { AgentRuntimeState } from './agent-state-manager.js';
 
 // Only mock logger since it has side effects
 vi.mock('../logger/index.js');

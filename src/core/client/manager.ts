@@ -42,7 +42,7 @@ export class MCPClientManager {
 
         [this.toolToClientMap, this.promptToClientMap, this.resourceToClientMap].forEach(
             (cacheMap) => {
-                for (const [key, mappedClient] of cacheMap.entries()) {
+                for (const [key, mappedClient] of Array.from(cacheMap.entries())) {
                     if (mappedClient === client) {
                         cacheMap.delete(key);
                     }
@@ -94,7 +94,7 @@ export class MCPClientManager {
      */
     async getAllTools(): Promise<ToolSet> {
         const allTools: ToolSet = {};
-        for (const [toolName, client] of this.toolToClientMap.entries()) {
+        for (const [toolName, client] of Array.from(this.toolToClientMap.entries())) {
             const clientTools = await client.getTools();
             // clientTools is itself a ToolSet, so extract the specific Tool
             const toolDef = clientTools[toolName];
@@ -322,7 +322,7 @@ export class MCPClientManager {
      */
     async disconnectAll(): Promise<void> {
         const disconnectPromises: Promise<void>[] = [];
-        for (const [name, client] of this.clients.entries()) {
+        for (const [name, client] of Array.from(this.clients.entries())) {
             if (client.disconnect) {
                 disconnectPromises.push(
                     client

@@ -1,6 +1,6 @@
-import path from 'path';
+import * as path from 'path';
 import { fileURLToPath } from 'url';
-import fs from 'fs';
+import { existsSync } from 'fs';
 import { promises as fsPromises } from 'fs';
 
 /**
@@ -62,7 +62,7 @@ export async function walkUpDirectoriesAsync(
 export function findPackageRoot(startPath: string = process.cwd()): string | null {
     return walkUpDirectories(startPath, (dirPath) => {
         const pkgPath = path.join(dirPath, 'package.json');
-        return fs.existsSync(pkgPath);
+        return existsSync(pkgPath);
     });
 }
 
@@ -80,7 +80,7 @@ export function findProjectRootByLockFiles(startPath: string = process.cwd()): s
     ];
 
     return walkUpDirectories(startPath, (dirPath) => {
-        return lockFiles.some((lockFile) => fs.existsSync(path.join(dirPath, lockFile)));
+        return lockFiles.some((lockFile) => existsSync(path.join(dirPath, lockFile)));
     });
 }
 
@@ -159,8 +159,8 @@ export function resolvePackagePath(targetPath: string, resolveFromPackageRoot: b
     }
     if (resolveFromPackageRoot) {
         // Resolve relative to the package root
-        const scriptPath = fileURLToPath(import.meta.url);
-        const packageRoot = findPackageRoot(path.dirname(scriptPath));
+        // Find package root starting from current working directory
+        const packageRoot = findPackageRoot(process.cwd());
 
         if (!packageRoot) {
             throw new Error(`Cannot find package root when resolving default path: ${targetPath}`);

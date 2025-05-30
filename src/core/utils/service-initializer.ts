@@ -33,7 +33,7 @@ import { AgentStateManager } from '../config/agent-state-manager.js';
 import { SessionManager } from '../ai/session/session-manager.js';
 import { createStorageInstances } from '../storage/factory.js';
 import type { StorageInstances } from '../storage/types.js';
-import { createAllowedToolsProviderWithStorage } from '../client/tool-confirmation/allowed-tools-provider/factory.js';
+import { createAllowedToolsProvider } from '../client/tool-confirmation/allowed-tools-provider/factory.js';
 import { logger } from '../logger/index.js';
 import type { CLIConfigOverrides } from '../config/types.js';
 import type { AgentConfig } from '../config/schemas.js';

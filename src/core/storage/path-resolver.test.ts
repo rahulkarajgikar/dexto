@@ -1,7 +1,8 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { StoragePathResolver } from './path-resolver.js';
-import os from 'os';
-import path from 'path';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { homedir } from 'os';
+import * as path from 'path';
+import { promises as fs } from 'fs';
 
 // Mock the path utilities
 vi.mock('../utils/path.js', () => ({
@@ -11,8 +12,8 @@ vi.mock('../utils/path.js', () => ({
 }));
 
 // Mock fs for testing
-vi.mock('fs/promises', () => ({
-    default: {
+vi.mock('fs', () => ({
+    promises: {
         access: vi.fn(),
         mkdir: vi.fn(),
     },
@@ -23,7 +24,6 @@ import {
     findSaikiProjectRoot,
     isGlobalInstall,
 } from '../utils/path.js';
-import fs from 'fs/promises';
 
 const mockIsCurrentDirectorySaikiProject = vi.mocked(isCurrentDirectorySaikiProject);
 const mockFindSaikiProjectRoot = vi.mocked(findSaikiProjectRoot);
@@ -157,7 +157,7 @@ describe('StoragePathResolver', () => {
 
             const result = await StoragePathResolver.resolveStorageRoot(context);
 
-            const expectedPath = path.join(os.homedir(), '.saiki');
+            const expectedPath = path.join(homedir(), '.saiki');
             expect(result).toBe(expectedPath);
         });
 
@@ -183,7 +183,7 @@ describe('StoragePathResolver', () => {
 
             const result = await StoragePathResolver.resolveStorageRoot(context);
 
-            const expectedPath = path.join(os.homedir(), '.saiki');
+            const expectedPath = path.join(homedir(), '.saiki');
             expect(result).toBe(expectedPath);
         });
     });
