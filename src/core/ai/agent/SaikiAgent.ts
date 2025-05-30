@@ -553,7 +553,7 @@ export class SaikiAgent {
      * @param sessionId Optional session ID. If not provided, returns default config.
      * @returns The effective configuration object
      */
-    public getEffectiveConfig(sessionId?: string): any {
+    public getEffectiveConfig(sessionId?: string): Readonly<AgentConfig> {
         return sessionId
             ? this.stateManager.getEffectiveConfig(sessionId)
             : this.stateManager.getEffectiveConfig();
