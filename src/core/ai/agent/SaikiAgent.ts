@@ -219,7 +219,8 @@ export class SaikiAgent {
     }
 
     /**
-     * Resets the conversation history for a specific session or the default session.
+     * Deletes the conversation history for a specific session or the default session.
+     * Keeps the session alive but the conversation history is deleted
      * @param sessionId Optional session ID. If not provided, resets the default session.
      */
     public async resetConversation(sessionId?: string): Promise<void> {
