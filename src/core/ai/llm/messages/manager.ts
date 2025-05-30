@@ -545,7 +545,6 @@ export class MessageManager {
     async resetConversation(): Promise<void> {
         // Clear persisted history
         await this.historyProvider.clearHistory();
-        this.sessionEventBus.emit('messageManager:conversationReset');
         logger.debug(`MessageManager: Conversation history cleared for session ${this.sessionId}`);
     }
 

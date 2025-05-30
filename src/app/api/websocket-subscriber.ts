@@ -92,9 +92,8 @@ export class WebSocketEventSubscriber implements EventSubscriber {
             });
         });
 
-        // Consolidated conversation reset handler - both messageManager:conversationReset
-        // and saiki:conversationReset represent the same logical operation, so we only
-        // need to listen to one. We'll use saiki:conversationReset as it's the higher-level event.
+        // Consolidated conversation reset handler - messageManager:conversationReset has been
+        // eliminated in favor of saiki:conversationReset as the single source of truth.
         eventBus.on('saiki:conversationReset', (payload) => {
             this.broadcast({
                 event: 'conversationReset',

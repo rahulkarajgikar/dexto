@@ -39,7 +39,6 @@ import { logger } from '../../logger/index.js';
  *
  * Each session has its own event bus that emits standard Saiki events:
  * - `llmservice:*` events (thinking, toolCall, response, etc.)
- * - `messageManager:conversationReset` when conversation is reset
  *
  * Session events are forwarded to the global agent event bus with session prefixes.
  *
@@ -76,7 +75,6 @@ export class ChatSession {
      * - `llmservice:thinking` - AI model is processing
      * - `llmservice:toolCall` - Tool execution requested
      * - `llmservice:response` - Final response generated
-     * - `messageManager:conversationReset` - Conversation history cleared
      */
     public readonly eventBus: SessionEventBus;
 

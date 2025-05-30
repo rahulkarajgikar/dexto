@@ -23,8 +23,7 @@ export const AGENT_EVENT_NAMES = [
  * Session-level event names - events that occur within individual sessions
  */
 export const SESSION_EVENT_NAMES = [
-    // Note: messageManager:conversationReset is not forwarded to agent bus
-    // as conversation resets are handled at the ChatSession level with saiki:conversationReset
+    // Note: messageManager:conversationReset has been eliminated in favor of saiki:conversationReset
     'llmservice:thinking',
     'llmservice:chunk',
     'llmservice:response',
@@ -182,9 +181,6 @@ export interface AgentEventMap {
  * (since they're already scoped to a session)
  */
 export interface SessionEventMap {
-    /** Fired when MessageManager conversation is reset */
-    'messageManager:conversationReset': void;
-
     /** LLM service started thinking */
     'llmservice:thinking': void;
 
