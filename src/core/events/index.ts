@@ -261,7 +261,7 @@ export const SessionEventNames: readonly SessionEventName[] = Object.freeze([
 export const EventNames: readonly EventName[] = Object.freeze([...EVENT_NAMES]);
 
 /**
- * Generic typed EventEmitter base class
+ * Base typed event emitter with AbortController support
  */
 class BaseTypedEventEmitter<TEventMap extends Record<string, any>> extends EventEmitter {
     // Method overloads for typed events
@@ -276,28 +276,78 @@ class BaseTypedEventEmitter<TEventMap extends Record<string, any>> extends Event
         return super.emit(event, ...args);
     }
 
-    // Method overloads for typed events
+    // Method overloads for typed events with signal support
     on<K extends keyof TEventMap>(
         event: K,
-        listener: TEventMap[K] extends void ? () => void : (payload: TEventMap[K]) => void
+        listener: TEventMap[K] extends void ? () => void : (payload: TEventMap[K]) => void,
+        options?: { signal?: AbortSignal }
     ): this;
     // Method overload for untyped events (compatibility)
-    on(event: string | symbol, listener: (...args: any[]) => void): this;
+    on(
+        event: string | symbol,
+        listener: (...args: any[]) => void,
+        options?: { signal?: AbortSignal }
+    ): this;
     // Implementation
-    on(event: any, listener: any): this {
-        return super.on(event, listener);
+    on(event: any, listener: any, options?: { signal?: AbortSignal }): this {
+        // Add the listener normally
+        super.on(event, listener);
+
+        // If signal provided, set up abort handling
+        if (options?.signal) {
+            const abortHandler = () => {
+                this.removeListener(event, listener);
+            };
+
+            // If already aborted, remove immediately
+            if (options.signal.aborted) {
+                this.removeListener(event, listener);
+            } else {
+                // Listen for abort signal
+                options.signal.addEventListener('abort', abortHandler, { once: true });
+            }
+        }
+
+        return this;
     }
 
-    // Method overloads for typed events
+    // Method overloads for typed events with signal support
     once<K extends keyof TEventMap>(
         event: K,
-        listener: TEventMap[K] extends void ? () => void : (payload: TEventMap[K]) => void
+        listener: TEventMap[K] extends void ? () => void : (payload: TEventMap[K]) => void,
+        options?: { signal?: AbortSignal }
     ): this;
     // Method overload for untyped events (compatibility)
-    once(event: string | symbol, listener: (...args: any[]) => void): this;
+    once(
+        event: string | symbol,
+        listener: (...args: any[]) => void,
+        options?: { signal?: AbortSignal }
+    ): this;
     // Implementation
-    once(event: any, listener: any): this {
-        return super.once(event, listener);
+    once(event: any, listener: any, options?: { signal?: AbortSignal }): this {
+        // If signal is already aborted, don't add listener
+        if (options?.signal?.aborted) {
+            return this;
+        }
+
+        // Create wrapper that handles both once and abort
+        const wrappedListener = (...args: any[]) => {
+            listener(...args);
+        };
+
+        // Add the listener normally
+        super.once(event, wrappedListener);
+
+        // If signal provided, set up abort handling
+        if (options?.signal) {
+            const abortHandler = () => {
+                this.removeListener(event, wrappedListener);
+            };
+
+            options.signal.addEventListener('abort', abortHandler, { once: true });
+        }
+
+        return this;
     }
 
     // Method overloads for typed events
@@ -310,6 +360,21 @@ class BaseTypedEventEmitter<TEventMap extends Record<string, any>> extends Event
     // Implementation
     off(event: any, listener: any): this {
         return super.off(event, listener);
+    }
+
+    // Alias for addListener with signal support
+    addListener<K extends keyof TEventMap>(
+        event: K,
+        listener: TEventMap[K] extends void ? () => void : (payload: TEventMap[K]) => void,
+        options?: { signal?: AbortSignal }
+    ): this;
+    addListener(
+        event: string | symbol,
+        listener: (...args: any[]) => void,
+        options?: { signal?: AbortSignal }
+    ): this;
+    addListener(event: any, listener: any, options?: { signal?: AbortSignal }): this {
+        return this.on(event, listener, options);
     }
 }
 
