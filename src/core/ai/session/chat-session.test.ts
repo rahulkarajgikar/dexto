@@ -212,22 +212,27 @@ describe('ChatSession', () => {
         test('should handle events with no payload by adding session context', async () => {
             await chatSession.init();
 
-            // Emit event without payload
-            chatSession.eventBus.emit('messageManager:conversationReset');
+            // Emit event without payload (using llmservice:thinking as example)
+            chatSession.eventBus.emit('llmservice:thinking');
 
-            expect(mockServices.agentEventBus.emit).toHaveBeenCalledWith(
-                'messageManager:conversationReset',
-                { sessionId }
-            );
+            expect(mockServices.agentEventBus.emit).toHaveBeenCalledWith('llmservice:thinking', {
+                sessionId,
+            });
         });
 
-        test('should emit conversation reset events at both session and agent level', async () => {
+        test('should emit saiki:conversationReset event when conversation is reset', async () => {
             await chatSession.init();
 
             await chatSession.reset();
 
             // Should call resetConversation on message manager
             expect(mockMessageManager.resetConversation).toHaveBeenCalled();
+
+            // Should emit saiki:conversationReset event with session context
+            expect(mockServices.agentEventBus.emit).toHaveBeenCalledWith(
+                'saiki:conversationReset',
+                { sessionId }
+            );
         });
     });
 

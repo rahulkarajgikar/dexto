@@ -23,7 +23,8 @@ export const AGENT_EVENT_NAMES = [
  * Session-level event names - events that occur within individual sessions
  */
 export const SESSION_EVENT_NAMES = [
-    'messageManager:conversationReset',
+    // Note: messageManager:conversationReset is not forwarded to agent bus
+    // as conversation resets are handled at the ChatSession level with saiki:conversationReset
     'llmservice:thinking',
     'llmservice:chunk',
     'llmservice:response',
@@ -46,7 +47,7 @@ export interface AgentEventMap {
     // Agent-level events
     /** Fired when Saiki conversation is reset */
     'saiki:conversationReset': {
-        sessionId?: string;
+        sessionId: string;
     };
 
     /** Fired when MCP server connection succeeds or fails */
@@ -54,14 +55,14 @@ export interface AgentEventMap {
         name: string;
         success: boolean;
         error?: string;
-        sessionId?: string;
+        sessionId: string;
     };
 
     /** Fired when available tools list updates */
     'saiki:availableToolsUpdated': {
         tools: string[];
         source: 'mcp' | 'builtin';
-        sessionId?: string;
+        sessionId: string;
     };
 
     /** Fired when LLM service switched */
@@ -69,26 +70,21 @@ export interface AgentEventMap {
         newConfig: any; // LLMConfig type
         router?: string;
         historyRetained?: boolean;
-        sessionId?: string;
+        sessionId: string;
         sessionIds?: string[];
     };
 
     // Session events forwarded to agent bus (with sessionId added)
-    /** Fired when MessageManager conversation is reset */
-    'messageManager:conversationReset': {
-        sessionId?: string;
-    };
-
     /** LLM service started thinking */
     'llmservice:thinking': {
-        sessionId?: string;
+        sessionId: string;
     };
 
     /** LLM service sent a streaming chunk */
     'llmservice:chunk': {
         content: string;
         isComplete?: boolean;
-        sessionId?: string;
+        sessionId: string;
     };
 
     /** LLM service final response */
@@ -96,7 +92,7 @@ export interface AgentEventMap {
         content: string;
         tokenCount?: number;
         model?: string;
-        sessionId?: string;
+        sessionId: string;
     };
 
     /** LLM service requested a tool call */
@@ -104,7 +100,7 @@ export interface AgentEventMap {
         toolName: string;
         args: Record<string, any>;
         callId?: string;
-        sessionId?: string;
+        sessionId: string;
     };
 
     /** LLM service returned a tool result */
@@ -113,7 +109,7 @@ export interface AgentEventMap {
         result: any;
         callId?: string;
         success: boolean;
-        sessionId?: string;
+        sessionId: string;
     };
 
     /** LLM service error */
@@ -121,7 +117,7 @@ export interface AgentEventMap {
         error: Error;
         context?: string;
         recoverable?: boolean;
-        sessionId?: string;
+        sessionId: string;
     };
 
     /** LLM service switched */
@@ -129,7 +125,7 @@ export interface AgentEventMap {
         newConfig: any; // LLMConfig type
         router?: string;
         historyRetained?: boolean;
-        sessionId?: string;
+        sessionId: string;
     };
 
     // Agent state manager events

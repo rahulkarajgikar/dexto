@@ -27,7 +27,7 @@ export class WebSocketEventSubscriber implements EventSubscriber {
             this.broadcast({
                 event: 'thinking',
                 data: {
-                    sessionId: payload?.sessionId,
+                    sessionId: payload.sessionId,
                 },
             });
         });
@@ -92,18 +92,12 @@ export class WebSocketEventSubscriber implements EventSubscriber {
             });
         });
 
-        eventBus.on('messageManager:conversationReset', (payload) => {
-            this.broadcast({
-                event: 'conversationReset',
-                data: {
-                    sessionId: payload?.sessionId,
-                },
-            });
-        });
-
+        // Consolidated conversation reset handler - both messageManager:conversationReset
+        // and saiki:conversationReset represent the same logical operation, so we only
+        // need to listen to one. We'll use saiki:conversationReset as it's the higher-level event.
         eventBus.on('saiki:conversationReset', (payload) => {
             this.broadcast({
-                event: 'saikiConversationReset',
+                event: 'conversationReset',
                 data: {
                     sessionId: payload.sessionId,
                 },
@@ -117,7 +111,7 @@ export class WebSocketEventSubscriber implements EventSubscriber {
                     name: payload.name,
                     success: payload.success,
                     error: payload.error,
-                    sessionId: payload?.sessionId,
+                    sessionId: payload.sessionId,
                 },
             });
         });
@@ -128,7 +122,7 @@ export class WebSocketEventSubscriber implements EventSubscriber {
                 data: {
                     tools: payload.tools,
                     source: payload.source,
-                    sessionId: payload?.sessionId,
+                    sessionId: payload.sessionId,
                 },
             });
         });

@@ -271,13 +271,12 @@ export class ChatSession {
     }
 
     /**
-     * Resets the conversation history for this session.
+     * Reset the conversation history for this session.
      *
      * This method:
      * 1. Clears all messages from the session's conversation history
      * 2. Removes persisted history from the storage provider
-     * 3. Emits a `messageManager:conversationReset` event
-     * 4. Emits a `saiki:conversationReset` event with session context
+     * 3. Emits a `saiki:conversationReset` event with session context
      *
      * The system prompt and session configuration remain unchanged.
      * Only the conversation messages are cleared.
@@ -296,10 +295,7 @@ export class ChatSession {
         // Reset history via MessageManager
         await this.messageManager.resetConversation();
 
-        // Notify listeners of conversation reset (session-level)
-        this.eventBus.emit('messageManager:conversationReset');
-
-        // Also emit agent-level event with session context
+        // Emit agent-level event with session context
         this.services.agentEventBus.emit('saiki:conversationReset', {
             sessionId: this.id,
         });
