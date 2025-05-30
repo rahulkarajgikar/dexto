@@ -437,7 +437,7 @@ describe('SessionManager', () => {
             const session = await sessionManager.createSession(sessionId);
 
             // Mock error during cleanup
-            session.reset.mockRejectedValue(new Error('Cleanup error'));
+            (session.reset as any).mockRejectedValue(new Error('Cleanup error'));
 
             await expect(sessionManager.cleanup()).resolves.not.toThrow();
         });
@@ -569,7 +569,7 @@ describe('SessionManager', () => {
             const session = await sessionManager.createSession(sessionId);
 
             // Mock cleanup error
-            session.reset.mockRejectedValue(new Error('Reset failed'));
+            (session.reset as any).mockRejectedValue(new Error('Reset failed'));
 
             // Mock that session is expired
             mockSessionStorage.getActiveSessions.mockResolvedValue([]);
