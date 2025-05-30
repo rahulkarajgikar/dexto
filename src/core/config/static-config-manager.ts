@@ -267,7 +267,8 @@ export class StaticConfigManager {
     private printStateForError(contextMessage: string): void {
         logger.error(contextMessage);
         logger.error('Current configuration state before error:');
-        logger.error(JSON.stringify(this.resolved, null, 2));
+        // sanitize config and then print
+        logger.error(JSON.stringify(this.exportAsJson(true), null, 2));
         logger.error('LLM Provenance state:');
         if (this.provenance?.llm) {
             logger.error(JSON.stringify(this.provenance.llm, null, 2));
