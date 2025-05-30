@@ -56,7 +56,7 @@ program
     .option('-r, --router <router>', 'Specify the LLM router to use (vercel or in-built)')
     .option(
         '--mode <mode>',
-        'The application in which saiki should talk to you - cli | web | discord | telegram',
+        'The application in which saiki should talk to you - cli | web | discord | telegram | mcp | api',
         'cli'
     )
     .option('--web-port <port>', 'optional port for the web UI', '3000');
@@ -131,7 +131,7 @@ program
         }
     });
 
-// 4) Interactive/One shot (CLI/HEADLESS) or run in other modes (--mode web/discord/telegram)
+// 4) Main saiki CLI - Interactive/One shot (CLI/HEADLESS) or run in other modes (--mode web/discord/telegram)
 program
     .argument(
         '[prompt...]',
@@ -251,6 +251,21 @@ program
 
                 // Start Next.js web server
                 await startNextJsWebServer(apiUrl, frontPort, nextJSserverURL);
+
+                break;
+            }
+
+            // just starts up the api server (legacy) on port 3001
+            case 'api': {
+                const apiPort = getPort(process.env.API_PORT, 3001, 'API_PORT');
+
+                // Start API server first with legacy web UI
+                await startApiAndLegacyWebUIServer(
+                    agent,
+                    apiPort,
+                    true,
+                    agent.stateManager.getEffectiveConfig().agentCard || {}
+                );
 
                 break;
             }

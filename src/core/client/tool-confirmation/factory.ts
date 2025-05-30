@@ -21,15 +21,11 @@ import {
 } from './allowed-tools-provider/factory.js';
 import type { IAllowedToolsProvider } from './allowed-tools-provider/types.js';
 
-export interface ToolConfirmationOptions {
-    runMode: 'cli' | 'web' | 'discord' | 'telegram' | 'mcp';
+export function createToolConfirmationProvider(options: {
+    runMode: 'cli' | 'web' | 'discord' | 'telegram' | 'mcp' | 'api';
     allowedToolsProvider?: IAllowedToolsProvider;
     allowedToolsConfig?: AllowedToolsConfig;
-}
-
-export function createToolConfirmationProvider(
-    options: ToolConfirmationOptions
-): ToolConfirmationProvider {
+}): ToolConfirmationProvider {
     const { runMode, allowedToolsProvider, allowedToolsConfig } = options;
 
     // Build allowedToolsProvider if config is provided and provider isn't
@@ -45,27 +41,10 @@ export function createToolConfirmationProvider(
         case 'discord':
         case 'telegram':
         case 'mcp':
+        case 'api':
             // Fallback: No-op provider for now. Replace with real provider when available.
             return new NoOpConfirmationProvider();
         default:
             throw new Error(`Unknown run mode for ToolConfirmationProvider: ${runMode}`);
-    }
-}
-
-// Convenience function for backward compatibility
-export function createToolConfirmationProviderLegacy(
-    runMode: 'cli' | 'web' | 'discord' | 'telegram' | 'mcp',
-    allowedToolsConfig?: AllowedToolsConfig | IAllowedToolsProvider
-): ToolConfirmationProvider {
-    if (allowedToolsConfig && 'allowTool' in allowedToolsConfig) {
-        return createToolConfirmationProvider({
-            runMode,
-            allowedToolsProvider: allowedToolsConfig as IAllowedToolsProvider,
-        });
-    } else {
-        return createToolConfirmationProvider({
-            runMode,
-            allowedToolsConfig: allowedToolsConfig as AllowedToolsConfig,
-        });
     }
 }
