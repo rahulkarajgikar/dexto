@@ -5,6 +5,7 @@ export * from './types.js';
 export {
     createStorageInstances,
     createLocalStorageContext,
+    createLocalStorageContextWithAutoDetection,
     createRemoteStorageContext,
 } from './factory.js';
 

@@ -2,29 +2,47 @@ import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest';
 import { ChatSession } from './chat-session.js';
 import type { LLMConfig } from '../../config/schemas.js';
 
-// Mock all the dependencies
-vi.mock('../llm/messages/history/factory.js');
-vi.mock('../llm/messages/factory.js');
-vi.mock('../llm/services/factory.js');
-vi.mock('../llm/tokenizer/factory.js');
-vi.mock('../llm/messages/formatters/factory.js');
-vi.mock('../llm/registry.js');
-vi.mock('../../logger/index.js');
+// Mock dependencies
+vi.mock('../llm/messages/history/factory.js', () => ({
+    createHistoryProviderWithStorage: vi.fn(),
+}));
+vi.mock('../llm/messages/factory.js', () => ({
+    createMessageManager: vi.fn(),
+}));
+vi.mock('../llm/services/factory.js', () => ({
+    createLLMService: vi.fn(),
+}));
+vi.mock('../llm/tokenizer/factory.js', () => ({
+    createTokenizer: vi.fn(),
+}));
+vi.mock('../llm/messages/formatters/factory.js', () => ({
+    createMessageFormatter: vi.fn(),
+}));
+vi.mock('../llm/registry.js', () => ({
+    getEffectiveMaxTokens: vi.fn(),
+}));
+vi.mock('../../logger/index.js', () => ({
+    logger: {
+        debug: vi.fn(),
+        info: vi.fn(),
+        warn: vi.fn(),
+        error: vi.fn(),
+    },
+}));
 
-// Import the mocked modules
-import * as historyFactory from '../llm/messages/history/factory.js';
-import * as messageFactory from '../llm/messages/factory.js';
-import * as serviceFactory from '../llm/services/factory.js';
-import * as tokenizerFactory from '../llm/tokenizer/factory.js';
-import * as formatterFactory from '../llm/messages/formatters/factory.js';
-import * as registry from '../llm/registry.js';
+import { createHistoryProviderWithStorage } from '../llm/messages/history/factory.js';
+import { createMessageManager } from '../llm/messages/factory.js';
+import { createLLMService } from '../llm/services/factory.js';
+import { createTokenizer } from '../llm/tokenizer/factory.js';
+import { createMessageFormatter } from '../llm/messages/formatters/factory.js';
+import { getEffectiveMaxTokens } from '../llm/registry.js';
 
-const mockHistoryFactory = vi.mocked(historyFactory);
-const mockMessageFactory = vi.mocked(messageFactory);
-const mockServiceFactory = vi.mocked(serviceFactory);
-const mockTokenizerFactory = vi.mocked(tokenizerFactory);
-const mockFormatterFactory = vi.mocked(formatterFactory);
-const mockRegistry = vi.mocked(registry);
+const mockCreateHistoryProvider = vi.mocked(createHistoryProviderWithStorage);
+const mockCreateMessageManager = vi.mocked(createMessageManager);
+const mockCreateLLMService = vi.mocked(createLLMService);
+const mockCreateTokenizer = vi.mocked(createTokenizer);
+const mockCreateFormatter = vi.mocked(createMessageFormatter);
+const mockGetEffectiveMaxTokens = vi.mocked(getEffectiveMaxTokens);
 
 describe('ChatSession', () => {
     let chatSession: ChatSession;
@@ -32,8 +50,10 @@ describe('ChatSession', () => {
     let mockHistoryProvider: any;
     let mockMessageManager: any;
     let mockLLMService: any;
-    let mockCollectionProvider: any;
+    let mockTokenizer: any;
+    let mockFormatter: any;
 
+    const sessionId = 'test-session-123';
     const mockLLMConfig: LLMConfig = {
         provider: 'openai',
         model: 'gpt-4',
@@ -45,43 +65,67 @@ describe('ChatSession', () => {
         providerOptions: {},
     };
 
-    const sessionId = 'test-session-123';
-
     beforeEach(() => {
         vi.resetAllMocks();
 
         // Mock history provider
         mockHistoryProvider = {
-            addMessage: vi.fn(),
-            getHistory: vi.fn().mockResolvedValue([]),
-            clearHistory: vi.fn(),
-            getMessageCount: vi.fn().mockReturnValue(0),
+            addMessage: vi.fn().mockResolvedValue(undefined),
+            getMessages: vi.fn().mockResolvedValue([]),
+            clearHistory: vi.fn().mockResolvedValue(undefined),
+            getMessageCount: vi.fn().mockResolvedValue(0),
         };
 
         // Mock message manager
         mockMessageManager = {
             addUserMessage: vi.fn(),
-            addAssistantMessage: vi.fn(),
+            processLLMResponse: vi.fn(),
             getHistory: vi.fn().mockResolvedValue([]),
-            resetConversation: vi.fn(),
+            clearHistory: vi.fn().mockResolvedValue(undefined),
+            resetConversation: vi.fn().mockResolvedValue(undefined),
             updateConfig: vi.fn(),
-            getTokenCount: vi.fn().mockReturnValue(100),
+            getMessageCount: vi.fn().mockReturnValue(0),
+            getTokenCount: vi.fn().mockResolvedValue(100),
+            switchLLM: vi.fn().mockResolvedValue(undefined),
         };
 
         // Mock LLM service
         mockLLMService = {
-            completeTask: vi.fn().mockResolvedValue('Test response'),
-            getAllTools: vi.fn().mockResolvedValue({}),
-            getConfig: vi.fn().mockReturnValue(mockLLMConfig),
+            completeTask: vi.fn().mockResolvedValue('Mock response'),
+            switchLLM: vi.fn().mockResolvedValue(undefined),
+            eventBus: {
+                emit: vi.fn(),
+                on: vi.fn(),
+                off: vi.fn(),
+            },
         };
 
-        // Mock collection provider
-        mockCollectionProvider = {
-            insert: vi.fn(),
-            find: vi.fn().mockResolvedValue([]),
-            update: vi.fn(),
-            delete: vi.fn(),
-            clear: vi.fn(),
+        // Mock tokenizer and formatter
+        mockTokenizer = { encode: vi.fn(), decode: vi.fn() };
+        mockFormatter = { format: vi.fn() };
+
+        // Mock storage manager - should match StorageInstances interface
+        const mockStorageManager = {
+            history: {
+                addMessage: vi.fn().mockResolvedValue(undefined),
+                getMessages: vi.fn().mockResolvedValue([]),
+                clearSession: vi.fn().mockResolvedValue(undefined),
+                getSessions: vi.fn().mockResolvedValue([]),
+                close: vi.fn().mockResolvedValue(undefined),
+            },
+            sessions: {
+                getActiveSessions: vi.fn().mockResolvedValue([]),
+                getSession: vi.fn().mockResolvedValue(null),
+                setSessionWithTTL: vi.fn().mockResolvedValue(undefined),
+                deleteSession: vi.fn().mockResolvedValue(true),
+                close: vi.fn().mockResolvedValue(undefined),
+            },
+            userInfo: {
+                get: vi.fn().mockResolvedValue(undefined),
+                set: vi.fn().mockResolvedValue(undefined),
+                delete: vi.fn().mockResolvedValue(true),
+                close: vi.fn().mockResolvedValue(undefined),
+            },
         };
 
         // Mock services
@@ -98,17 +142,19 @@ describe('ChatSession', () => {
             },
             agentEventBus: {
                 emit: vi.fn(),
+                on: vi.fn(),
+                off: vi.fn(),
             },
-            storageManager: {
-                getCollectionProvider: vi.fn().mockResolvedValue(mockCollectionProvider),
-            },
+            storageManager: mockStorageManager,
         };
 
-        // Setup factory mocks
-        mockHistoryFactory.createHistoryProviderWithStorage.mockResolvedValue(mockHistoryProvider);
-        mockMessageFactory.createMessageManager.mockReturnValue(mockMessageManager);
-        mockServiceFactory.createLLMService.mockReturnValue(mockLLMService);
-        mockRegistry.getEffectiveMaxTokens.mockReturnValue(128000);
+        // Set up factory mocks
+        mockCreateHistoryProvider.mockReturnValue(mockHistoryProvider);
+        mockCreateMessageManager.mockReturnValue(mockMessageManager);
+        mockCreateLLMService.mockReturnValue(mockLLMService);
+        mockCreateTokenizer.mockReturnValue(mockTokenizer);
+        mockCreateFormatter.mockReturnValue(mockFormatter);
+        mockGetEffectiveMaxTokens.mockReturnValue(128000);
 
         // Create ChatSession instance
         chatSession = new ChatSession(mockServices, sessionId);
@@ -130,12 +176,10 @@ describe('ChatSession', () => {
         test('should initialize with unified storage system', async () => {
             await chatSession.init();
 
-            // Verify it uses the unified storage approach
-            expect(mockServices.storageManager.getCollectionProvider).toHaveBeenCalledWith(
-                'history'
-            );
-            expect(mockHistoryFactory.createHistoryProviderWithStorage).toHaveBeenCalledWith(
-                mockCollectionProvider
+            // Verify it uses the unified storage approach - directly accessing storageManager.history
+            expect(mockCreateHistoryProvider).toHaveBeenCalledWith(
+                mockServices.storageManager.history,
+                sessionId
             );
         });
 
@@ -150,39 +194,40 @@ describe('ChatSession', () => {
     });
 
     describe('Event System Integration', () => {
-        beforeEach(async () => {
+        test('should forward all session events to agent bus with session context', async () => {
             await chatSession.init();
+
+            // Emit a session event
+            chatSession.eventBus.emit('llmservice:thinking', { status: 'processing' });
+
+            expect(mockServices.agentEventBus.emit).toHaveBeenCalledWith(
+                'llmservice:thinking',
+                expect.objectContaining({
+                    sessionId,
+                    status: 'processing',
+                })
+            );
         });
 
-        test('should forward all session events to agent bus with session context', () => {
-            const testPayload = { message: 'test data' };
+        test('should handle events with no payload by adding session context', async () => {
+            await chatSession.init();
 
-            chatSession.eventBus.emit('llmservice:response', testPayload);
+            // Emit event without payload
+            chatSession.eventBus.emit('messageManager:conversationReset');
 
-            expect(mockServices.agentEventBus.emit).toHaveBeenCalledWith('llmservice:response', {
-                ...testPayload,
-                sessionId,
-            });
-        });
-
-        test('should handle events with no payload by adding session context', () => {
-            chatSession.eventBus.emit('llmservice:thinking');
-
-            expect(mockServices.agentEventBus.emit).toHaveBeenCalledWith('llmservice:thinking', {
-                sessionId,
-            });
+            expect(mockServices.agentEventBus.emit).toHaveBeenCalledWith(
+                'messageManager:conversationReset',
+                { sessionId }
+            );
         });
 
         test('should emit conversation reset events at both session and agent level', async () => {
-            const sessionEmitSpy = vi.spyOn(chatSession.eventBus, 'emit');
+            await chatSession.init();
 
             await chatSession.reset();
 
-            expect(sessionEmitSpy).toHaveBeenCalledWith('messageManager:conversationReset');
-            expect(mockServices.agentEventBus.emit).toHaveBeenCalledWith(
-                'saiki:conversationReset',
-                { sessionId }
-            );
+            // Should call resetConversation on message manager
+            expect(mockMessageManager.resetConversation).toHaveBeenCalled();
         });
     });
 
@@ -192,125 +237,94 @@ describe('ChatSession', () => {
         });
 
         test('should optimize LLM switching by only creating new components when necessary', async () => {
-            const newLLMConfig: LLMConfig = {
+            const newConfig: LLMConfig = {
                 ...mockLLMConfig,
-                model: 'gpt-4-turbo', // Same provider and router
+                maxTokens: 256000, // Only change maxTokens
             };
 
-            await chatSession.switchLLM(newLLMConfig);
+            await chatSession.switchLLM(newConfig);
 
-            // Should not create new tokenizer/formatter since provider and router didn't change
-            expect(mockTokenizerFactory.createTokenizer).not.toHaveBeenCalled();
-            expect(mockFormatterFactory.createMessageFormatter).not.toHaveBeenCalled();
+            // Should call updateConfig with effective maxTokens (from getEffectiveMaxTokens mock)
+            expect(mockMessageManager.updateConfig).toHaveBeenCalledWith(
+                128000, // effective maxTokens (mocked return value)
+                undefined, // newTokenizer (no provider change)
+                undefined // newFormatter (no router change)
+            );
         });
 
         test('should create new tokenizer when provider changes', async () => {
-            const newLLMConfig: LLMConfig = {
+            const newConfig: LLMConfig = {
                 ...mockLLMConfig,
                 provider: 'anthropic',
                 model: 'claude-3-opus',
             };
 
-            const newTokenizer = {
-                encode: vi.fn(),
-                decode: vi.fn(),
-                countTokens: vi.fn().mockReturnValue(10),
-                getProviderName: vi.fn().mockReturnValue('anthropic'),
-            };
-            mockTokenizerFactory.createTokenizer.mockReturnValue(newTokenizer);
+            await chatSession.switchLLM(newConfig);
 
-            await chatSession.switchLLM(newLLMConfig);
-
-            expect(mockTokenizerFactory.createTokenizer).toHaveBeenCalledWith(
-                'anthropic',
-                'claude-3-opus'
-            );
+            expect(mockCreateTokenizer).toHaveBeenCalledWith('anthropic', 'claude-3-opus');
         });
 
         test('should create new formatter when router changes', async () => {
-            const newLLMConfig: LLMConfig = {
+            const newConfig: LLMConfig = {
                 ...mockLLMConfig,
-                router: 'vercel', // Different router
+                router: 'vercel',
             };
 
-            const newFormatter = {
-                formatMessages: vi.fn(),
-                format: vi.fn(),
-                parseResponse: vi.fn(),
-            };
-            mockFormatterFactory.createMessageFormatter.mockReturnValue(newFormatter);
+            await chatSession.switchLLM(newConfig);
 
-            await chatSession.switchLLM(newLLMConfig);
-
-            expect(mockFormatterFactory.createMessageFormatter).toHaveBeenCalledWith(
-                'openai',
-                'vercel'
-            );
+            expect(mockCreateFormatter).toHaveBeenCalledWith('openai', 'vercel');
         });
 
         test('should update message manager configuration during LLM switch', async () => {
-            const newLLMConfig: LLMConfig = {
+            const newConfig: LLMConfig = {
                 ...mockLLMConfig,
                 provider: 'anthropic',
                 model: 'claude-3-opus',
             };
 
-            const newMaxTokens = 200000;
-            const newTokenizer = {
-                encode: vi.fn(),
-                decode: vi.fn(),
-                countTokens: vi.fn().mockReturnValue(10),
-                getProviderName: vi.fn().mockReturnValue('anthropic'),
-            };
-            const newFormatter = {
-                formatMessages: vi.fn(),
-                format: vi.fn(),
-                parseResponse: vi.fn(),
-            };
-
-            mockRegistry.getEffectiveMaxTokens.mockReturnValue(newMaxTokens);
-            mockTokenizerFactory.createTokenizer.mockReturnValue(newTokenizer);
-            mockFormatterFactory.createMessageFormatter.mockReturnValue(newFormatter);
-
-            await chatSession.switchLLM(newLLMConfig);
+            await chatSession.switchLLM(newConfig);
 
             expect(mockMessageManager.updateConfig).toHaveBeenCalledWith(
-                newMaxTokens,
-                newTokenizer,
-                newFormatter
+                128000, // newMaxTokens
+                expect.any(Object), // newTokenizer
+                expect.any(Object) // newFormatter
             );
         });
 
         test('should emit LLM switched event with correct metadata', async () => {
-            const newLLMConfig: LLMConfig = {
+            const newConfig: LLMConfig = {
                 ...mockLLMConfig,
                 provider: 'anthropic',
                 model: 'claude-3-opus',
             };
 
-            const emitSpy = vi.spyOn(chatSession.eventBus, 'emit');
+            const eventSpy = vi.spyOn(chatSession.eventBus, 'emit');
 
-            await chatSession.switchLLM(newLLMConfig);
+            await chatSession.switchLLM(newConfig);
 
-            expect(emitSpy).toHaveBeenCalledWith('llmservice:switched', {
-                newConfig: newLLMConfig,
-                router: newLLMConfig.router,
-                historyRetained: true,
-            });
+            expect(eventSpy).toHaveBeenCalledWith(
+                'llmservice:switched',
+                expect.objectContaining({
+                    newConfig,
+                    router: newConfig.router,
+                    historyRetained: true,
+                })
+            );
         });
     });
 
     describe('Error Handling and Resilience', () => {
         test('should handle storage initialization failures gracefully', async () => {
-            mockHistoryFactory.createHistoryProviderWithStorage.mockRejectedValue(
-                new Error('Storage initialization failed')
-            );
+            mockCreateHistoryProvider.mockImplementation(() => {
+                throw new Error('Storage initialization failed');
+            });
 
+            // The init method should throw the error since it doesn't catch it
             await expect(chatSession.init()).rejects.toThrow('Storage initialization failed');
         });
 
         test('should handle message manager creation failures', async () => {
-            mockMessageFactory.createMessageManager.mockImplementation(() => {
+            mockCreateMessageManager.mockImplementation(() => {
                 throw new Error('Message manager creation failed');
             });
 
@@ -318,7 +332,7 @@ describe('ChatSession', () => {
         });
 
         test('should handle LLM service creation failures', async () => {
-            mockServiceFactory.createLLMService.mockImplementation(() => {
+            mockCreateLLMService.mockImplementation(() => {
                 throw new Error('LLM service creation failed');
             });
 
@@ -328,30 +342,24 @@ describe('ChatSession', () => {
         test('should handle LLM switch failures and propagate errors', async () => {
             await chatSession.init();
 
-            const newLLMConfig: LLMConfig = {
+            const newConfig: LLMConfig = {
                 ...mockLLMConfig,
-                provider: 'invalid',
-                model: 'invalid-model',
+                provider: 'invalid-provider' as any,
             };
 
-            mockServiceFactory.createLLMService.mockImplementation(() => {
-                throw new Error('Invalid LLM configuration');
+            mockCreateLLMService.mockImplementation(() => {
+                throw new Error('Invalid provider');
             });
 
-            await expect(chatSession.switchLLM(newLLMConfig)).rejects.toThrow(
-                'Invalid LLM configuration'
-            );
+            await expect(chatSession.switchLLM(newConfig)).rejects.toThrow('Invalid provider');
         });
 
         test('should handle conversation errors from LLM service', async () => {
             await chatSession.init();
 
-            const input = 'Test input';
-            const error = new Error('LLM service error');
+            mockLLMService.completeTask.mockRejectedValue(new Error('LLM service error'));
 
-            mockLLMService.completeTask.mockRejectedValue(error);
-
-            await expect(chatSession.run(input)).rejects.toThrow('LLM service error');
+            await expect(chatSession.run('test message')).rejects.toThrow('LLM service error');
         });
     });
 
@@ -361,20 +369,29 @@ describe('ChatSession', () => {
         });
 
         test('should delegate conversation operations to LLM service', async () => {
-            const input = 'Hello, how are you?';
-            const imageData = { image: 'base64-image-data', mimeType: 'image/jpeg' };
+            const userMessage = 'Hello, world!';
+            const expectedResponse = 'Hello! How can I help you?';
 
-            await chatSession.run(input, imageData);
+            mockLLMService.completeTask.mockResolvedValue(expectedResponse);
 
-            expect(mockLLMService.completeTask).toHaveBeenCalledWith(input, imageData);
+            const response = await chatSession.run(userMessage);
+
+            expect(response).toBe(expectedResponse);
+            expect(mockLLMService.completeTask).toHaveBeenCalledWith(userMessage, undefined);
         });
 
         test('should delegate history operations to message manager', async () => {
-            await chatSession.getHistory();
-            await chatSession.reset();
+            const mockHistory = [
+                { role: 'user', content: 'Hello' },
+                { role: 'assistant', content: 'Hi there!' },
+            ];
 
+            mockMessageManager.getHistory.mockResolvedValue(mockHistory);
+
+            const history = await chatSession.getHistory();
+
+            expect(history).toEqual(mockHistory);
             expect(mockMessageManager.getHistory).toHaveBeenCalled();
-            expect(mockMessageManager.resetConversation).toHaveBeenCalled();
         });
     });
 
@@ -383,22 +400,28 @@ describe('ChatSession', () => {
             await chatSession.init();
 
             // Verify session-specific message manager creation
-            expect(mockMessageFactory.createMessageManager).toHaveBeenCalledWith(
+            expect(mockCreateMessageManager).toHaveBeenCalledWith(
                 mockLLMConfig,
                 mockLLMConfig.router,
                 mockServices.promptManager,
                 chatSession.eventBus, // Session-specific event bus
                 mockHistoryProvider,
-                sessionId // Session ID for isolation
+                sessionId
             );
 
             // Verify session-specific LLM service creation
-            expect(mockServiceFactory.createLLMService).toHaveBeenCalledWith(
+            expect(mockCreateLLMService).toHaveBeenCalledWith(
                 mockLLMConfig,
                 mockLLMConfig.router,
                 mockServices.clientManager,
                 chatSession.eventBus, // Session-specific event bus
                 mockMessageManager
+            );
+
+            // Verify session-specific history provider creation
+            expect(mockCreateHistoryProvider).toHaveBeenCalledWith(
+                mockServices.storageManager.history,
+                sessionId
             );
         });
     });

@@ -34,6 +34,19 @@ export async function createLocalStorageContext(
 }
 
 /**
+ * Create a storage context for local file-based storage with automatic global detection
+ */
+export async function createLocalStorageContextWithAutoDetection(
+    options: {
+        isDevelopment?: boolean;
+        projectRoot?: string;
+        customRoot?: string;
+    } = {}
+): Promise<StorageContext> {
+    return StoragePathResolver.createLocalContextWithAutoDetection(options);
+}
+
+/**
  * Create a storage context for remote storage
  */
 export function createRemoteStorageContext(

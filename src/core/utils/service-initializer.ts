@@ -38,6 +38,7 @@ import { logger } from '../logger/index.js';
 import type { CLIConfigOverrides } from '../config/types.js';
 import type { AgentConfig } from '../config/schemas.js';
 import { AgentEventBus } from '../events/index.js';
+import { createLocalStorageContextWithAutoDetection } from '../storage/index.js';
 
 /**
  * Type for the core agent services returned by createAgentServices
@@ -103,10 +104,12 @@ export async function createAgentServices(
     // 3. Initialize storage manager
     const storageManager =
         overrides?.storageManager ??
-        (await createStorageInstances(config.storage, {
-            isDevelopment: process.env.NODE_ENV !== 'production',
-            projectRoot: process.cwd(),
-        }));
+        (await createStorageInstances(
+            config.storage,
+            await createLocalStorageContextWithAutoDetection({
+                isDevelopment: process.env.NODE_ENV !== 'production',
+            })
+        ));
     logger.debug('Storage manager initialized');
 
     // 4. Initialize client manager with storage-backed allowed tools provider
