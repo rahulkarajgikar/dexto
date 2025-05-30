@@ -139,7 +139,7 @@ export class SaikiAgent {
             );
             const response = await session.run(userInput, imageDataInput);
 
-            // Increment message count for this session (user message + assistant response = 2 messages)
+            // Increment message count for this session (counts each turn)
             await this.sessionManager.incrementMessageCount(session.id);
 
             // If response is an empty string, treat it as no significant response.
