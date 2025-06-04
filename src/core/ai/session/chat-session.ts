@@ -11,7 +11,8 @@ import type { PromptManager } from '../systemPrompt/manager.js';
 import type { MCPClientManager } from '../../client/manager.js';
 import type { LLMConfig } from '../../config/schemas.js';
 import type { AgentStateManager } from '../../config/agent-state-manager.js';
-import type { StorageInstances } from '../../storage/types.js';
+import type { StorageBackends } from '../../storage/backend/types.js';
+import { createHistoryStorage } from '../../storage/history-storage.js';
 import {
     SessionEventBus,
     AgentEventBus,
@@ -117,7 +118,7 @@ export class ChatSession {
             promptManager: PromptManager;
             clientManager: MCPClientManager;
             agentEventBus: AgentEventBus;
-            storageManager: StorageInstances;
+            storageManager: StorageBackends;
         },
         public readonly id: string
     ) {
@@ -172,18 +173,16 @@ export class ChatSession {
     }
 
     /**
-     * Initializes session-specific services using the new unified storage layer.
+     * Initializes session-specific services using the new simplified storage layer.
      */
     private async initializeServices(): Promise<void> {
         // Get current effective configuration for this session from state manager
         const llmConfig = this.services.stateManager.getLLMConfig(this.id);
 
-        // Create session-specific history provider using the unified storage system
-        // The storage instance handles the specifics of memory vs file vs database storage
-        const historyProvider = createHistoryProviderWithStorage(
-            this.services.storageManager.history,
-            this.id
-        );
+        // Create session-specific history provider using the simplified storage system
+        // The HistoryStorage implementation uses the database backend for message persistence
+        const historyStorage = createHistoryStorage(this.services.storageManager.database);
+        const historyProvider = createHistoryProviderWithStorage(historyStorage, this.id);
 
         // Create session-specific message manager
         this.messageManager = createMessageManager(
@@ -204,7 +203,7 @@ export class ChatSession {
             this.messageManager
         );
 
-        logger.debug(`ChatSession ${this.id}: Services initialized with unified storage`);
+        logger.debug(`ChatSession ${this.id}: Services initialized with simplified storage`);
     }
 
     /**
@@ -370,10 +369,10 @@ export class ChatSession {
             // Create new LLM service with the same dependencies but new config
             const newLLMService = createLLMService(
                 newLLMConfig,
-                router,
+                newLLMConfig.router,
                 this.services.clientManager,
                 this.eventBus, // Use session event bus
-                this.messageManager // This preserves the conversation history
+                this.messageManager
             );
 
             // Replace the LLM service
@@ -391,6 +390,25 @@ export class ChatSession {
             });
         } catch (error) {
             logger.error(`Error during ChatSession.switchLLM for session ${this.id}:`, error);
+            throw error;
+        }
+    }
+
+    /**
+     * Cleanup the session and its resources.
+     * This method should be called when the session is being ended.
+     */
+    public async cleanup(): Promise<void> {
+        try {
+            // Reset the conversation history to clean up any storage
+            await this.reset();
+
+            // Dispose of event listeners
+            this.dispose();
+
+            logger.debug(`ChatSession ${this.id}: Cleanup completed`);
+        } catch (error) {
+            logger.error(`Error during ChatSession cleanup for session ${this.id}:`, error);
             throw error;
         }
     }

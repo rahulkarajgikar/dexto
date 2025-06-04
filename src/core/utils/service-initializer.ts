@@ -31,14 +31,14 @@ import { PromptManager } from '../ai/systemPrompt/manager.js';
 import { StaticConfigManager } from '../config/static-config-manager.js';
 import { AgentStateManager } from '../config/agent-state-manager.js';
 import { SessionManager } from '../ai/session/session-manager.js';
-import { createStorageInstances } from '../storage/factory.js';
-import type { StorageInstances } from '../storage/types.js';
+import { initializeStorage, type StorageBackends } from '../storage/index.js';
 import { createAllowedToolsProvider } from '../client/tool-confirmation/allowed-tools-provider/factory.js';
 import { logger } from '../logger/index.js';
 import type { CLIConfigOverrides } from '../config/types.js';
 import type { AgentConfig } from '../config/schemas.js';
 import { AgentEventBus } from '../events/index.js';
-import { createLocalStorageContextWithAutoDetection } from '../storage/index.js';
+// Remove the old storage context import since we're using the new system
+// import { createLocalStorageContextWithAutoDetection } from '../storage/index.js';
 
 /**
  * Type for the core agent services returned by createAgentServices
@@ -49,7 +49,7 @@ export type AgentServices = {
     agentEventBus: AgentEventBus;
     stateManager: AgentStateManager;
     sessionManager: SessionManager;
-    storageManager: StorageInstances;
+    storageManager: StorageBackends;
 };
 
 /**
@@ -74,7 +74,7 @@ export type InitializeServicesOptions = {
     clientManager?: MCPClientManager; // Inject a custom or mock MCPClientManager
     agentEventBus?: AgentEventBus; // Inject a custom or mock AgentEventBus
     sessionManager?: SessionManager; // Inject a custom or mock SessionManager
-    storageManager?: StorageInstances; // Inject a custom or mock StorageManager
+    storageManager?: StorageBackends; // Inject a custom or mock StorageManager
     // Add more overrides as needed
     // configOverride?: Partial<AgentConfig>; // (optional) for field-level config overrides
 };
@@ -101,16 +101,18 @@ export async function createAgentServices(
     const agentEventBus: AgentEventBus = overrides?.agentEventBus ?? new AgentEventBus();
     logger.debug('Agent event bus initialized');
 
-    // 3. Initialize storage manager
-    const storageManager =
-        overrides?.storageManager ??
-        (await createStorageInstances(
-            config.storage,
-            await createLocalStorageContextWithAutoDetection({
-                isDevelopment: process.env.NODE_ENV !== 'production',
-            })
-        ));
-    logger.debug('Storage manager initialized');
+    // 3. Initialize storage manager using the new simplified storage system
+    // Convert from old storage config format to new simplified format
+    const oldStorageConfig = config.storage;
+    const newStorageConfig: import('../storage/index.js').StorageBackendConfig = {
+        cache: { type: 'memory' as const },
+        database: { type: 'memory' as const },
+    };
+
+    // Use memory as default for now since we're in transition
+    // TODO: Add mapping logic when we need to support other backends
+    const storageManager = overrides?.storageManager ?? (await initializeStorage(newStorageConfig));
+    logger.debug('Storage manager initialized with new simplified storage system');
 
     // 4. Initialize client manager with storage-backed allowed tools provider
     const connectionMode = overrides?.connectionMode ?? 'lenient';
@@ -133,7 +135,7 @@ export async function createAgentServices(
         logger.debug(
             overrides?.clientManager
                 ? 'Client manager and MCP servers initialized via override'
-                : `Client manager initialized with ${mcpServerCount} MCP server(s) and storage-backed allowed tools`
+                : `Client manager initialized with ${mcpServerCount} MCP server(s)`
         );
     }
 
@@ -169,7 +171,7 @@ export async function createAgentServices(
     logger.debug(
         overrides?.sessionManager
             ? 'Session manager provided via override'
-            : 'Session manager initialized with storage support'
+            : 'Session manager initialized with simplified storage support'
     );
 
     // 8. Return the core services

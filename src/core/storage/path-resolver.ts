@@ -13,6 +13,7 @@ import {
  * Resolves storage paths for Saiki's local storage backends.
  * Handles the logic for determining whether to use global (~/.saiki)
  * or project-local (.saiki) storage based on context.
+ * from old implementation, might need to be refactored to use the new storage backend types
  */
 export class StoragePathResolver {
     static readonly SAIKI_DIR = '.saiki';
