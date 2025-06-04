@@ -467,6 +467,50 @@ export const StorageSchema = z
 
 export type StorageConfig = z.infer<typeof StorageSchema>;
 
+// ==== NEW SIMPLIFIED STORAGE CONFIGURATION ====
+// Backend configuration for simplified storage system
+const BackendConfigSchema = z.object({
+    type: z.enum(['memory', 'redis', 'sqlite', 'postgres']).describe('Backend type'),
+    // Connection options
+    url: z.string().optional().describe('Connection URL (for redis/postgres)'),
+    path: z.string().optional().describe('File path (for sqlite)'),
+    connectionString: z.string().optional().describe('Database connection string'),
+    host: z.string().optional().describe('Database host'),
+    port: z.number().int().positive().optional().describe('Database port'),
+    password: z.string().optional().describe('Database password'),
+    database: z.number().int().nonnegative().optional().describe('Database number (for redis)'),
+
+    // Connection pool options
+    maxConnections: z.number().int().positive().optional().describe('Maximum connections'),
+    idleTimeoutMillis: z
+        .number()
+        .int()
+        .positive()
+        .optional()
+        .describe('Idle timeout in milliseconds'),
+    connectionTimeoutMillis: z
+        .number()
+        .int()
+        .positive()
+        .optional()
+        .describe('Connection timeout in milliseconds'),
+
+    // Additional options
+    options: z.record(z.any()).optional().describe('Backend-specific options'),
+});
+
+// Simplified storage configuration with just cache and database backends
+export const SimplifiedStorageSchema = z
+    .object({
+        cache: BackendConfigSchema.describe('Cache backend configuration (fast, ephemeral)'),
+        database: BackendConfigSchema.describe(
+            'Database backend configuration (persistent, reliable)'
+        ),
+    })
+    .describe('Simplified storage configuration with cache and database backends');
+
+export type SimplifiedStorageConfig = z.infer<typeof SimplifiedStorageSchema>;
+
 export const AgentConfigSchema = z
     .object({
         agentCard: AgentCardSchema.describe('Configuration for the agent card').optional(),
@@ -474,7 +518,13 @@ export const AgentConfigSchema = z
             .default({})
             .describe('Configurations for MCP (Model Context Protocol) servers used by the agent'),
         llm: LLMConfigSchema.describe('Core LLM configuration for the agent'),
-        storage: StorageSchema.optional().describe('Storage configuration for the agent'),
+
+        // Support both old and new storage configurations
+        storage: z
+            .union([StorageSchema, SimplifiedStorageSchema])
+            .optional()
+            .describe('Storage configuration for the agent (legacy or simplified)'),
+
         sessions: z
             .object({
                 maxSessions: z

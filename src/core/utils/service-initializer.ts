@@ -31,11 +31,15 @@ import { PromptManager } from '../ai/systemPrompt/manager.js';
 import { StaticConfigManager } from '../config/static-config-manager.js';
 import { AgentStateManager } from '../config/agent-state-manager.js';
 import { SessionManager } from '../ai/session/session-manager.js';
-import { initializeStorage, type StorageBackends } from '../storage/index.js';
+import {
+    initializeStorage,
+    type StorageBackends,
+    type StorageBackendConfig,
+} from '../storage/index.js';
 import { createAllowedToolsProvider } from '../client/tool-confirmation/allowed-tools-provider/factory.js';
 import { logger } from '../logger/index.js';
-import type { CLIConfigOverrides } from '../config/types.js';
-import type { AgentConfig } from '../config/schemas.js';
+import type { CLIConfigOverrides, SimplifiedStorageConfig } from '../config/types.js';
+import type { AgentConfig, StorageConfig } from '../config/schemas.js';
 import { AgentEventBus } from '../events/index.js';
 // Remove the old storage context import since we're using the new system
 // import { createLocalStorageContextWithAutoDetection } from '../storage/index.js';
@@ -79,6 +83,79 @@ export type InitializeServicesOptions = {
     // configOverride?: Partial<AgentConfig>; // (optional) for field-level config overrides
 };
 
+/**
+ * Utility function to detect if storage config is using the simplified format
+ */
+function isSimplifiedStorageConfig(storage: any): storage is SimplifiedStorageConfig {
+    return (
+        storage &&
+        typeof storage === 'object' &&
+        storage.cache &&
+        storage.database &&
+        !storage.history && // Legacy format has history
+        !storage.allowedTools
+    ); // Legacy format has allowedTools
+}
+
+/**
+ * Convert legacy storage config to simplified storage config
+ */
+function convertLegacyStorageConfig(legacyConfig: StorageConfig): StorageBackendConfig {
+    // For now, we'll use memory backends as default
+    // TODO: Add proper mapping logic for legacy storage types
+    const defaultConfig: StorageBackendConfig = {
+        cache: { type: 'memory' as const },
+        database: { type: 'memory' as const },
+    };
+
+    // Map legacy storage types to backends (simplified mapping for now)
+    if (legacyConfig.history?.type === 'sqlite') {
+        defaultConfig.database = {
+            type: 'sqlite' as const,
+            path: './storage/history.db',
+        };
+    } else if (legacyConfig.history?.type === 'database') {
+        defaultConfig.database = {
+            type: 'postgres' as const,
+            url: (legacyConfig.history as any).url,
+        };
+    }
+
+    if (legacyConfig.toolCache?.type === 'redis') {
+        defaultConfig.cache = {
+            type: 'redis' as const,
+            url: (legacyConfig.toolCache as any).url,
+        };
+    }
+
+    return defaultConfig;
+}
+
+/**
+ * Get storage configuration from agent config
+ */
+function getStorageConfig(config: AgentConfig): StorageBackendConfig {
+    if (!config.storage) {
+        // No storage config provided, use memory defaults
+        return {
+            cache: { type: 'memory' as const },
+            database: { type: 'memory' as const },
+        };
+    }
+
+    if (isSimplifiedStorageConfig(config.storage)) {
+        // New simplified format - ensure types are properly set
+        return {
+            cache: { type: config.storage.cache.type, ...config.storage.cache },
+            database: { type: config.storage.database.type, ...config.storage.database },
+        };
+    } else {
+        // Legacy format - convert to simplified
+        logger.info('Converting legacy storage configuration to simplified format');
+        return convertLegacyStorageConfig(config.storage as StorageConfig);
+    }
+}
+
 // High-level factory to load, validate, and wire up all agent services in one call
 /**
  * Loads and validates configuration and initializes all agent services as a single unit.
@@ -102,17 +179,12 @@ export async function createAgentServices(
     logger.debug('Agent event bus initialized');
 
     // 3. Initialize storage manager using the new simplified storage system
-    // Convert from old storage config format to new simplified format
-    const oldStorageConfig = config.storage;
-    const newStorageConfig: import('../storage/index.js').StorageBackendConfig = {
-        cache: { type: 'memory' as const },
-        database: { type: 'memory' as const },
-    };
-
-    // Use memory as default for now since we're in transition
-    // TODO: Add mapping logic when we need to support other backends
-    const storageManager = overrides?.storageManager ?? (await initializeStorage(newStorageConfig));
-    logger.debug('Storage manager initialized with new simplified storage system');
+    const storageConfig = getStorageConfig(config);
+    const storageManager = overrides?.storageManager ?? (await initializeStorage(storageConfig));
+    logger.debug('Storage manager initialized with simplified storage system', {
+        cache: storageConfig.cache.type,
+        database: storageConfig.database.type,
+    });
 
     // 4. Initialize client manager with storage-backed allowed tools provider
     const connectionMode = overrides?.connectionMode ?? 'lenient';

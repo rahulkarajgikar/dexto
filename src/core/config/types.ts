@@ -2,7 +2,7 @@
  * Type definitions for application configuration
  */
 
-import type { LLMConfig, AgentCard } from './schemas.js';
+import type { LLMConfig, AgentCard, SimplifiedStorageConfig } from './schemas.js';
 
 /**
  * Keys in LLMConfig that can be overridden via CLI
@@ -24,5 +24,5 @@ export type Source = 'file' | 'cli' | 'default' | 'runtime';
  */
 export type LLMProvenance = Record<LLMOverrideKey, Source>;
 
-// Re-export AgentCard from schemas for convenience
-export type { AgentCard };
+// Re-export types from schemas for convenience
+export type { AgentCard, SimplifiedStorageConfig };
