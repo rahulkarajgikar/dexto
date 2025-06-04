@@ -1,4 +1,4 @@
-import { createHistoryProviderWithStorage } from '../llm/messages/history/factory.js';
+import { createDatabaseHistoryProvider } from '../llm/messages/history/factory.js';
 import { createMessageManager } from '../llm/messages/factory.js';
 import { createLLMService } from '../llm/services/factory.js';
 import { createTokenizer } from '../llm/tokenizer/factory.js';
@@ -12,7 +12,6 @@ import type { MCPClientManager } from '../../client/manager.js';
 import type { LLMConfig } from '../../config/schemas.js';
 import type { AgentStateManager } from '../../config/agent-state-manager.js';
 import type { StorageBackends } from '../../storage/backend/types.js';
-import { createHistoryStorage } from '../../storage/history-storage.js';
 import {
     SessionEventBus,
     AgentEventBus,
@@ -179,10 +178,11 @@ export class ChatSession {
         // Get current effective configuration for this session from state manager
         const llmConfig = this.services.stateManager.getLLMConfig(this.id);
 
-        // Create session-specific history provider using the simplified storage system
-        // The HistoryStorage implementation uses the database backend for message persistence
-        const historyStorage = createHistoryStorage(this.services.storage.database);
-        const historyProvider = createHistoryProviderWithStorage(historyStorage, this.id);
+        // Create session-specific history provider directly with database backend
+        const historyProvider = createDatabaseHistoryProvider(
+            this.services.storage.database,
+            this.id
+        );
 
         // Create session-specific message manager
         this.messageManager = createMessageManager(

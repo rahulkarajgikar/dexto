@@ -2,9 +2,9 @@ import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest';
 import { ChatSession } from './chat-session.js';
 import type { LLMConfig } from '../../config/schemas.js';
 
-// Mock dependencies
+// Mock all dependencies
 vi.mock('../llm/messages/history/factory.js', () => ({
-    createHistoryProviderWithStorage: vi.fn(),
+    createDatabaseHistoryProvider: vi.fn(),
 }));
 vi.mock('../llm/messages/factory.js', () => ({
     createMessageManager: vi.fn(),
@@ -21,9 +21,6 @@ vi.mock('../llm/messages/formatters/factory.js', () => ({
 vi.mock('../llm/registry.js', () => ({
     getEffectiveMaxTokens: vi.fn(),
 }));
-vi.mock('../../storage/history-storage.js', () => ({
-    createHistoryStorage: vi.fn(),
-}));
 vi.mock('../../logger/index.js', () => ({
     logger: {
         debug: vi.fn(),
@@ -33,21 +30,19 @@ vi.mock('../../logger/index.js', () => ({
     },
 }));
 
-import { createHistoryProviderWithStorage } from '../llm/messages/history/factory.js';
+import { createDatabaseHistoryProvider } from '../llm/messages/history/factory.js';
 import { createMessageManager } from '../llm/messages/factory.js';
 import { createLLMService } from '../llm/services/factory.js';
 import { createTokenizer } from '../llm/tokenizer/factory.js';
 import { createMessageFormatter } from '../llm/messages/formatters/factory.js';
 import { getEffectiveMaxTokens } from '../llm/registry.js';
-import { createHistoryStorage } from '../../storage/history-storage.js';
 
-const mockCreateHistoryProvider = vi.mocked(createHistoryProviderWithStorage);
+const mockCreateDatabaseHistoryProvider = vi.mocked(createDatabaseHistoryProvider);
 const mockCreateMessageManager = vi.mocked(createMessageManager);
 const mockCreateLLMService = vi.mocked(createLLMService);
 const mockCreateTokenizer = vi.mocked(createTokenizer);
 const mockCreateFormatter = vi.mocked(createMessageFormatter);
 const mockGetEffectiveMaxTokens = vi.mocked(getEffectiveMaxTokens);
-const mockCreateHistoryStorage = vi.mocked(createHistoryStorage);
 
 describe('ChatSession', () => {
     let chatSession: ChatSession;
@@ -159,8 +154,7 @@ describe('ChatSession', () => {
         };
 
         // Set up factory mocks
-        mockCreateHistoryStorage.mockReturnValue(mockHistoryProvider);
-        mockCreateHistoryProvider.mockReturnValue(mockHistoryProvider);
+        mockCreateDatabaseHistoryProvider.mockReturnValue(mockHistoryProvider);
         mockCreateMessageManager.mockReturnValue(mockMessageManager);
         mockCreateLLMService.mockReturnValue(mockLLMService);
         mockCreateTokenizer.mockReturnValue(mockTokenizer);
@@ -187,12 +181,9 @@ describe('ChatSession', () => {
         test('should initialize with unified storage system', async () => {
             await chatSession.init();
 
-            // Verify createHistoryStorage is called with the database backend
-            expect(mockCreateHistoryStorage).toHaveBeenCalledWith(mockServices.storage.database);
-
-            // Verify createHistoryProviderWithStorage is called with the storage and sessionId
-            expect(mockCreateHistoryProvider).toHaveBeenCalledWith(
-                mockHistoryProvider, // This is what createHistoryStorage returns
+            // Verify createDatabaseHistoryProvider is called with the database backend and sessionId
+            expect(mockCreateDatabaseHistoryProvider).toHaveBeenCalledWith(
+                mockServices.storage.database,
                 sessionId
             );
         });
@@ -334,7 +325,7 @@ describe('ChatSession', () => {
 
     describe('Error Handling and Resilience', () => {
         test('should handle storage initialization failures gracefully', async () => {
-            mockCreateHistoryProvider.mockImplementation(() => {
+            mockCreateDatabaseHistoryProvider.mockImplementation(() => {
                 throw new Error('Storage initialization failed');
             });
 
@@ -438,8 +429,10 @@ describe('ChatSession', () => {
             );
 
             // Verify session-specific history provider creation
-            expect(mockCreateHistoryStorage).toHaveBeenCalledWith(mockServices.storage.database);
-            expect(mockCreateHistoryProvider).toHaveBeenCalledWith(mockHistoryProvider, sessionId);
+            expect(mockCreateDatabaseHistoryProvider).toHaveBeenCalledWith(
+                mockServices.storage.database,
+                sessionId
+            );
         });
     });
 });

@@ -47,10 +47,6 @@ export type {
 // Backend implementations - always available
 export { MemoryBackend } from './backend/memory-backend.js';
 
-// History storage (bridge to new system)
-export type { HistoryStorage } from './types.js';
-export { DatabaseHistoryStorage, createHistoryStorage } from './history-storage.js';
-
 // Optional backend configurations (types only - implementations are lazy-loaded)
 export type { SQLiteBackendConfig } from './backend/sqlite-backend.js';
 export type { RedisBackendConfig } from './backend/redis-backend.js';
