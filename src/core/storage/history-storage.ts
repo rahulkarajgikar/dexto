@@ -25,8 +25,7 @@ export class DatabaseHistoryStorage implements HistoryStorage {
             return chronologicalMessages;
         } catch (error) {
             logger.error(
-                `DatabaseHistoryStorage: Error retrieving messages for session ${sessionId}:`,
-                error
+                `DatabaseHistoryStorage: Error retrieving messages for session ${sessionId}: ${error instanceof Error ? error.message : String(error)}`
             );
             return [];
         }
@@ -57,8 +56,7 @@ export class DatabaseHistoryStorage implements HistoryStorage {
             });
         } catch (error) {
             logger.error(
-                `DatabaseHistoryStorage: Error adding message to session ${sessionId}:`,
-                error
+                `DatabaseHistoryStorage: Error adding message to session ${sessionId}: ${error instanceof Error ? error.message : String(error)}`
             );
             throw new Error(
                 `Failed to save message: ${error instanceof Error ? error.message : String(error)}`
@@ -73,7 +71,9 @@ export class DatabaseHistoryStorage implements HistoryStorage {
 
             logger.debug(`DatabaseHistoryStorage: Cleared session ${sessionId}`);
         } catch (error) {
-            logger.error(`DatabaseHistoryStorage: Error clearing session ${sessionId}:`, error);
+            logger.error(
+                `DatabaseHistoryStorage: Error clearing session ${sessionId}: ${error instanceof Error ? error.message : String(error)}`
+            );
             throw new Error(
                 `Failed to clear session: ${error instanceof Error ? error.message : String(error)}`
             );

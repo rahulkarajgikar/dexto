@@ -167,9 +167,10 @@ export class MessageManager {
 
             return totalTokens;
         } catch (error) {
-            logger.error('Error calculating total token count:', error);
-            // Fallback to history-only count
-            return this.getTokenCount();
+            logger.error(
+                `Error calculating total token count: ${error instanceof Error ? error.message : String(error)}`
+            );
+            return 0; // Return 0 if we can't calculate
         }
     }
 
@@ -467,8 +468,7 @@ export class MessageManager {
             messageHistory = history ?? (await this.historyProvider.getHistory());
         } catch (error) {
             logger.error(
-                `MessageManager: Failed to get history for session ${this.sessionId}:`,
-                error
+                `MessageManager: Failed to get history for session ${this.sessionId}: ${error instanceof Error ? error.message : String(error)}`
             );
             throw new Error(
                 `Failed to get conversation history: ${error instanceof Error ? error.message : String(error)}`
@@ -480,7 +480,9 @@ export class MessageManager {
             const prompt = systemPrompt ?? (await this.getSystemPrompt(context));
             return this.formatter.format([...messageHistory], prompt);
         } catch (error) {
-            logger.error('Error formatting messages:', error);
+            logger.error(
+                `Error formatting messages: ${error instanceof Error ? error.message : String(error)}`
+            );
             throw new Error(
                 `Failed to format messages: ${error instanceof Error ? error.message : String(error)}`
             );
@@ -533,7 +535,9 @@ export class MessageManager {
                 tokensUsed,
             };
         } catch (error) {
-            logger.error('Error in getFormattedMessagesWithCompression:', error);
+            logger.error(
+                `Error in getFormattedMessagesWithCompression: ${error instanceof Error ? error.message : String(error)}`
+            );
             throw new Error(
                 `Failed to get formatted messages with compression: ${error instanceof Error ? error.message : String(error)}`
             );
@@ -619,10 +623,11 @@ export class MessageManager {
                     this.tokenizer,
                     targetHistoryTokens // Use target tokens that account for system prompt
                 );
-            } catch (error) {
-                logger.error(`MessageManager: Error applying ${strategyName}:`, error);
-                // Decide if we should stop or try the next strategy. Let's stop for now.
-                break;
+            } catch (strategyError) {
+                logger.error(
+                    `MessageManager: Error applying ${strategyName}: ${strategyError instanceof Error ? strategyError.message : String(strategyError)}`
+                );
+                throw strategyError;
             }
 
             // Recalculate tokens after applying the strategy
@@ -654,8 +659,7 @@ export class MessageManager {
                 await this.addMessage(msg);
             } catch (error) {
                 logger.error(
-                    `MessageManager: Failed to process LLM response message for session ${this.sessionId}:`,
-                    error
+                    `MessageManager: Failed to process LLM response message for session ${this.sessionId}: ${error instanceof Error ? error.message : String(error)}`
                 );
                 // Continue processing other messages rather than failing completely
             }

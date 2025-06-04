@@ -61,7 +61,10 @@ export class MCPClientManager {
             }
             logger.debug(`Cached tools for client: ${clientName}`);
         } catch (error) {
-            logger.error(`Error retrieving tools for client ${clientName}:`, error);
+            logger.error(
+                `Error retrieving tools for client ${clientName}: ${error instanceof Error ? error.message : String(error)}`
+            );
+            return; // Early return on error, no caching
         }
 
         // Cache prompts, if supported

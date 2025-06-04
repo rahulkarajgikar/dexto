@@ -120,7 +120,10 @@ export class SessionManager {
                 }
             }
         } catch (error) {
-            logger.error('Failed to restore sessions from storage:', error);
+            logger.error(
+                `Failed to restore sessions from storage: ${error instanceof Error ? error.message : String(error)}`
+            );
+            // Continue without restored sessions
         }
     }
 
@@ -403,7 +406,9 @@ export class SessionManager {
                     }
                 } catch (error) {
                     failedSessions.push(sId);
-                    logger.warn(`Error switching LLM for session ${sId}:`, error);
+                    logger.warn(
+                        `Error switching LLM for session ${sId}: ${error instanceof Error ? error.message : String(error)}`
+                    );
                 }
             }
         }
@@ -525,7 +530,9 @@ export class SessionManager {
             try {
                 await this.endSession(sessionId);
             } catch (error) {
-                logger.error(`Failed to cleanup session ${sessionId}:`, error);
+                logger.error(
+                    `Failed to cleanup session ${sessionId}: ${error instanceof Error ? error.message : String(error)}`
+                );
             }
         }
 

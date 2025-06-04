@@ -149,8 +149,9 @@ export class SaikiAgent {
             // Return null if the response is empty or just whitespace.
             return null;
         } catch (error) {
-            logger.error('Error during SaikiAgent.run:', error);
-            // Re-throw the error to allow the caller to handle it.
+            logger.error(
+                `Error during SaikiAgent.run: ${error instanceof Error ? error.message : String(error)}`
+            );
             throw error;
         }
     }
@@ -246,8 +247,9 @@ export class SaikiAgent {
                 sessionId: session.id,
             });
         } catch (error) {
-            logger.error('Error during SaikiAgent.resetConversation:', error);
-            // Re-throw the error to allow the caller to handle it.
+            logger.error(
+                `Error during SaikiAgent.resetConversation: ${error instanceof Error ? error.message : String(error)}`
+            );
             throw error;
         }
     }

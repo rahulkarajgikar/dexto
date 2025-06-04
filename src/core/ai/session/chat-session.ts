@@ -389,7 +389,9 @@ export class ChatSession {
                 historyRetained: true,
             });
         } catch (error) {
-            logger.error(`Error during ChatSession.switchLLM for session ${this.id}:`, error);
+            logger.error(
+                `Error during ChatSession.switchLLM for session ${this.id}: ${error instanceof Error ? error.message : String(error)}`
+            );
             throw error;
         }
     }
@@ -408,7 +410,9 @@ export class ChatSession {
 
             logger.debug(`ChatSession ${this.id}: Cleanup completed`);
         } catch (error) {
-            logger.error(`Error during ChatSession cleanup for session ${this.id}:`, error);
+            logger.error(
+                `Error during ChatSession cleanup for session ${this.id}: ${error instanceof Error ? error.message : String(error)}`
+            );
             throw error;
         }
     }
