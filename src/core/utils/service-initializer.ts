@@ -126,6 +126,7 @@ export async function createAgentServices(
     logger.debug('Agent event bus initialized');
 
     // 3. Initialize storage backends using the new storage system
+    logger.debug('Initializing storage backends');
     const storageConfig = getStorageConfig(config);
     const storage = overrides?.storage ?? (await initializeStorage(storageConfig));
 
