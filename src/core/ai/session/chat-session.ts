@@ -118,7 +118,7 @@ export class ChatSession {
             promptManager: PromptManager;
             clientManager: MCPClientManager;
             agentEventBus: AgentEventBus;
-            storageManager: StorageBackends;
+            storage: StorageBackends;
         },
         public readonly id: string
     ) {
@@ -181,7 +181,7 @@ export class ChatSession {
 
         // Create session-specific history provider using the simplified storage system
         // The HistoryStorage implementation uses the database backend for message persistence
-        const historyStorage = createHistoryStorage(this.services.storageManager.database);
+        const historyStorage = createHistoryStorage(this.services.storage.database);
         const historyProvider = createHistoryProviderWithStorage(historyStorage, this.id);
 
         // Create session-specific message manager

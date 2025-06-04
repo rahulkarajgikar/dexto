@@ -6,7 +6,7 @@ import { AgentEventBus } from '../../events/index.js';
 import { logger } from '../../logger/index.js';
 import type { AgentStateManager } from '../../config/agent-state-manager.js';
 import type { LLMConfig } from '../../config/schemas.js';
-import type { StorageBackends } from '../../storage/backend/types.js';
+import type { StorageBackends } from '../../storage/index.js';
 
 export interface SessionMetadata {
     createdAt: number;
@@ -49,7 +49,7 @@ export class SessionManager {
             promptManager: PromptManager;
             clientManager: MCPClientManager;
             agentEventBus: AgentEventBus;
-            storageManager: StorageBackends;
+            storage: StorageBackends;
         },
         options: {
             maxSessions?: number;
@@ -95,14 +95,14 @@ export class SessionManager {
      */
     private async restoreSessionsFromStorage(): Promise<void> {
         try {
-            // Use the new storage system to list sessions with the 'session:' prefix
-            const sessionKeys = await this.services.storageManager.database.list('session:');
+            // Use the database backend to list sessions with the 'session:' prefix
+            const sessionKeys = await this.services.storage.database.list('session:');
             logger.debug(`Found ${sessionKeys.length} persisted sessions to restore`);
 
             for (const sessionKey of sessionKeys) {
                 const sessionId = sessionKey.replace('session:', '');
                 const sessionData =
-                    await this.services.storageManager.database.get<SessionData>(sessionKey);
+                    await this.services.storage.database.get<SessionData>(sessionKey);
 
                 if (sessionData) {
                     // Check if session is still valid (not expired)
@@ -114,7 +114,7 @@ export class SessionManager {
                         logger.debug(`Session ${sessionId} restored from storage`);
                     } else {
                         // Session expired, clean it up
-                        await this.services.storageManager.database.delete(sessionKey);
+                        await this.services.storage.database.delete(sessionKey);
                         logger.debug(`Expired session ${sessionId} cleaned up during restore`);
                     }
                 }
@@ -159,8 +159,7 @@ export class SessionManager {
 
         // Check if session exists in storage
         const sessionKey = `session:${id}`;
-        const existingMetadata =
-            await this.services.storageManager.database.get<SessionData>(sessionKey);
+        const existingMetadata = await this.services.storage.database.get<SessionData>(sessionKey);
         if (existingMetadata) {
             // Session exists in storage, restore it
             await this.updateSessionActivity(id);
@@ -172,7 +171,7 @@ export class SessionManager {
         }
 
         // Check session limits
-        const activeSessionKeys = await this.services.storageManager.database.list('session:');
+        const activeSessionKeys = await this.services.storage.database.list('session:');
         if (activeSessionKeys.length >= this.maxSessions) {
             throw new Error(`Maximum sessions (${this.maxSessions}) reached`);
         }
@@ -191,14 +190,10 @@ export class SessionManager {
             messageCount: 0,
         };
 
-        await this.services.storageManager.database.set(sessionKey, sessionData);
+        await this.services.storage.database.set(sessionKey, sessionData);
 
         // Also store in cache with TTL for faster access
-        await this.services.storageManager.cache.set(
-            sessionKey,
-            sessionData,
-            this.sessionTTL / 1000
-        );
+        await this.services.storage.cache.set(sessionKey, sessionData, this.sessionTTL / 1000);
 
         logger.debug(`Created new session: ${id}`);
         return session;
@@ -231,8 +226,7 @@ export class SessionManager {
 
         // Check storage
         const sessionKey = `session:${sessionId}`;
-        const sessionData =
-            await this.services.storageManager.database.get<SessionData>(sessionKey);
+        const sessionData = await this.services.storage.database.get<SessionData>(sessionKey);
         if (sessionData) {
             // Restore session to memory
             const session = new ChatSession(this.services, sessionId);
@@ -261,8 +255,8 @@ export class SessionManager {
 
         // Remove from storage
         const sessionKey = `session:${sessionId}`;
-        await this.services.storageManager.database.delete(sessionKey);
-        await this.services.storageManager.cache.delete(sessionKey);
+        await this.services.storage.database.delete(sessionKey);
+        await this.services.storage.cache.delete(sessionKey);
 
         logger.debug(`Ended session: ${sessionId}`);
     }
@@ -274,7 +268,7 @@ export class SessionManager {
      */
     public async listSessions(): Promise<string[]> {
         await this.ensureInitialized();
-        const sessionKeys = await this.services.storageManager.database.list('session:');
+        const sessionKeys = await this.services.storage.database.list('session:');
         return sessionKeys.map((key) => key.replace('session:', ''));
     }
 
@@ -287,8 +281,7 @@ export class SessionManager {
     public async getSessionMetadata(sessionId: string): Promise<SessionMetadata | undefined> {
         await this.ensureInitialized();
         const sessionKey = `session:${sessionId}`;
-        const sessionData =
-            await this.services.storageManager.database.get<SessionData>(sessionKey);
+        const sessionData = await this.services.storage.database.get<SessionData>(sessionKey);
         return sessionData
             ? {
                   createdAt: sessionData.createdAt,
@@ -305,18 +298,13 @@ export class SessionManager {
      */
     private async updateSessionActivity(sessionId: string): Promise<void> {
         const sessionKey = `session:${sessionId}`;
-        const sessionData =
-            await this.services.storageManager.database.get<SessionData>(sessionKey);
+        const sessionData = await this.services.storage.database.get<SessionData>(sessionKey);
 
         if (sessionData) {
             sessionData.lastActivity = Date.now();
-            await this.services.storageManager.database.set(sessionKey, sessionData);
+            await this.services.storage.database.set(sessionKey, sessionData);
             // Update cache as well
-            await this.services.storageManager.cache.set(
-                sessionKey,
-                sessionData,
-                this.sessionTTL / 1000
-            );
+            await this.services.storage.cache.set(sessionKey, sessionData, this.sessionTTL / 1000);
         }
     }
 
@@ -327,19 +315,14 @@ export class SessionManager {
         await this.ensureInitialized();
 
         const sessionKey = `session:${sessionId}`;
-        const sessionData =
-            await this.services.storageManager.database.get<SessionData>(sessionKey);
+        const sessionData = await this.services.storage.database.get<SessionData>(sessionKey);
 
         if (sessionData) {
             sessionData.messageCount++;
             sessionData.lastActivity = Date.now();
-            await this.services.storageManager.database.set(sessionKey, sessionData);
+            await this.services.storage.database.set(sessionKey, sessionData);
             // Update cache as well
-            await this.services.storageManager.cache.set(
-                sessionKey,
-                sessionData,
-                this.sessionTTL / 1000
-            );
+            await this.services.storage.cache.set(sessionKey, sessionData, this.sessionTTL / 1000);
         }
     }
 
@@ -348,11 +331,10 @@ export class SessionManager {
      */
     private async cleanupExpiredSessions(): Promise<void> {
         const now = Date.now();
-        const sessionKeys = await this.services.storageManager.database.list('session:');
+        const sessionKeys = await this.services.storage.database.list('session:');
 
         for (const sessionKey of sessionKeys) {
-            const sessionData =
-                await this.services.storageManager.database.get<SessionData>(sessionKey);
+            const sessionData = await this.services.storage.database.get<SessionData>(sessionKey);
 
             if (sessionData && now - sessionData.lastActivity > this.sessionTTL) {
                 const sessionId = sessionKey.replace('session:', '');
@@ -365,8 +347,8 @@ export class SessionManager {
                 }
 
                 // Remove from storage
-                await this.services.storageManager.database.delete(sessionKey);
-                await this.services.storageManager.cache.delete(sessionKey);
+                await this.services.storage.database.delete(sessionKey);
+                await this.services.storage.cache.delete(sessionKey);
 
                 logger.debug(`Cleaned up expired session: ${sessionId}`);
             }

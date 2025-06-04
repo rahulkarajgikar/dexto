@@ -21,6 +21,9 @@ vi.mock('../llm/messages/formatters/factory.js', () => ({
 vi.mock('../llm/registry.js', () => ({
     getEffectiveMaxTokens: vi.fn(),
 }));
+vi.mock('../../storage/history-storage.js', () => ({
+    createHistoryStorage: vi.fn(),
+}));
 vi.mock('../../logger/index.js', () => ({
     logger: {
         debug: vi.fn(),
@@ -36,6 +39,7 @@ import { createLLMService } from '../llm/services/factory.js';
 import { createTokenizer } from '../llm/tokenizer/factory.js';
 import { createMessageFormatter } from '../llm/messages/formatters/factory.js';
 import { getEffectiveMaxTokens } from '../llm/registry.js';
+import { createHistoryStorage } from '../../storage/history-storage.js';
 
 const mockCreateHistoryProvider = vi.mocked(createHistoryProviderWithStorage);
 const mockCreateMessageManager = vi.mocked(createMessageManager);
@@ -43,6 +47,7 @@ const mockCreateLLMService = vi.mocked(createLLMService);
 const mockCreateTokenizer = vi.mocked(createTokenizer);
 const mockCreateFormatter = vi.mocked(createMessageFormatter);
 const mockGetEffectiveMaxTokens = vi.mocked(getEffectiveMaxTokens);
+const mockCreateHistoryStorage = vi.mocked(createHistoryStorage);
 
 describe('ChatSession', () => {
     let chatSession: ChatSession;
@@ -104,27 +109,32 @@ describe('ChatSession', () => {
         mockTokenizer = { encode: vi.fn(), decode: vi.fn() };
         mockFormatter = { format: vi.fn() };
 
-        // Mock storage manager - should match StorageInstances interface
+        // Mock storage manager - should match StorageBackends interface
         const mockStorageManager = {
-            history: {
-                addMessage: vi.fn().mockResolvedValue(undefined),
-                getMessages: vi.fn().mockResolvedValue([]),
-                clearSession: vi.fn().mockResolvedValue(undefined),
-                getSessions: vi.fn().mockResolvedValue([]),
-                close: vi.fn().mockResolvedValue(undefined),
-            },
-            sessions: {
-                getActiveSessions: vi.fn().mockResolvedValue([]),
-                getSession: vi.fn().mockResolvedValue(null),
-                setSessionWithTTL: vi.fn().mockResolvedValue(undefined),
-                deleteSession: vi.fn().mockResolvedValue(true),
-                close: vi.fn().mockResolvedValue(undefined),
-            },
-            userInfo: {
-                get: vi.fn().mockResolvedValue(undefined),
+            cache: {
+                get: vi.fn().mockResolvedValue(null),
                 set: vi.fn().mockResolvedValue(undefined),
                 delete: vi.fn().mockResolvedValue(true),
-                close: vi.fn().mockResolvedValue(undefined),
+                list: vi.fn().mockResolvedValue([]),
+                clear: vi.fn().mockResolvedValue(undefined),
+                connect: vi.fn().mockResolvedValue(undefined),
+                disconnect: vi.fn().mockResolvedValue(undefined),
+                isConnected: vi.fn().mockReturnValue(true),
+                getBackendType: vi.fn().mockReturnValue('memory'),
+            },
+            database: {
+                get: vi.fn().mockResolvedValue(null),
+                set: vi.fn().mockResolvedValue(undefined),
+                delete: vi.fn().mockResolvedValue(true),
+                list: vi.fn().mockResolvedValue([]),
+                clear: vi.fn().mockResolvedValue(undefined),
+                append: vi.fn().mockResolvedValue(undefined),
+                getRange: vi.fn().mockResolvedValue([]),
+                getLength: vi.fn().mockResolvedValue(0),
+                connect: vi.fn().mockResolvedValue(undefined),
+                disconnect: vi.fn().mockResolvedValue(undefined),
+                isConnected: vi.fn().mockReturnValue(true),
+                getBackendType: vi.fn().mockReturnValue('memory'),
             },
         };
 
@@ -145,10 +155,11 @@ describe('ChatSession', () => {
                 on: vi.fn(),
                 off: vi.fn(),
             },
-            storageManager: mockStorageManager,
+            storage: mockStorageManager,
         };
 
         // Set up factory mocks
+        mockCreateHistoryStorage.mockReturnValue(mockHistoryProvider);
         mockCreateHistoryProvider.mockReturnValue(mockHistoryProvider);
         mockCreateMessageManager.mockReturnValue(mockMessageManager);
         mockCreateLLMService.mockReturnValue(mockLLMService);
@@ -176,9 +187,12 @@ describe('ChatSession', () => {
         test('should initialize with unified storage system', async () => {
             await chatSession.init();
 
-            // Verify it uses the unified storage approach - directly accessing storageManager.history
+            // Verify createHistoryStorage is called with the database backend
+            expect(mockCreateHistoryStorage).toHaveBeenCalledWith(mockServices.storage.database);
+
+            // Verify createHistoryProviderWithStorage is called with the storage and sessionId
             expect(mockCreateHistoryProvider).toHaveBeenCalledWith(
-                mockServices.storageManager.history,
+                mockHistoryProvider, // This is what createHistoryStorage returns
                 sessionId
             );
         });
@@ -424,10 +438,8 @@ describe('ChatSession', () => {
             );
 
             // Verify session-specific history provider creation
-            expect(mockCreateHistoryProvider).toHaveBeenCalledWith(
-                mockServices.storageManager.history,
-                sessionId
-            );
+            expect(mockCreateHistoryStorage).toHaveBeenCalledWith(mockServices.storage.database);
+            expect(mockCreateHistoryProvider).toHaveBeenCalledWith(mockHistoryProvider, sessionId);
         });
     });
 });

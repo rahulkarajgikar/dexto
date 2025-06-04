@@ -15,7 +15,6 @@ const MockChatSession = vi.mocked(ChatSession);
 describe('SessionManager', () => {
     let sessionManager: SessionManager;
     let mockServices: any;
-    let mockSessionStorage: any;
     let mockStorageManager: any;
 
     const mockLLMConfig: LLMConfig = {
@@ -39,33 +38,32 @@ describe('SessionManager', () => {
     beforeEach(() => {
         vi.resetAllMocks();
 
-        // Mock session storage provider
-        mockSessionStorage = {
-            getActiveSessions: vi.fn().mockResolvedValue([]),
-            getSession: vi.fn().mockResolvedValue(null),
-            setSessionWithTTL: vi.fn().mockResolvedValue(undefined),
-            deleteSession: vi.fn().mockResolvedValue(true),
-            saveSession: vi.fn().mockResolvedValue(undefined),
-            getAllSessions: vi.fn().mockResolvedValue([]),
-            cleanupExpiredSessions: vi.fn().mockResolvedValue(0),
-            close: vi.fn().mockResolvedValue(undefined),
-        };
-
-        // Mock storage manager - should match StorageInstances interface
+        // Mock storage manager - should match StorageBackends interface
         mockStorageManager = {
-            sessions: mockSessionStorage,
-            history: {
-                addMessage: vi.fn().mockResolvedValue(undefined),
-                getMessages: vi.fn().mockResolvedValue([]),
-                clearSession: vi.fn().mockResolvedValue(undefined),
-                getSessions: vi.fn().mockResolvedValue([]),
-                close: vi.fn().mockResolvedValue(undefined),
-            },
-            userInfo: {
-                get: vi.fn().mockResolvedValue(undefined),
+            cache: {
+                get: vi.fn().mockResolvedValue(null),
                 set: vi.fn().mockResolvedValue(undefined),
                 delete: vi.fn().mockResolvedValue(true),
-                close: vi.fn().mockResolvedValue(undefined),
+                list: vi.fn().mockResolvedValue([]),
+                clear: vi.fn().mockResolvedValue(undefined),
+                connect: vi.fn().mockResolvedValue(undefined),
+                disconnect: vi.fn().mockResolvedValue(undefined),
+                isConnected: vi.fn().mockReturnValue(true),
+                getBackendType: vi.fn().mockReturnValue('memory'),
+            },
+            database: {
+                get: vi.fn().mockResolvedValue(null),
+                set: vi.fn().mockResolvedValue(undefined),
+                delete: vi.fn().mockResolvedValue(true),
+                list: vi.fn().mockResolvedValue([]),
+                clear: vi.fn().mockResolvedValue(undefined),
+                append: vi.fn().mockResolvedValue(undefined),
+                getRange: vi.fn().mockResolvedValue([]),
+                getLength: vi.fn().mockResolvedValue(0),
+                connect: vi.fn().mockResolvedValue(undefined),
+                disconnect: vi.fn().mockResolvedValue(undefined),
+                isConnected: vi.fn().mockReturnValue(true),
+                getBackendType: vi.fn().mockReturnValue('memory'),
             },
         };
 
@@ -84,7 +82,7 @@ describe('SessionManager', () => {
             agentEventBus: {
                 emit: vi.fn(),
             },
-            storageManager: mockStorageManager,
+            storage: mockStorageManager,
         };
 
         // Create SessionManager instance
@@ -101,6 +99,7 @@ describe('SessionManager', () => {
                 run: vi.fn().mockResolvedValue('Mock response'),
                 reset: vi.fn().mockResolvedValue(undefined),
                 dispose: vi.fn(),
+                cleanup: vi.fn().mockResolvedValue(undefined),
                 switchLLM: vi.fn().mockResolvedValue(undefined),
                 getHistory: vi.fn().mockResolvedValue([]),
                 getMessageManager: vi.fn(),
@@ -136,46 +135,52 @@ describe('SessionManager', () => {
         test('should initialize storage layer on first use', async () => {
             await sessionManager.init();
 
-            expect(mockStorageManager.sessions).toBe(mockSessionStorage);
-            expect(mockSessionStorage.getActiveSessions).toHaveBeenCalled();
+            // Verify database.list is called to find existing sessions
+            expect(mockStorageManager.database.list).toHaveBeenCalledWith('session:');
         });
 
         test('should prevent duplicate initialization', async () => {
             await sessionManager.init();
             await sessionManager.init(); // Second call
 
-            expect(mockStorageManager.sessions).toBe(mockSessionStorage);
+            // Should only call database.list once since it's already initialized
+            expect(mockStorageManager.database.list).toHaveBeenCalledTimes(1);
         });
 
         test('should restore valid sessions from persistent storage on startup', async () => {
             const existingSessionIds = ['session-1', 'session-2'];
+            const existingSessionKeys = ['session:session-1', 'session:session-2'];
             const validMetadata = {
                 ...mockSessionData,
                 lastActivity: new Date().getTime(), // Recent activity
             };
 
-            mockSessionStorage.getActiveSessions.mockResolvedValue(existingSessionIds);
-            mockSessionStorage.getSession.mockResolvedValue(validMetadata);
+            mockStorageManager.database.list.mockResolvedValue(existingSessionKeys);
+            mockStorageManager.database.get.mockResolvedValue(validMetadata);
 
             await sessionManager.init();
 
-            expect(mockSessionStorage.getActiveSessions).toHaveBeenCalled();
-            expect(mockSessionStorage.getSession).toHaveBeenCalledTimes(existingSessionIds.length);
+            expect(mockStorageManager.database.list).toHaveBeenCalledWith('session:');
+            expect(mockStorageManager.database.get).toHaveBeenCalledTimes(
+                existingSessionIds.length
+            );
         });
 
         test('should clean up expired sessions during startup restoration', async () => {
-            const existingSessionIds = ['expired-session'];
+            const existingSessionKeys = ['session:expired-session'];
             const expiredMetadata = {
                 ...mockSessionData,
                 lastActivity: new Date(Date.now() - 7200000).getTime(), // 2 hours ago
             };
 
-            mockSessionStorage.getActiveSessions.mockResolvedValue(existingSessionIds);
-            mockSessionStorage.getSession.mockResolvedValue(expiredMetadata);
+            mockStorageManager.database.list.mockResolvedValue(existingSessionKeys);
+            mockStorageManager.database.get.mockResolvedValue(expiredMetadata);
 
             await sessionManager.init();
 
-            expect(mockSessionStorage.deleteSession).toHaveBeenCalledWith('expired-session');
+            expect(mockStorageManager.database.delete).toHaveBeenCalledWith(
+                'session:expired-session'
+            );
         });
     });
 
@@ -215,12 +220,12 @@ describe('SessionManager', () => {
         test('should restore sessions from storage when not in memory', async () => {
             const sessionId = 'stored-session';
 
-            mockSessionStorage.getSession.mockResolvedValue(mockSessionData);
+            mockStorageManager.database.get.mockResolvedValue(mockSessionData);
 
             const session = await sessionManager.createSession(sessionId);
 
             expect(session.id).toBe(sessionId);
-            expect(mockSessionStorage.getSession).toHaveBeenCalledWith(sessionId);
+            expect(mockStorageManager.database.get).toHaveBeenCalledWith(`session:${sessionId}`);
         });
 
         test('should provide default session for backward compatibility', async () => {
@@ -238,7 +243,10 @@ describe('SessionManager', () => {
             await limitedManager.init();
 
             // Mock that we already have max sessions
-            mockSessionStorage.getActiveSessions.mockResolvedValue(['session-1', 'session-2']);
+            mockStorageManager.database.list.mockResolvedValue([
+                'session:session-1',
+                'session:session-2',
+            ]);
 
             await expect(limitedManager.createSession()).rejects.toThrow(
                 'Maximum sessions (2) reached'
@@ -249,7 +257,7 @@ describe('SessionManager', () => {
             await sessionManager.init();
 
             // Mock expired session that should be cleaned up
-            mockSessionStorage.getActiveSessions.mockResolvedValue(['expired-session']);
+            mockStorageManager.database.list.mockResolvedValue(['session:expired-session']);
 
             const session = await sessionManager.createSession();
 
@@ -260,8 +268,8 @@ describe('SessionManager', () => {
         test('should provide session statistics for monitoring', async () => {
             await sessionManager.init();
 
-            const activeSessionIds = ['session-1', 'session-2'];
-            mockSessionStorage.getActiveSessions.mockResolvedValue(activeSessionIds);
+            const activeSessionIds = ['session:session-1', 'session:session-2'];
+            mockStorageManager.database.list.mockResolvedValue(activeSessionIds);
 
             // Create one session in memory
             await sessionManager.createSession('session-1');
@@ -298,13 +306,13 @@ describe('SessionManager', () => {
         test('should restore sessions from storage when not in memory', async () => {
             const sessionId = 'stored-session';
 
-            mockSessionStorage.getSession.mockResolvedValue(mockSessionData);
+            mockStorageManager.database.get.mockResolvedValue(mockSessionData);
 
             const session = await sessionManager.getSession(sessionId);
 
             expect(session).toBeDefined();
             expect(session!.id).toBe(sessionId);
-            expect(mockSessionStorage.getSession).toHaveBeenCalledWith(sessionId);
+            expect(mockStorageManager.database.get).toHaveBeenCalledWith(`session:${sessionId}`);
         });
 
         test('should return undefined for non-existent sessions', async () => {
@@ -316,16 +324,21 @@ describe('SessionManager', () => {
         test('should update session activity timestamps on access', async () => {
             const sessionId = 'test-session';
 
-            mockSessionStorage.getSession.mockResolvedValue(mockSessionData);
+            // Create the session first so it exists in storage
+            await sessionManager.createSession(sessionId);
 
-            await sessionManager.getSession(sessionId);
+            // Reset the mock to clear the creation calls
+            mockStorageManager.database.set.mockClear();
+            mockStorageManager.database.get.mockResolvedValue(mockSessionData);
 
-            expect(mockSessionStorage.setSessionWithTTL).toHaveBeenCalledWith(
-                sessionId,
+            // Call incrementMessageCount which should update activity
+            await sessionManager.incrementMessageCount(sessionId);
+
+            expect(mockStorageManager.database.set).toHaveBeenCalledWith(
+                `session:${sessionId}`,
                 expect.objectContaining({
                     lastActivity: expect.any(Number),
-                }),
-                1800000
+                })
             );
         });
     });
@@ -338,53 +351,62 @@ describe('SessionManager', () => {
         test('should track and persist session metadata', async () => {
             const session = await sessionManager.createSession();
 
-            expect(mockSessionStorage.setSessionWithTTL).toHaveBeenCalledWith(
-                session.id,
+            expect(mockStorageManager.database.set).toHaveBeenCalledWith(
+                `session:${session.id}`,
                 expect.objectContaining({
                     createdAt: expect.any(Number),
                     lastActivity: expect.any(Number),
                     messageCount: 0,
-                }),
-                1800000
+                })
             );
         });
 
         test('should increment message counts and update activity', async () => {
             const sessionId = 'test-session';
 
-            mockSessionStorage.getSession.mockResolvedValue({ ...mockSessionData });
+            mockStorageManager.database.get.mockResolvedValue({ ...mockSessionData });
 
             await sessionManager.incrementMessageCount(sessionId);
 
-            expect(mockSessionStorage.setSessionWithTTL).toHaveBeenCalledWith(
-                sessionId,
+            expect(mockStorageManager.database.set).toHaveBeenCalledWith(
+                `session:${sessionId}`,
                 expect.objectContaining({
                     messageCount: mockSessionData.messageCount + 1,
                     lastActivity: expect.any(Number),
-                }),
-                1800000
+                })
             );
         });
 
         test('should provide access to session metadata', async () => {
             const sessionId = 'test-session';
 
-            mockSessionStorage.getSession.mockResolvedValue(mockSessionData);
+            mockStorageManager.database.get.mockResolvedValue(mockSessionData);
 
             const metadata = await sessionManager.getSessionMetadata(sessionId);
 
-            expect(metadata).toEqual(mockSessionData);
-            expect(mockSessionStorage.getSession).toHaveBeenCalledWith(sessionId);
+            expect(metadata).toEqual({
+                createdAt: mockSessionData.createdAt,
+                lastActivity: mockSessionData.lastActivity,
+                messageCount: mockSessionData.messageCount,
+                maxSessions: 10,
+                sessionTTL: 1800000,
+            });
+            expect(mockStorageManager.database.get).toHaveBeenCalledWith(`session:${sessionId}`);
         });
 
         test('should list all active sessions', async () => {
-            const activeSessionIds = ['session-1', 'session-2', 'session-3'];
-            mockSessionStorage.getActiveSessions.mockResolvedValue(activeSessionIds);
+            const activeSessionKeys = [
+                'session:session-1',
+                'session:session-2',
+                'session:session-3',
+            ];
+            const expectedSessionIds = ['session-1', 'session-2', 'session-3'];
+            mockStorageManager.database.list.mockResolvedValue(activeSessionKeys);
 
             const sessions = await sessionManager.listSessions();
 
-            expect(sessions).toEqual(activeSessionIds);
-            expect(mockSessionStorage.getActiveSessions).toHaveBeenCalled();
+            expect(sessions).toEqual(expectedSessionIds);
+            expect(mockStorageManager.database.list).toHaveBeenCalledWith('session:');
         });
     });
 
@@ -402,31 +424,29 @@ describe('SessionManager', () => {
             // End session
             await sessionManager.endSession(sessionId);
 
-            expect(session.reset).toHaveBeenCalled();
-            expect(session.dispose).toHaveBeenCalled();
-            expect(mockSessionStorage.deleteSession).toHaveBeenCalledWith(sessionId);
+            expect(session.cleanup).toHaveBeenCalled();
+            expect(mockStorageManager.database.delete).toHaveBeenCalledWith(`session:${sessionId}`);
         });
 
         test('should handle ending non-existent sessions gracefully', async () => {
             await expect(sessionManager.endSession('non-existent')).resolves.not.toThrow();
-            expect(mockSessionStorage.deleteSession).toHaveBeenCalledWith('non-existent');
+            expect(mockStorageManager.database.delete).toHaveBeenCalledWith('session:non-existent');
         });
 
         test('should cleanup all sessions during shutdown', async () => {
-            const sessionIds = ['session-1', 'session-2'];
+            // Create multiple sessions
+            const sessions = [
+                await sessionManager.createSession('session-1'),
+                await sessionManager.createSession('session-2'),
+                await sessionManager.createSession('session-3'),
+            ];
 
-            // Create sessions
-            const sessions = [];
-            for (const id of sessionIds) {
-                sessions.push(await sessionManager.createSession(id));
-            }
-
+            // Cleanup all sessions
             await sessionManager.cleanup();
 
             // Verify all sessions were cleaned up
             for (const session of sessions) {
-                expect(session.reset).toHaveBeenCalled();
-                expect(session.dispose).toHaveBeenCalled();
+                expect(session.cleanup).toHaveBeenCalled();
             }
         });
 
@@ -504,14 +524,14 @@ describe('SessionManager', () => {
         });
 
         test('should handle partial failures when switching LLM for all sessions', async () => {
-            const sessionIds = ['session-1', 'session-2'];
+            const sessionIds = ['session:session-1', 'session:session-2'];
             const newLLMConfig: LLMConfig = {
                 ...mockLLMConfig,
                 provider: 'anthropic',
                 model: 'claude-3-opus',
             };
 
-            mockSessionStorage.getActiveSessions.mockResolvedValue(sessionIds);
+            mockStorageManager.database.list.mockResolvedValue(sessionIds);
 
             // Mock validation failure for one session
             mockServices.stateManager.updateLLM.mockImplementation((config, sessionId) => {
@@ -522,8 +542,9 @@ describe('SessionManager', () => {
             });
 
             // Create sessions
-            for (const id of sessionIds) {
-                await sessionManager.createSession(id);
+            for (const sessionKey of sessionIds) {
+                const sessionId = sessionKey.replace('session:', '');
+                await sessionManager.createSession(sessionId);
             }
 
             const result = await sessionManager.switchLLMForAllSessions(newLLMConfig);
@@ -535,7 +556,7 @@ describe('SessionManager', () => {
 
     describe('Error Handling and Resilience', () => {
         test('should handle storage initialization failures', async () => {
-            mockSessionStorage.getActiveSessions.mockRejectedValue(
+            mockStorageManager.database.list.mockRejectedValue(
                 new Error('Storage initialization failed')
             );
 
@@ -546,17 +567,15 @@ describe('SessionManager', () => {
         test('should handle storage operation failures gracefully', async () => {
             await sessionManager.init();
 
-            mockSessionStorage.setSessionWithTTL.mockRejectedValue(
-                new Error('Storage write failed')
-            );
+            mockStorageManager.database.set.mockRejectedValue(new Error('Storage write failed'));
 
             // Should still create session in memory despite storage failure
             await expect(sessionManager.createSession()).rejects.toThrow('Storage write failed');
         });
 
         test('should handle session restoration errors during startup', async () => {
-            mockSessionStorage.getActiveSessions.mockResolvedValue(['session-1']);
-            mockSessionStorage.getSession.mockRejectedValue(new Error('Storage read failed'));
+            mockStorageManager.database.list.mockResolvedValue(['session:session-1']);
+            mockStorageManager.database.get.mockRejectedValue(new Error('Storage read failed'));
 
             // Should not throw during initialization
             await expect(sessionManager.init()).resolves.not.toThrow();
@@ -572,7 +591,7 @@ describe('SessionManager', () => {
             (session.reset as any).mockRejectedValue(new Error('Reset failed'));
 
             // Mock that session is expired
-            mockSessionStorage.getActiveSessions.mockResolvedValue([]);
+            mockStorageManager.database.list.mockResolvedValue([]);
 
             // Should handle error gracefully during cleanup
             await expect(sessionManager.createSession('new-session')).resolves.toBeDefined();
@@ -616,7 +635,7 @@ describe('SessionManager', () => {
                 // Missing maxSessions and sessionTTL
             };
 
-            mockSessionStorage.getSession.mockResolvedValue(legacyMetadata);
+            mockStorageManager.database.get.mockResolvedValue(legacyMetadata);
 
             const session = await sessionManager.getSession(sessionId);
 
@@ -625,7 +644,7 @@ describe('SessionManager', () => {
         });
 
         test('should handle empty session lists gracefully', async () => {
-            mockSessionStorage.getActiveSessions.mockResolvedValue([]);
+            mockStorageManager.database.list.mockResolvedValue([]);
 
             const sessions = await sessionManager.listSessions();
 
@@ -633,9 +652,7 @@ describe('SessionManager', () => {
         });
 
         test('should continue operating when storage is temporarily unavailable', async () => {
-            mockSessionStorage.setSessionWithTTL.mockRejectedValue(
-                new Error('Storage unavailable')
-            );
+            mockStorageManager.database.set.mockRejectedValue(new Error('Storage unavailable'));
 
             // Should throw error since storage is required for session persistence
             await expect(sessionManager.createSession()).rejects.toThrow('Storage unavailable');
@@ -648,7 +665,7 @@ describe('SessionManager', () => {
             await sessionManager.createSession(sessionId);
 
             // Mock that session is no longer in storage (expired)
-            mockSessionStorage.getActiveSessions.mockResolvedValue([]);
+            mockStorageManager.database.list.mockResolvedValue([]);
 
             // Trigger cleanup by creating another session
             await sessionManager.createSession('new-session');
@@ -687,7 +704,7 @@ describe('SessionManager', () => {
         test('should handle periodic cleanup errors gracefully', async () => {
             const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
             const setIntervalSpy = vi.spyOn(global, 'setInterval');
-            mockSessionStorage.getActiveSessions.mockRejectedValue(new Error('Storage error'));
+            mockStorageManager.database.list.mockRejectedValue(new Error('Storage error'));
 
             await sessionManager.init();
 

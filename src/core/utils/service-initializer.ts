@@ -53,7 +53,7 @@ export type AgentServices = {
     agentEventBus: AgentEventBus;
     stateManager: AgentStateManager;
     sessionManager: SessionManager;
-    storageManager: StorageBackends;
+    storage: StorageBackends;
 };
 
 /**
@@ -78,7 +78,7 @@ export type InitializeServicesOptions = {
     clientManager?: MCPClientManager; // Inject a custom or mock MCPClientManager
     agentEventBus?: AgentEventBus; // Inject a custom or mock AgentEventBus
     sessionManager?: SessionManager; // Inject a custom or mock SessionManager
-    storageManager?: StorageBackends; // Inject a custom or mock StorageManager
+    storage?: StorageBackends; // Inject a custom or mock storage backends
     // Add more overrides as needed
     // configOverride?: Partial<AgentConfig>; // (optional) for field-level config overrides
 };
@@ -125,10 +125,11 @@ export async function createAgentServices(
     const agentEventBus: AgentEventBus = overrides?.agentEventBus ?? new AgentEventBus();
     logger.debug('Agent event bus initialized');
 
-    // 3. Initialize storage manager using the new storage system
+    // 3. Initialize storage backends using the new storage system
     const storageConfig = getStorageConfig(config);
-    const storageManager = overrides?.storageManager ?? (await initializeStorage(storageConfig));
-    logger.debug('Storage manager initialized', {
+    const storage = overrides?.storage ?? (await initializeStorage(storageConfig));
+
+    logger.debug('Storage backends initialized', {
         cache: storageConfig.cache.type,
         database: storageConfig.database.type,
     });
@@ -174,7 +175,7 @@ export async function createAgentServices(
                 promptManager,
                 clientManager,
                 agentEventBus,
-                storageManager, // Add storage manager to session services
+                storage, // Add storage backends to session services
             },
             {
                 maxSessions: config.sessions?.maxSessions,
@@ -200,6 +201,6 @@ export async function createAgentServices(
         agentEventBus,
         stateManager,
         sessionManager,
-        storageManager,
+        storage,
     };
 }
