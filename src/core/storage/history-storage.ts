@@ -4,10 +4,10 @@ import type { InternalMessage } from '../ai/llm/messages/types.js';
 import { logger } from '../logger/index.js';
 
 /**
- * History storage implementation using the new simplified DatabaseBackend.
+ * History storage implementation using the DatabaseBackend.
  * Stores conversation messages using the database backend's list operations.
  */
-export class SimplifiedHistoryStorage implements HistoryStorage {
+export class DatabaseHistoryStorage implements HistoryStorage {
     constructor(private database: DatabaseBackend) {}
 
     async getMessages(sessionId: string): Promise<InternalMessage[]> {
@@ -19,13 +19,13 @@ export class SimplifiedHistoryStorage implements HistoryStorage {
             const chronologicalMessages = messages.reverse();
 
             logger.debug(
-                `SimplifiedHistoryStorage: Retrieved ${chronologicalMessages.length} messages for session ${sessionId}`
+                `DatabaseHistoryStorage: Retrieved ${chronologicalMessages.length} messages for session ${sessionId}`
             );
 
             return chronologicalMessages;
         } catch (error) {
             logger.error(
-                `SimplifiedHistoryStorage: Error retrieving messages for session ${sessionId}:`,
+                `DatabaseHistoryStorage: Error retrieving messages for session ${sessionId}:`,
                 error
             );
             return [];
@@ -51,13 +51,13 @@ export class SimplifiedHistoryStorage implements HistoryStorage {
                 }
             }
 
-            logger.debug(`SimplifiedHistoryStorage: Added message to session ${sessionId}`, {
+            logger.debug(`DatabaseHistoryStorage: Added message to session ${sessionId}`, {
                 role: message.role,
                 content: contentPreview,
             });
         } catch (error) {
             logger.error(
-                `SimplifiedHistoryStorage: Error adding message to session ${sessionId}:`,
+                `DatabaseHistoryStorage: Error adding message to session ${sessionId}:`,
                 error
             );
             throw new Error(
@@ -71,9 +71,9 @@ export class SimplifiedHistoryStorage implements HistoryStorage {
         try {
             await this.database.delete(key);
 
-            logger.debug(`SimplifiedHistoryStorage: Cleared session ${sessionId}`);
+            logger.debug(`DatabaseHistoryStorage: Cleared session ${sessionId}`);
         } catch (error) {
-            logger.error(`SimplifiedHistoryStorage: Error clearing session ${sessionId}:`, error);
+            logger.error(`DatabaseHistoryStorage: Error clearing session ${sessionId}:`, error);
             throw new Error(
                 `Failed to clear session: ${error instanceof Error ? error.message : String(error)}`
             );
@@ -89,5 +89,5 @@ export class SimplifiedHistoryStorage implements HistoryStorage {
  * Create a HistoryStorage instance using the provided database backend
  */
 export function createHistoryStorage(database: DatabaseBackend): HistoryStorage {
-    return new SimplifiedHistoryStorage(database);
+    return new DatabaseHistoryStorage(database);
 }

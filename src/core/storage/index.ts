@@ -1,7 +1,7 @@
 /**
- * Saiki Storage Layer - Simplified Architecture
+ * Saiki Storage Layer
  *
- * A simplified storage system with two backend types:
+ * A storage system with two backend types:
  * - CacheBackend: Fast, ephemeral storage (Redis, Memory) with TTL support
  * - DatabaseBackend: Persistent, reliable storage (PostgreSQL, SQLite, Memory) with list operations
  *
@@ -49,7 +49,7 @@ export { MemoryBackend } from './backend/memory-backend.js';
 
 // History storage (bridge to new system)
 export type { HistoryStorage } from './types.js';
-export { SimplifiedHistoryStorage, createHistoryStorage } from './history-storage.js';
+export { DatabaseHistoryStorage, createHistoryStorage } from './history-storage.js';
 
 // Optional backend configurations (types only - implementations are lazy-loaded)
 export type { SQLiteBackendConfig } from './backend/sqlite-backend.js';

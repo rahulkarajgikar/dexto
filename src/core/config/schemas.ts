@@ -335,140 +335,8 @@ export const ServerConfigsSchema = z
     .describe('A dictionary of server configurations, keyed by server name');
 export type ServerConfigs = z.infer<typeof ServerConfigsSchema>;
 
-// Storage Configuration Schemas
-
-// Base storage provider schemas
-const MemoryStorageSchema = z.object({
-    type: z.literal('memory'),
-    maxSize: z
-        .number()
-        .int()
-        .positive()
-        .optional()
-        .describe('Maximum number of items to store in memory'),
-    ttl: z
-        .number()
-        .int()
-        .positive()
-        .optional()
-        .describe('Time-to-live in milliseconds for stored items'),
-});
-
-const FileStorageSchema = z.object({
-    type: z.literal('file'),
-    format: z.enum(['json', 'jsonl', 'csv']).optional().default('json').describe('File format'),
-    maxSize: z.string().optional().describe('Maximum file size (e.g., "10MB", "1GB")'),
-    backup: z.boolean().optional().default(false).describe('Whether to create backup files'),
-    compression: z.boolean().optional().default(false).describe('Whether to compress the file'),
-    // Path is auto-generated based on storage type directory
-});
-
-const SQLiteStorageSchema = z.object({
-    type: z.literal('sqlite'),
-    table: z.string().optional().describe('Table name (defaults to storage type)'),
-    ttl: z
-        .number()
-        .int()
-        .positive()
-        .optional()
-        .describe('Default time-to-live in milliseconds for stored items'),
-    // Path is auto-generated based on storage type directory
-});
-
-const DatabaseStorageSchema = z.object({
-    type: z.literal('database'),
-    url: z.string().describe('Database connection URL'),
-    table: z.string().optional().describe('Table/collection name (defaults to storage type)'),
-    pool: z
-        .object({
-            min: z.number().int().nonnegative().optional().default(0),
-            max: z.number().int().positive().optional().default(10),
-        })
-        .optional()
-        .describe('Connection pool settings'),
-    ssl: z.boolean().optional().describe('Whether to use SSL connection'),
-});
-
-const RedisStorageSchema = z.object({
-    type: z.literal('redis'),
-    url: z.string().describe('Redis connection URL'),
-    keyPrefix: z.string().optional().describe('Prefix for all keys'),
-    ttl: z.number().int().positive().optional().describe('Default TTL in seconds'),
-    cluster: z.boolean().optional().default(false).describe('Whether to use Redis cluster mode'),
-});
-
-const S3StorageSchema = z.object({
-    type: z.literal('s3'),
-    bucket: z.string().describe('S3 bucket name'),
-    region: z.string().describe('AWS region'),
-    keyPrefix: z.string().optional().describe('Prefix for all object keys'),
-    encryption: z
-        .boolean()
-        .optional()
-        .default(true)
-        .describe('Whether to use server-side encryption'),
-    storageClass: z
-        .enum([
-            'STANDARD',
-            'REDUCED_REDUNDANCY',
-            'STANDARD_IA',
-            'ONEZONE_IA',
-            'INTELLIGENT_TIERING',
-            'GLACIER',
-            'DEEP_ARCHIVE',
-        ])
-        .optional()
-        .default('STANDARD'),
-});
-
-// Union of all storage provider types - much simpler now!
-const StorageProviderSchema = z.discriminatedUnion('type', [
-    MemoryStorageSchema,
-    FileStorageSchema,
-    SQLiteStorageSchema,
-    DatabaseStorageSchema,
-    RedisStorageSchema,
-    S3StorageSchema,
-]);
-
-export type StorageProviderConfig = z.infer<typeof StorageProviderSchema>;
-
-export const StorageSchema = z
-    .object({
-        // Specific storage configurations - all optional, default to memory
-        history: StorageProviderSchema.optional().describe('Storage for conversation history'),
-        allowedTools: StorageProviderSchema.optional().describe(
-            'Storage for allowed tools configuration'
-        ),
-        userInfo: StorageProviderSchema.optional().describe('Storage for user information'),
-        toolCache: StorageProviderSchema.optional().describe('Storage for tool response caching'),
-        sessions: StorageProviderSchema.optional().describe('Storage for session data'),
-
-        // Custom storage types (extensible)
-        custom: z
-            .record(StorageProviderSchema)
-            .optional()
-            .default({})
-            .describe('Custom storage configurations'),
-    })
-    .transform((data) => {
-        // Each storage type defaults to memory if not specified
-        const defaultMemoryConfig = { type: 'memory' as const };
-
-        return {
-            history: data.history ?? defaultMemoryConfig,
-            allowedTools: data.allowedTools ?? defaultMemoryConfig,
-            userInfo: data.userInfo ?? defaultMemoryConfig,
-            toolCache: data.toolCache ?? defaultMemoryConfig,
-            sessions: data.sessions ?? defaultMemoryConfig,
-            custom: data.custom ?? {},
-        };
-    });
-
-export type StorageConfig = z.infer<typeof StorageSchema>;
-
-// ==== NEW SIMPLIFIED STORAGE CONFIGURATION ====
-// Backend configuration for simplified storage system
+// ==== STORAGE CONFIGURATION ====
+// Backend configuration for storage system
 const BackendConfigSchema = z.object({
     type: z.enum(['memory', 'redis', 'sqlite', 'postgres']).describe('Backend type'),
     // Connection options
@@ -499,17 +367,17 @@ const BackendConfigSchema = z.object({
     options: z.record(z.any()).optional().describe('Backend-specific options'),
 });
 
-// Simplified storage configuration with just cache and database backends
-export const SimplifiedStorageSchema = z
+// Storage configuration with cache and database backends
+export const StorageSchema = z
     .object({
         cache: BackendConfigSchema.describe('Cache backend configuration (fast, ephemeral)'),
         database: BackendConfigSchema.describe(
             'Database backend configuration (persistent, reliable)'
         ),
     })
-    .describe('Simplified storage configuration with cache and database backends');
+    .describe('Storage configuration with cache and database backends');
 
-export type SimplifiedStorageConfig = z.infer<typeof SimplifiedStorageSchema>;
+export type StorageConfig = z.infer<typeof StorageSchema>;
 
 export const AgentConfigSchema = z
     .object({
@@ -519,11 +387,10 @@ export const AgentConfigSchema = z
             .describe('Configurations for MCP (Model Context Protocol) servers used by the agent'),
         llm: LLMConfigSchema.describe('Core LLM configuration for the agent'),
 
-        // Support both old and new storage configurations
-        storage: z
-            .union([StorageSchema, SimplifiedStorageSchema])
-            .optional()
-            .describe('Storage configuration for the agent (legacy or simplified)'),
+        // Storage configuration
+        storage: StorageSchema.optional().describe(
+            'Storage configuration for the agent using cache and database backends'
+        ),
 
         sessions: z
             .object({

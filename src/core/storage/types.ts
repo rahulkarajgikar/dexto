@@ -16,6 +16,19 @@ export interface HistoryStorage {
 }
 
 /**
+ * Storage context for path resolution
+ * Used by StoragePathResolver to determine storage locations
+ */
+export interface StorageContext {
+    isDevelopment?: boolean;
+    projectRoot?: string;
+    forceGlobal?: boolean;
+    customRoot?: string;
+    connectionString?: string;
+    connectionOptions?: Record<string, any>;
+}
+
+/**
  * Re-export simplified storage types
  */
 export type {

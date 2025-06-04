@@ -369,7 +369,7 @@ export class ChatSession {
             // Create new LLM service with the same dependencies but new config
             const newLLMService = createLLMService(
                 newLLMConfig,
-                newLLMConfig.router,
+                router,
                 this.services.clientManager,
                 this.eventBus, // Use session event bus
                 this.messageManager
