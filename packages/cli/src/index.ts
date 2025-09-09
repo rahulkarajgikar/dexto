@@ -67,6 +67,7 @@ import { createAgentCard } from '@dexto/core';
 import { initializeMcpToolAggregationServer } from './api/mcp/tool-aggregation-handler.js';
 import { CLIConfigOverrides } from './config/cli-overrides.js';
 import { Telemetry } from '@core/telemetry/index.js';
+import e from 'express';
 
 const program = new Command();
 
@@ -644,22 +645,24 @@ program
                     // Ensure spans flush on shutdown
                     process.once('SIGINT', async () => {
                         try {
-                            await Telemetry.shutdown();
+                            await Telemetry.get().shutdown();
                         } finally {
                             process.exit(130);
                         }
                     });
                     process.once('SIGTERM', async () => {
                         try {
-                            await Telemetry.shutdown();
+                            await Telemetry.get().shutdown();
                         } finally {
                             process.exit(143);
                         }
                     });
                     process.once('beforeExit', async () => {
                         try {
-                            await Telemetry.shutdown();
-                        } catch {}
+                            await Telemetry.get().shutdown();
+                        } catch {
+                            e;
+                        }
                     });
                 }
             }
