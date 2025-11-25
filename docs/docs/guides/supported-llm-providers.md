@@ -78,17 +78,19 @@ llm:
 ```yaml
 llm:
   provider: xai
-  model: grok-4
+  model: grok-4.1
   apiKey: $XAI_API_KEY
 ```
 
 **Supported models:**
-- `grok-4` (default)
+- `grok-4.1` (default, 2M context window)
+- `grok-4.1-fast` (optimized for tool calling, 2M context)
+- `grok-4`
 - `grok-3`
 - `grok-3-mini`
 - `grok-code-fast-1`
 
-**Features:** State-of-the-art reasoning, real-time knowledge, strong benchmark performance
+**Features:** State-of-the-art reasoning, 2M token context window, real-time knowledge, 3x lower hallucination rate
 
 ---
 

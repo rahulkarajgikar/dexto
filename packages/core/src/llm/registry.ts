@@ -706,10 +706,36 @@ export const LLM_REGISTRY: Record<LLMProvider, ProviderInfo> = {
     xai: {
         models: [
             {
+                name: 'grok-4.1',
+                displayName: 'Grok 4.1',
+                maxInputTokens: 2000000,
+                default: true,
+                supportedFileTypes: ['image'],
+                pricing: {
+                    inputPerM: 0.2,
+                    outputPerM: 0.5,
+                    cacheReadPerM: 0.05,
+                    currency: 'USD',
+                    unit: 'per_million_tokens',
+                },
+            },
+            {
+                name: 'grok-4.1-fast',
+                displayName: 'Grok 4.1 Fast',
+                maxInputTokens: 2000000,
+                supportedFileTypes: ['image'],
+                pricing: {
+                    inputPerM: 0.2,
+                    outputPerM: 0.5,
+                    cacheReadPerM: 0.05,
+                    currency: 'USD',
+                    unit: 'per_million_tokens',
+                },
+            },
+            {
                 name: 'grok-4',
                 displayName: 'Grok 4',
                 maxInputTokens: 256000,
-                default: true,
                 supportedFileTypes: ['image'],
                 pricing: {
                     inputPerM: 3.0,

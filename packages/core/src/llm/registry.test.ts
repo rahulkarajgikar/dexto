@@ -488,8 +488,10 @@ describe('Provider-Specific Tests', () => {
     describe('XAI provider', () => {
         it('has correct capabilities and models', () => {
             expect(getSupportedProviders()).toContain('xai');
+            expect(getSupportedModels('xai')).toContain('grok-4.1');
+            expect(getSupportedModels('xai')).toContain('grok-4.1-fast');
             expect(getSupportedModels('xai')).toContain('grok-4');
-            expect(getDefaultModelForProvider('xai')).toBe('grok-4');
+            expect(getDefaultModelForProvider('xai')).toBe('grok-4.1');
             expect(supportsBaseURL('xai')).toBe(false);
             expect(requiresBaseURL('xai')).toBe(false);
             expect(acceptsAnyModel('xai')).toBe(false);
