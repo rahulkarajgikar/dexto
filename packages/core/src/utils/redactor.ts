@@ -40,8 +40,8 @@ const SENSITIVE_PATTERNS: RegExp[] = [
 // JWT pattern - applied selectively (not to signed URLs)
 const JWT_PATTERN = /\beyJ[A-Za-z0-9_-]*\.[A-Za-z0-9_-]*\.[A-Za-z0-9_-]*/g;
 
-// Patterns that indicate a URL contains a signed token that should NOT be redacted
-// These are legitimate shareable URLs, not sensitive credentials
+// Pre-existing policy: signed storage URLs keep their tokens. This remains a telemetry exposure
+// risk, but changing that policy is outside the bounded-memory experiment.
 const SIGNED_URL_PATTERNS = [
     /supabase\.co\/storage\/.*\?token=/i, // Supabase signed URLs
     /\.r2\.cloudflarestorage\.com\/.*\?/i, // Cloudflare R2 signed URLs
@@ -53,10 +53,16 @@ const REDACTED = '[REDACTED]';
 const REDACTED_CIRCULAR = '[REDACTED_CIRCULAR]';
 const FILE_DATA_TRUNCATED = '[FILE_DATA_TRUNCATED]';
 const TRUNCATED = '[TRUNCATED]';
+const REDACTION_FAILED = '[UNSERIALIZABLE]';
 
-interface RedactionBudget {
+interface TraversalBudget {
     remaining: number;
     truncated: boolean;
+}
+
+interface TraversalState {
+    seen: WeakSet<object>;
+    budget?: TraversalBudget;
 }
 
 /**
@@ -117,119 +123,150 @@ function redactString(input: string): string {
 }
 
 export function redactSensitiveData(input: unknown, seen = new WeakSet()): unknown {
-    if (typeof input === 'string') {
-        return redactString(input);
+    try {
+        return redactValue(input, { seen });
+    } catch {
+        return REDACTION_FAILED;
     }
-    if (Array.isArray(input)) {
-        if (seen.has(input)) return REDACTED_CIRCULAR;
-        seen.add(input);
-        return input.map((item) => redactSensitiveData(item, seen));
-    }
-    if (input && typeof input === 'object') {
-        if (seen.has(input)) return REDACTED_CIRCULAR;
-        seen.add(input);
-        const result: any = {};
-        for (const [key, value] of Object.entries(input)) {
-            if (SENSITIVE_FIELDS.includes(key.toLowerCase())) {
-                result[key] = REDACTED;
-            } else {
-                // First truncate file data (with parent context), then recursively redact
-                const truncatedValue = truncateFileData(value, key, input);
-                result[key] = redactSensitiveData(truncatedValue, seen);
-            }
-        }
-        return result;
-    }
-    return input;
 }
 
 /**
  * Redacts while limiting how much of the input is visited and cloned.
  * Used for telemetry values that will be length-limited after serialization.
+ * Proxy enumeration and descriptor failures return a fixed marker, but JavaScript cannot preempt
+ * an arbitrary proxy trap that does not return.
  */
 export function redactSensitiveDataBounded(input: unknown, maxLen: number): unknown {
-    return redactBounded(input, new WeakSet(), {
-        remaining: Math.floor(maxLen),
-        truncated: false,
-    });
+    try {
+        return redactValue(input, {
+            seen: new WeakSet(),
+            budget: {
+                remaining: Math.floor(maxLen),
+                truncated: false,
+            },
+        });
+    } catch {
+        return REDACTION_FAILED;
+    }
 }
 
-function redactBounded(input: unknown, seen: WeakSet<object>, budget: RedactionBudget): unknown {
+function redactValue(input: unknown, state: TraversalState): unknown {
     if (typeof input === 'bigint') {
-        const maxDigits = Math.max(0, budget.remaining - 2);
+        if (state.budget === undefined) return input;
+        const maxDigits = Math.max(0, state.budget.remaining - 2);
         const digitLimit = 10n ** BigInt(maxDigits);
         if (maxDigits === 0 || input >= digitLimit || input <= -digitLimit) {
-            budget.remaining = 0;
-            budget.truncated = true;
-            return '[BIGINT_TRUNCATED]';
+            return truncateTraversal(state, '[BIGINT_TRUNCATED]');
         }
         const result = input.toString();
-        if (result.length + 2 > budget.remaining) {
-            budget.remaining = 0;
-            budget.truncated = true;
+        if (!consume(state, result.length + 2)) {
             return '[BIGINT_TRUNCATED]';
         }
-        budget.remaining -= result.length + 2;
         return result;
     }
 
     if (typeof input === 'string') {
-        if (input.length + 2 > budget.remaining) {
-            budget.remaining = 0;
-            budget.truncated = true;
-            return TRUNCATED;
-        }
-        budget.remaining -= input.length + 2;
+        if (!consume(state, input.length + 2)) return TRUNCATED;
         return redactString(input);
     }
 
     if (Array.isArray(input)) {
-        if (seen.has(input)) return REDACTED_CIRCULAR;
-        seen.add(input);
-        budget.remaining = Math.max(0, budget.remaining - 2);
+        if (state.seen.has(input)) return REDACTED_CIRCULAR;
+        state.seen.add(input);
+        consume(state, 2);
         const result: unknown[] = [];
-        for (let index = 0; index < input.length; index += 1) {
-            if (budget.remaining <= 1) {
-                budget.truncated = true;
+        const lengthDescriptor = Object.getOwnPropertyDescriptor(input, 'length');
+        const length = lengthDescriptor?.value;
+        if (typeof length !== 'number') return REDACTION_FAILED;
+        for (let index = 0; index < length; index += 1) {
+            if (!consume(state, 1)) {
                 result.push(TRUNCATED);
                 break;
             }
-            budget.remaining -= 1;
-            result.push(redactBounded(input[index], seen, budget));
-            if (budget.truncated) break;
+            const descriptor = Object.getOwnPropertyDescriptor(input, String(index));
+            if (descriptor === undefined || !('value' in descriptor)) {
+                result.push(undefined);
+                continue;
+            }
+            result.push(redactValue(descriptor.value, state));
+            if (state.budget?.truncated === true) break;
         }
         return result;
     }
 
     if (input && typeof input === 'object') {
-        if (seen.has(input)) return REDACTED_CIRCULAR;
-        seen.add(input);
-        budget.remaining = Math.max(0, budget.remaining - 2);
+        if (state.seen.has(input)) return REDACTED_CIRCULAR;
+        state.seen.add(input);
+        consume(state, 2);
+        if (input instanceof Error) return redactError(input, state);
+
         const result: Record<string, unknown> = {};
         for (const key in input) {
-            if (!Object.hasOwn(input, key)) continue;
             if (key === 'toJSON') continue;
+            const descriptor = Object.getOwnPropertyDescriptor(input, key);
+            if (descriptor === undefined || !descriptor.enumerable || !('value' in descriptor)) {
+                continue;
+            }
             const propertyCost = key.length + 4;
-            if (propertyCost > budget.remaining) {
-                budget.truncated = true;
+            if (!consume(state, propertyCost)) {
                 result.__dexto_truncated__ = TRUNCATED;
                 break;
             }
-            budget.remaining -= propertyCost;
             if (SENSITIVE_FIELDS.includes(key.toLowerCase())) {
                 result[key] = REDACTED;
-                budget.remaining = Math.max(0, budget.remaining - REDACTED.length - 2);
+                consume(state, REDACTED.length + 2);
                 continue;
             }
 
-            const value = Reflect.get(input, key);
-            const truncatedValue = truncateFileData(value, key, input);
-            result[key] = redactBounded(truncatedValue, seen, budget);
-            if (budget.truncated) break;
+            const truncatedValue = truncateFileData(descriptor.value, key, input);
+            result[key] = redactValue(truncatedValue, state);
+            if (state.budget?.truncated === true) break;
         }
         return result;
     }
 
-    budget.remaining = Math.max(0, budget.remaining - 8);
+    consume(state, 8);
     return input;
+}
+
+function redactError(error: Error, state: TraversalState): Record<string, unknown> {
+    const result: Record<string, unknown> = {};
+    const name = readDataProperty(error, 'name');
+    const message = readDataProperty(error, 'message');
+    const stack = readDataProperty(error, 'stack');
+
+    result.name = redactValue(typeof name === 'string' ? name : 'Error', state);
+    result.message = redactValue(typeof message === 'string' ? message : '', state);
+    if (typeof stack === 'string') result.stack = redactValue(stack, state);
+    return result;
+}
+
+function readDataProperty(input: object, key: string): unknown {
+    let current: object | null = input;
+    while (current !== null) {
+        const descriptor = Object.getOwnPropertyDescriptor(current, key);
+        if (descriptor !== undefined) {
+            return 'value' in descriptor ? descriptor.value : undefined;
+        }
+        current = Object.getPrototypeOf(current);
+    }
+    return undefined;
+}
+
+function consume(state: TraversalState, amount: number): boolean {
+    if (state.budget === undefined) return true;
+    if (amount <= state.budget.remaining) {
+        state.budget.remaining -= amount;
+        return true;
+    }
+    truncateTraversal(state, TRUNCATED);
+    return false;
+}
+
+function truncateTraversal(state: TraversalState, marker: string): string {
+    if (state.budget !== undefined) {
+        state.budget.remaining = 0;
+        state.budget.truncated = true;
+    }
+    return marker;
 }

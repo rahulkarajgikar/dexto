@@ -1,5 +1,7 @@
 import { redactSensitiveData, redactSensitiveDataBounded } from './redactor.js';
 
+const REDACTION_FAILED = '[UNSERIALIZABLE]';
+
 /**
  * Safe stringify that handles circular references and BigInt.
  * Also redacts sensitive data to prevent PII leaks.
@@ -9,6 +11,9 @@ import { redactSensitiveData, redactSensitiveDataBounded } from './redactor.js';
  */
 export function safeStringify(value: unknown, maxLen?: number): string {
     try {
+        if (typeof value === 'function') return truncateString('[FUNCTION]', maxLen);
+        if (typeof value === 'symbol') return truncateString('[SYMBOL]', maxLen);
+        if (value === undefined) return truncateString('undefined', maxLen);
         // Handle top-level BigInt without triggering JSON.stringify errors
         if (typeof value === 'bigint') {
             if (maxLen !== undefined && Number.isFinite(maxLen) && maxLen > 0) {
@@ -24,23 +29,19 @@ export function safeStringify(value: unknown, maxLen?: number): string {
         const redacted = hasLimit
             ? redactSensitiveDataBounded(value, maxLen)
             : redactSensitiveData(value);
+        if (redacted === REDACTION_FAILED && typeof value === 'object' && value !== null) {
+            return truncateString(REDACTION_FAILED, maxLen);
+        }
         const str = JSON.stringify(redacted, (_, v) => {
-            if (v instanceof Error) {
-                return { name: v.name, message: v.message, stack: v.stack };
-            }
             if (typeof v === 'bigint') return v.toString();
             return v;
         });
         if (typeof str === 'string') {
             return truncateString(str, maxLen);
         }
-        return String(value);
+        return truncateString(REDACTION_FAILED, maxLen);
     } catch {
-        try {
-            return String(value);
-        } catch {
-            return '[Unserializable value]';
-        }
+        return truncateString(REDACTION_FAILED, maxLen);
     }
 }
 

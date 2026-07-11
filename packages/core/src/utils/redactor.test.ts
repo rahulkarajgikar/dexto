@@ -193,4 +193,28 @@ describe('redact', () => {
             expect(redacted).toEqual([1, [2, '[REDACTED_CIRCULAR]']]);
         });
     });
+
+    test('preserves and redacts Error name, message, and stack', () => {
+        const error = new TypeError('Contact test@example.com');
+        error.stack = 'TypeError: Contact test@example.com\n    at safe-location';
+
+        expect(redact(error)).toEqual({
+            name: 'TypeError',
+            message: 'Contact [REDACTED]',
+            stack: 'TypeError: Contact [REDACTED]\n    at safe-location',
+        });
+    });
+
+    test('returns a fixed marker when proxy enumeration fails', () => {
+        const value = new Proxy(
+            {},
+            {
+                ownKeys() {
+                    throw new Error('enumeration failed');
+                },
+            }
+        );
+
+        expect(redact(value)).toBe('[UNSERIALIZABLE]');
+    });
 });
