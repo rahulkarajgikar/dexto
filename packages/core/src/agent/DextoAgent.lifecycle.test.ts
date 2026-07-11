@@ -15,7 +15,11 @@ import { ErrorScope, ErrorType } from '../errors/types.js';
 import { AgentErrorCode } from './error-codes.js';
 import { LLMErrorCode } from '../llm/error-codes.js';
 import { createLogger } from '../logger/factory.js';
-import { AgentEventBus, type StreamingEvent } from '../events/index.js';
+import {
+    AgentEventBus,
+    EVENT_LISTENER_CLEANUP_REASON,
+    type StreamingEvent,
+} from '../events/index.js';
 import { InMemoryDextoStores } from '../storage/index.js';
 
 // Mock the createAgentServices function
@@ -44,6 +48,18 @@ function createDeferred<T>() {
         reject = rej;
     });
     return { promise, resolve, reject };
+}
+
+function observeStreamSignal(agent: DextoAgent): () => AbortSignal | undefined {
+    let eventBus: AgentEventBus | undefined;
+    agent.registerSubscriber({
+        subscribe: (bus) => {
+            eventBus = bus;
+        },
+    });
+    if (!eventBus) throw new Error('Expected the agent event bus');
+    const onSpy = vi.spyOn(eventBus, 'on');
+    return () => onSpy.mock.calls.find(([eventName]) => eventName === 'llm:thinking')?.[2]?.signal;
 }
 
 describe('DextoAgent Lifecycle Management', () => {
@@ -1087,6 +1103,78 @@ describe('DextoAgent Lifecycle Management', () => {
                     finishReason: 'stop',
                 }),
             ]);
+        });
+
+        test('should clean up the stream signal with a primitive reason after completion', async () => {
+            const agent = createTestAgent(mockValidatedConfig);
+            const sessionStream = vi.fn().mockImplementation(async () => {
+                agent.emit('run:complete', {
+                    sessionId: 'test-session',
+                    finishReason: 'stop',
+                    stepCount: 1,
+                    durationMs: 1,
+                });
+            });
+            mockServices.sessionManager.getSession = vi.fn().mockResolvedValue({
+                id: 'test-session',
+                stream: sessionStream,
+            });
+
+            await agent.start();
+            const getStreamSignal = observeStreamSignal(agent);
+
+            for await (const _event of await agent.stream('hello', 'test-session')) {
+                // Consume through normal completion.
+            }
+
+            const cleanupSignal = getStreamSignal();
+            expect(cleanupSignal?.aborted).toBe(true);
+            expect(cleanupSignal?.reason).toBe(EVENT_LISTENER_CLEANUP_REASON);
+            expect(cleanupSignal?.reason).not.toBeInstanceOf(globalThis.DOMException);
+        });
+
+        test('should clean up the stream signal with a primitive reason when iteration returns', async () => {
+            const agent = createTestAgent(mockValidatedConfig);
+            const deferred = createDeferred<void>();
+            mockServices.sessionManager.getSession = vi.fn().mockResolvedValue({
+                id: 'test-session',
+                stream: vi.fn().mockImplementation(async () => await deferred.promise),
+            });
+
+            await agent.start();
+            const getStreamSignal = observeStreamSignal(agent);
+            const iterator = await agent.stream('hello', 'test-session');
+            const cleanupSignal = getStreamSignal();
+
+            await iterator.return?.();
+
+            expect(cleanupSignal?.aborted).toBe(true);
+            expect(cleanupSignal?.reason).toBe(EVENT_LISTENER_CLEANUP_REASON);
+            expect(cleanupSignal?.reason).not.toBeInstanceOf(globalThis.DOMException);
+            deferred.resolve();
+        });
+
+        test('should preserve the default abort reason when the user cancels a stream', async () => {
+            const agent = createTestAgent(mockValidatedConfig);
+            const deferred = createDeferred<void>();
+            const session = {
+                id: 'test-session',
+                stream: vi.fn().mockImplementation(async () => await deferred.promise),
+                cancel: vi.fn().mockResolvedValue(true),
+            };
+            mockServices.sessionManager.getSession = vi.fn().mockResolvedValue(session);
+
+            await agent.start();
+            const getStreamSignal = observeStreamSignal(agent);
+            await agent.stream('hello', 'test-session');
+            const streamSignal = getStreamSignal();
+
+            await expect(agent.cancel('test-session')).resolves.toBe(true);
+
+            expect(streamSignal?.reason).toBeInstanceOf(globalThis.DOMException);
+            expect(streamSignal?.reason).toMatchObject({ name: 'AbortError' });
+            expect(session.cancel).toHaveBeenCalledOnce();
+            deferred.resolve();
         });
 
         test('should reject with the original error when session streaming fails before any terminal event', async () => {

@@ -75,6 +75,7 @@ import type { AgentRuntimeSettings, DextoAgentConfigInput } from './runtime-conf
 import { UsageScopeIdSchema } from '../llm/usage-scope.js';
 import {
     AgentEventBus,
+    EVENT_LISTENER_CLEANUP_REASON,
     type AgentEventMap,
     type EventArgs,
     type EventListener,
@@ -1007,7 +1008,7 @@ export class DextoAgent {
             }
         } catch (error) {
             cleanupListeners();
-            controller.abort();
+            controller.abort(EVENT_LISTENER_CLEANUP_REASON);
             throw error;
         }
 
@@ -1015,7 +1016,7 @@ export class DextoAgent {
         if (disconnectSignal) {
             const abortHandler = () => {
                 cleanupListeners();
-                controller.abort();
+                controller.abort(EVENT_LISTENER_CLEANUP_REASON);
             };
             disconnectSignal.addEventListener('abort', abortHandler, { once: true });
             detachDisconnectAbortListener = () =>
@@ -1418,7 +1419,7 @@ export class DextoAgent {
                     // Check for disconnect/cancel (external disconnect signal OR internal cleanup)
                     if (disconnectSignal?.aborted || cleanupSignal.aborted) {
                         cleanupListeners();
-                        controller.abort();
+                        controller.abort(EVENT_LISTENER_CLEANUP_REASON);
                         return { done: true, value: undefined };
                     }
                 }
@@ -1431,7 +1432,7 @@ export class DextoAgent {
                 // Stream completed
                 if (completed) {
                     cleanupListeners();
-                    controller.abort();
+                    controller.abort(EVENT_LISTENER_CLEANUP_REASON);
                     if (terminalError !== undefined) {
                         throw terminalError;
                     }
@@ -1446,7 +1447,7 @@ export class DextoAgent {
             async return(): Promise<IteratorResult<StreamingEvent>> {
                 // Called when consumer breaks out early or explicitly calls return()
                 cleanupListeners();
-                controller.abort();
+                controller.abort(EVENT_LISTENER_CLEANUP_REASON);
                 return { done: true, value: undefined };
             },
 
