@@ -1,4 +1,4 @@
-import { redactSensitiveData } from './redactor.js';
+import { redactSensitiveData, redactSensitiveDataBounded } from './redactor.js';
 
 /**
  * Safe stringify that handles circular references and BigInt.
@@ -11,10 +11,19 @@ export function safeStringify(value: unknown, maxLen?: number): string {
     try {
         // Handle top-level BigInt without triggering JSON.stringify errors
         if (typeof value === 'bigint') {
-            return value.toString();
+            if (maxLen !== undefined && Number.isFinite(maxLen) && maxLen > 0) {
+                const digitLimit = 10n ** BigInt(Math.floor(maxLen) + 1);
+                if (value >= digitLimit || value <= -digitLimit) {
+                    return truncateString('[BIGINT_TRUNCATED]', maxLen);
+                }
+            }
+            return truncateString(value.toString(), maxLen);
         }
-        // First redact sensitive data to prevent PII leaks
-        const redacted = redactSensitiveData(value);
+        // Bound traversal before cloning and JSON serialization for telemetry-sized values.
+        const hasLimit = maxLen !== undefined && Number.isFinite(maxLen) && maxLen > 0;
+        const redacted = hasLimit
+            ? redactSensitiveDataBounded(value, maxLen)
+            : redactSensitiveData(value);
         const str = JSON.stringify(redacted, (_, v) => {
             if (v instanceof Error) {
                 return { name: v.name, message: v.message, stack: v.stack };
@@ -23,16 +32,7 @@ export function safeStringify(value: unknown, maxLen?: number): string {
             return v;
         });
         if (typeof str === 'string') {
-            // Only truncate if maxLen is explicitly provided
-            if (maxLen !== undefined && maxLen > 0 && str.length > maxLen) {
-                const indicator = '…(truncated)';
-                if (maxLen <= indicator.length) {
-                    return str.slice(0, maxLen);
-                }
-                const sliceLen = maxLen - indicator.length;
-                return `${str.slice(0, sliceLen)}${indicator}`;
-            }
-            return str;
+            return truncateString(str, maxLen);
         }
         return String(value);
     } catch {
@@ -42,4 +42,11 @@ export function safeStringify(value: unknown, maxLen?: number): string {
             return '[Unserializable value]';
         }
     }
+}
+
+function truncateString(value: string, maxLen?: number): string {
+    if (maxLen === undefined || maxLen <= 0 || value.length <= maxLen) return value;
+    const indicator = '…(truncated)';
+    if (maxLen <= indicator.length) return value.slice(0, maxLen);
+    return `${value.slice(0, maxLen - indicator.length)}${indicator}`;
 }

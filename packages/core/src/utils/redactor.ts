@@ -52,6 +52,12 @@ const SIGNED_URL_PATTERNS = [
 const REDACTED = '[REDACTED]';
 const REDACTED_CIRCULAR = '[REDACTED_CIRCULAR]';
 const FILE_DATA_TRUNCATED = '[FILE_DATA_TRUNCATED]';
+const TRUNCATED = '[TRUNCATED]';
+
+interface RedactionBudget {
+    remaining: number;
+    truncated: boolean;
+}
 
 /**
  * Determines if a string looks like base64-encoded file data
@@ -70,7 +76,7 @@ function isLargeBase64Data(value: string): boolean {
  * @param parent - The parent object for context checking
  * @returns Truncated value with metadata or original value
  */
-function truncateFileData(value: unknown, key: string, parent?: Record<string, unknown>): unknown {
+function truncateFileData(value: unknown, key: string, parent?: object): unknown {
     if (typeof value !== 'string') return value;
     const lowerKey = key.toLowerCase();
     // Gate "data" by presence of file-ish sibling metadata to avoid false positives
@@ -99,18 +105,20 @@ function isSignedUrl(value: string): boolean {
     return SIGNED_URL_PATTERNS.some((pattern) => pattern.test(value));
 }
 
+function redactString(input: string): string {
+    let result = input;
+    for (const pattern of SENSITIVE_PATTERNS) {
+        result = result.replace(pattern, REDACTED);
+    }
+    if (!isSignedUrl(result)) {
+        result = result.replace(JWT_PATTERN, REDACTED);
+    }
+    return result;
+}
+
 export function redactSensitiveData(input: unknown, seen = new WeakSet()): unknown {
     if (typeof input === 'string') {
-        let result = input;
-        for (const pattern of SENSITIVE_PATTERNS) {
-            result = result.replace(pattern, REDACTED);
-        }
-        // Only redact JWTs if they're not part of a signed URL
-        // Signed URLs are meant to be shared and their tokens are not credentials
-        if (!isSignedUrl(result)) {
-            result = result.replace(JWT_PATTERN, REDACTED);
-        }
-        return result;
+        return redactString(input);
     }
     if (Array.isArray(input)) {
         if (seen.has(input)) return REDACTED_CIRCULAR;
@@ -126,15 +134,102 @@ export function redactSensitiveData(input: unknown, seen = new WeakSet()): unkno
                 result[key] = REDACTED;
             } else {
                 // First truncate file data (with parent context), then recursively redact
-                const truncatedValue = truncateFileData(
-                    value,
-                    key,
-                    input as Record<string, unknown>
-                );
+                const truncatedValue = truncateFileData(value, key, input);
                 result[key] = redactSensitiveData(truncatedValue, seen);
             }
         }
         return result;
     }
+    return input;
+}
+
+/**
+ * Redacts while limiting how much of the input is visited and cloned.
+ * Used for telemetry values that will be length-limited after serialization.
+ */
+export function redactSensitiveDataBounded(input: unknown, maxLen: number): unknown {
+    return redactBounded(input, new WeakSet(), {
+        remaining: Math.floor(maxLen),
+        truncated: false,
+    });
+}
+
+function redactBounded(input: unknown, seen: WeakSet<object>, budget: RedactionBudget): unknown {
+    if (typeof input === 'bigint') {
+        const maxDigits = Math.max(0, budget.remaining - 2);
+        const digitLimit = 10n ** BigInt(maxDigits);
+        if (maxDigits === 0 || input >= digitLimit || input <= -digitLimit) {
+            budget.remaining = 0;
+            budget.truncated = true;
+            return '[BIGINT_TRUNCATED]';
+        }
+        const result = input.toString();
+        if (result.length + 2 > budget.remaining) {
+            budget.remaining = 0;
+            budget.truncated = true;
+            return '[BIGINT_TRUNCATED]';
+        }
+        budget.remaining -= result.length + 2;
+        return result;
+    }
+
+    if (typeof input === 'string') {
+        if (input.length + 2 > budget.remaining) {
+            budget.remaining = 0;
+            budget.truncated = true;
+            return TRUNCATED;
+        }
+        budget.remaining -= input.length + 2;
+        return redactString(input);
+    }
+
+    if (Array.isArray(input)) {
+        if (seen.has(input)) return REDACTED_CIRCULAR;
+        seen.add(input);
+        budget.remaining = Math.max(0, budget.remaining - 2);
+        const result: unknown[] = [];
+        for (let index = 0; index < input.length; index += 1) {
+            if (budget.remaining <= 1) {
+                budget.truncated = true;
+                result.push(TRUNCATED);
+                break;
+            }
+            budget.remaining -= 1;
+            result.push(redactBounded(input[index], seen, budget));
+            if (budget.truncated) break;
+        }
+        return result;
+    }
+
+    if (input && typeof input === 'object') {
+        if (seen.has(input)) return REDACTED_CIRCULAR;
+        seen.add(input);
+        budget.remaining = Math.max(0, budget.remaining - 2);
+        const result: Record<string, unknown> = {};
+        for (const key in input) {
+            if (!Object.hasOwn(input, key)) continue;
+            if (key === 'toJSON') continue;
+            const propertyCost = key.length + 4;
+            if (propertyCost > budget.remaining) {
+                budget.truncated = true;
+                result.__dexto_truncated__ = TRUNCATED;
+                break;
+            }
+            budget.remaining -= propertyCost;
+            if (SENSITIVE_FIELDS.includes(key.toLowerCase())) {
+                result[key] = REDACTED;
+                budget.remaining = Math.max(0, budget.remaining - REDACTED.length - 2);
+                continue;
+            }
+
+            const value = Reflect.get(input, key);
+            const truncatedValue = truncateFileData(value, key, input);
+            result[key] = redactBounded(truncatedValue, seen, budget);
+            if (budget.truncated) break;
+        }
+        return result;
+    }
+
+    budget.remaining = Math.max(0, budget.remaining - 8);
     return input;
 }
