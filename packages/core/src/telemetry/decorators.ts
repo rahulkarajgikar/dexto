@@ -13,6 +13,38 @@ import { hasActiveTelemetry, getBaggageValues } from './utils.js';
 import { safeStringify } from '../utils/safe-stringify.js';
 import { getHostRuntimeAttributes, getHostRuntimeBaggageEntries } from '../runtime/index.js';
 
+const MAX_CAPTURED_STRING_LENGTH = 1024;
+const MAX_CAPTURED_BIGINT = 10n ** 128n;
+
+function summarizeSpanValue(value: unknown): string {
+    switch (typeof value) {
+        case 'string':
+            return value.length <= MAX_CAPTURED_STRING_LENGTH
+                ? safeStringify(value, MAX_CAPTURED_STRING_LENGTH + 2)
+                : `[String(${value.length})]`;
+        case 'number':
+        case 'boolean':
+            return safeStringify(value);
+        case 'bigint':
+            return value > -MAX_CAPTURED_BIGINT && value < MAX_CAPTURED_BIGINT
+                ? value.toString()
+                : '[BigInt]';
+        case 'undefined':
+            return 'undefined';
+        case 'symbol':
+            return '[Symbol]';
+        case 'function':
+            return '[Function]';
+        case 'object':
+            if (value === null) return 'null';
+            try {
+                return Array.isArray(value) ? '[Array]' : '[Object]';
+            } catch {
+                return '[Object]';
+            }
+    }
+}
+
 // Decorator factory that takes optional spanName
 export function withSpan(options: {
     spanName?: string;
@@ -79,9 +111,9 @@ export function withSpan(options: {
             const effectiveRunId = effectiveHostRuntime?.ids?.runId ?? runId;
 
             const applySpanAttributes = (span: Span) => {
-                // Record input arguments as span attributes (sanitized and truncated)
+                // Keep scalar diagnostics without traversing arbitrary application object graphs.
                 args.forEach((arg, index) => {
-                    span.setAttribute(`${spanName}.argument.${index}`, safeStringify(arg, 8192));
+                    span.setAttribute(`${spanName}.argument.${index}`, summarizeSpanValue(arg));
                 });
 
                 // Add all baggage values to span attributes
@@ -200,7 +232,7 @@ export function withSpan(options: {
                             .then((resolvedValue) => {
                                 span.setAttribute(
                                     `${spanName}.result`,
-                                    safeStringify(resolvedValue, 8192)
+                                    summarizeSpanValue(resolvedValue)
                                 );
                                 return resolvedValue;
                             })
@@ -217,8 +249,7 @@ export function withSpan(options: {
                             });
                     }
 
-                    // Record result for non-promise returns (sanitized and truncated)
-                    span.setAttribute(`${spanName}.result`, safeStringify(result, 8192));
+                    span.setAttribute(`${spanName}.result`, summarizeSpanValue(result));
                     // Return regular results
                     return result;
                 } catch (error) {

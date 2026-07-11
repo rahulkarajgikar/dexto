@@ -1,6 +1,6 @@
 ---
 sidebar_position: 9
-sidebar_label: "Telemetry"
+sidebar_label: 'Telemetry'
 ---
 
 # Telemetry Configuration
@@ -16,6 +16,7 @@ For complete field documentation, backend setup, and collector configuration, se
 Telemetry provides visibility into your agent's operations through distributed tracing. When enabled, Dexto automatically traces agent operations, LLM calls, and tool executions.
 
 **What you get:**
+
 - Complete request lifecycle traces
 - LLM token usage tracking
 - Tool execution monitoring
@@ -37,11 +38,11 @@ docker run -d \
 
 ```yaml
 telemetry:
-  enabled: true
-  serviceName: my-agent
-  export:
-    type: otlp
-    endpoint: http://localhost:4318/v1/traces
+    enabled: true
+    serviceName: my-agent
+    export:
+        type: otlp
+        endpoint: http://localhost:4318/v1/traces
 ```
 
 ### 3. View Traces
@@ -71,11 +72,11 @@ Export to OTLP-compatible backends:
 
 ```yaml
 telemetry:
-  enabled: true
-  serviceName: my-prod-agent
-  export:
-    type: otlp
-    endpoint: http://localhost:4318/v1/traces
+    enabled: true
+    serviceName: my-prod-agent
+    export:
+        type: otlp
+        endpoint: http://localhost:4318/v1/traces
 ```
 
 ### Console (Development)
@@ -84,9 +85,9 @@ Print traces to terminal:
 
 ```yaml
 telemetry:
-  enabled: true
-  export:
-    type: console
+    enabled: true
+    export:
+        type: console
 ```
 
 ## Common Configurations
@@ -95,48 +96,55 @@ telemetry:
 
 ```yaml
 telemetry:
-  enabled: true
-  serviceName: my-dev-agent
-  export:
-    type: otlp
-    protocol: http
-    endpoint: http://localhost:4318/v1/traces
+    enabled: true
+    serviceName: my-dev-agent
+    export:
+        type: otlp
+        protocol: http
+        endpoint: http://localhost:4318/v1/traces
 ```
 
 ### Grafana Cloud
 
 ```yaml
 telemetry:
-  enabled: true
-  serviceName: my-prod-agent
-  export:
-    type: otlp
-    endpoint: https://otlp-gateway-prod.grafana.net/otlp
-    headers:
-      authorization: "Basic $GRAFANA_CLOUD_TOKEN"
+    enabled: true
+    serviceName: my-prod-agent
+    export:
+        type: otlp
+        endpoint: https://otlp-gateway-prod.grafana.net/otlp
+        headers:
+            authorization: 'Basic $GRAFANA_CLOUD_TOKEN'
 ```
 
 ### Honeycomb
 
 ```yaml
 telemetry:
-  enabled: true
-  serviceName: my-prod-agent
-  export:
-    type: otlp
-    endpoint: https://api.honeycomb.io:443
-    headers:
-      x-honeycomb-team: $HONEYCOMB_API_KEY
+    enabled: true
+    serviceName: my-prod-agent
+    export:
+        type: otlp
+        endpoint: https://api.honeycomb.io:443
+        headers:
+            x-honeycomb-team: $HONEYCOMB_API_KEY
 ```
 
 ## What Gets Traced
 
 Dexto automatically traces:
+
 - **Agent operations** - Full request lifecycle
 - **LLM calls** - Model invocations with token counts
 - **Tool executions** - Tool calls and results
 
+Automatically instrumented method arguments and results retain sanitized scalar values. Complex
+objects, arrays, functions, and symbols are represented by type markers rather than serialized
+contents. This keeps traces useful for correlation and status diagnosis without copying application
+object graphs or exposing nested values.
+
 **Key attributes:**
+
 - `gen_ai.usage.input_tokens` - Prompt tokens
 - `gen_ai.usage.output_tokens` - Completion tokens
 - `llm.provider` - Provider name
@@ -144,16 +152,17 @@ Dexto automatically traces:
 
 ## Use Cases
 
-| Scenario | How Telemetry Helps |
-|----------|---------------------|
-| **Debug slow requests** | Identify bottlenecks in traces |
-| **Monitor token usage** | Track LLM costs and optimize prompts |
-| **Production monitoring** | Set alerts for errors and latency |
-| **Performance optimization** | Find inefficient operations |
+| Scenario                     | How Telemetry Helps                  |
+| ---------------------------- | ------------------------------------ |
+| **Debug slow requests**      | Identify bottlenecks in traces       |
+| **Monitor token usage**      | Track LLM costs and optimize prompts |
+| **Production monitoring**    | Set alerts for errors and latency    |
+| **Performance optimization** | Find inefficient operations          |
 
 ## Performance Impact
 
 Minimal overhead:
+
 - ~1-2ms per span
 - Async export (non-blocking)
 - Automatic batching
