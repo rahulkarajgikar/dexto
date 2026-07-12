@@ -11,6 +11,11 @@ type OTLPHttpExporterType = import('@opentelemetry/exporter-trace-otlp-http').OT
 type OTLPGrpcExporterType = import('@opentelemetry/exporter-trace-otlp-grpc').OTLPTraceExporter;
 export type TelemetryShutdownHandler = () => Promise<void>;
 
+// Keep optional Node telemetry packages out of host bundles that inject their own bootstrap.
+function importRuntimeDependency<T>(specifier: string): Promise<T> {
+    return import(specifier);
+}
+
 export type TelemetryRegistrationOptions = {
     config?: OtelConfiguration | undefined;
     initialized?: boolean | undefined;
@@ -62,14 +67,18 @@ export class Telemetry {
     ): Promise<ConsoleSpanExporterType | OTLPHttpExporterType | OTLPGrpcExporterType> {
         const e = config?.export;
         if (!e || e.type === 'console') {
-            const { ConsoleSpanExporter } = await import('@opentelemetry/sdk-trace-base');
+            const { ConsoleSpanExporter } = await importRuntimeDependency<
+                typeof import('@opentelemetry/sdk-trace-base')
+            >('@opentelemetry/sdk-trace-base');
             return new ConsoleSpanExporter();
         }
         if (e.type === 'otlp') {
             if (e.protocol === 'grpc') {
                 let OTLPGrpcExporter: typeof import('@opentelemetry/exporter-trace-otlp-grpc').OTLPTraceExporter;
                 try {
-                    const mod = await import('@opentelemetry/exporter-trace-otlp-grpc');
+                    const mod = await importRuntimeDependency<
+                        typeof import('@opentelemetry/exporter-trace-otlp-grpc')
+                    >('@opentelemetry/exporter-trace-otlp-grpc');
                     OTLPGrpcExporter = mod.OTLPTraceExporter;
                 } catch (err) {
                     const error = err as NodeJS.ErrnoException;
@@ -90,7 +99,9 @@ export class Telemetry {
             // default to http when omitted
             let OTLPHttpExporter: typeof import('@opentelemetry/exporter-trace-otlp-http').OTLPTraceExporter;
             try {
-                const mod = await import('@opentelemetry/exporter-trace-otlp-http');
+                const mod = await importRuntimeDependency<
+                    typeof import('@opentelemetry/exporter-trace-otlp-http')
+                >('@opentelemetry/exporter-trace-otlp-http');
                 OTLPHttpExporter = mod.OTLPTraceExporter;
             } catch (err) {
                 const error = err as NodeJS.ErrnoException;
@@ -112,7 +123,9 @@ export class Telemetry {
             return new OTLPHttpExporter(options);
         }
         // schema also allows 'custom' but YAML cannot provide a SpanExporter instance
-        const { ConsoleSpanExporter } = await import('@opentelemetry/sdk-trace-base');
+        const { ConsoleSpanExporter } = await importRuntimeDependency<
+            typeof import('@opentelemetry/sdk-trace-base')
+        >('@opentelemetry/sdk-trace-base');
         return new ConsoleSpanExporter();
     }
     /**
@@ -148,27 +161,32 @@ export class Telemetry {
                         let ATTR_SERVICE_NAME: string;
 
                         try {
-                            const sdkModule = await import('@opentelemetry/sdk-node');
+                            const sdkModule =
+                                await importRuntimeDependency<
+                                    typeof import('@opentelemetry/sdk-node')
+                                >('@opentelemetry/sdk-node');
                             NodeSDK = sdkModule.NodeSDK;
 
-                            const resourcesModule = await import('@opentelemetry/resources');
+                            const resourcesModule = await importRuntimeDependency<
+                                typeof import('@opentelemetry/resources')
+                            >('@opentelemetry/resources');
                             Resource = resourcesModule.Resource;
 
                             // Import specific instrumentations instead of auto-instrumentations-node
                             // This reduces install size by ~130MB while maintaining HTTP tracing for LLM API calls
-                            const httpInstModule = await import(
-                                '@opentelemetry/instrumentation-http'
-                            );
+                            const httpInstModule = await importRuntimeDependency<
+                                typeof import('@opentelemetry/instrumentation-http')
+                            >('@opentelemetry/instrumentation-http');
                             HttpInstrumentation = httpInstModule.HttpInstrumentation;
 
-                            const undiciInstModule = await import(
-                                '@opentelemetry/instrumentation-undici'
-                            );
+                            const undiciInstModule = await importRuntimeDependency<
+                                typeof import('@opentelemetry/instrumentation-undici')
+                            >('@opentelemetry/instrumentation-undici');
                             UndiciInstrumentation = undiciInstModule.UndiciInstrumentation;
 
-                            const semanticModule = await import(
-                                '@opentelemetry/semantic-conventions'
-                            );
+                            const semanticModule = await importRuntimeDependency<
+                                typeof import('@opentelemetry/semantic-conventions')
+                            >('@opentelemetry/semantic-conventions');
                             ATTR_SERVICE_NAME = semanticModule.ATTR_SERVICE_NAME;
                         } catch (importError) {
                             const err = importError as NodeJS.ErrnoException;
@@ -196,7 +214,10 @@ export class Telemetry {
                             exporter || (await Telemetry.buildTraceExporter(config));
 
                         // Dynamically import CompositeExporter to avoid loading OpenTelemetry at startup
-                        const { CompositeExporter } = await import('./exporters.js');
+                        const { CompositeExporter } =
+                            await importRuntimeDependency<typeof import('./exporters.js')>(
+                                './exporters.js'
+                            );
                         const traceExporter =
                             spanExporter instanceof CompositeExporter
                                 ? spanExporter
