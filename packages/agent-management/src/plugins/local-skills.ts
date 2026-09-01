@@ -5,7 +5,7 @@ import type { LoadedSkill, SkillSummary, Skills } from '@dexto/core';
 import { discoverClaudeCodePlugins } from './discover-plugins.js';
 import { discoverStandaloneSkills } from './discover-skills.js';
 import { loadClaudeCodePlugin } from './load-plugin.js';
-import { getSkillFrontmatter } from './skill-markdown.js';
+import { getSkillFrontmatter, stripSkillFrontmatter } from './skill-markdown.js';
 
 export interface LocalSkillRoot {
     /** Exact name exposed to callers and accepted by `skill_load`. */
@@ -77,7 +77,29 @@ export class LocalSkills implements Skills {
             throw new Error(`Skill file not found: ${name}/${requestedPath}`);
         }
 
-        return fs.readFile(resolvedPath, 'utf8');
+        const notFoundMessage = `Skill file not found: ${name}/${requestedPath}`;
+        try {
+            const [physicalSkillDirectory, physicalResolvedPath, physicalSkillFile] =
+                await Promise.all([
+                    fs.realpath(skillDirectory),
+                    fs.realpath(resolvedPath),
+                    fs.realpath(skillFile),
+                ]);
+            const relativePath = path.relative(physicalSkillDirectory, physicalResolvedPath);
+            if (
+                relativePath.length === 0 ||
+                relativePath === '..' ||
+                relativePath.startsWith(`..${path.sep}`) ||
+                path.isAbsolute(relativePath) ||
+                physicalResolvedPath === physicalSkillFile
+            ) {
+                throw new Error(notFoundMessage);
+            }
+
+            return await fs.readFile(physicalResolvedPath, 'utf8');
+        } catch {
+            throw new Error(notFoundMessage);
+        }
     }
 
     private async findSkill(name: string): Promise<SkillFile | null> {
@@ -172,9 +194,7 @@ async function walk(directory: string, rootDirectory: string, files: string[]): 
 }
 
 function deriveDescription(markdown: string, name: string): string {
-    const withoutFrontmatter = /^---\r?\n[\s\S]*?\r?\n---(?:\r?\n|$)/u.test(markdown)
-        ? markdown.replace(/^---\r?\n[\s\S]*?\r?\n---(?:\r?\n|$)/u, '')
-        : markdown;
+    const withoutFrontmatter = stripSkillFrontmatter(markdown);
     const line = withoutFrontmatter
         .split('\n')
         .map((candidate) => candidate.trim())

@@ -6,6 +6,8 @@
  *
  * Structure:
  * .agents/skills/
+ * skills/ (legacy project root, still discovered for compatibility)
+ * .dexto/skills/ (legacy project/user root, still discovered for compatibility)
  * ~/.agents/skills/
  * └── skill-name/
  *     ├── SKILL.md          (required - skill instructions)
@@ -19,6 +21,7 @@
 
 import * as path from 'path';
 import { existsSync, readdirSync } from 'fs';
+import { homedir } from 'os';
 
 /**
  * Represents a discovered standalone skill
@@ -40,19 +43,23 @@ export interface DiscoveredSkill {
 
 export interface StandaloneSkillPaths {
     project: string;
-    user: string | undefined;
+    user: string;
+    legacyProject: readonly string[];
+    legacyUser: readonly string[];
 }
 
 /**
  * Resolves the canonical standalone Skill roots used by discovery and creator tools.
  */
 export function getStandaloneSkillPaths(projectPath?: string): StandaloneSkillPaths {
-    const homeDir = process.env.HOME || process.env.USERPROFILE || '';
+    const homeDir = process.env.HOME || process.env.USERPROFILE || homedir();
     const cwd = projectPath || process.cwd();
 
     return {
         project: path.join(cwd, '.agents', 'skills'),
-        user: homeDir ? path.join(homeDir, '.agents', 'skills') : undefined,
+        user: path.join(homeDir, '.agents', 'skills'),
+        legacyProject: [path.join(cwd, 'skills'), path.join(cwd, '.dexto', 'skills')],
+        legacyUser: [path.join(homeDir, '.dexto', 'skills')],
     };
 }
 
@@ -115,13 +122,17 @@ export function discoverStandaloneSkills(projectPath?: string): DiscoveredSkill[
     };
 
     // === Project skills ===
-    // Project-authored Skills have one canonical root: <projectRoot>/.agents/skills/.
+    // Project-authored Skills prefer the canonical root, while retaining legacy roots so
+    // initialization never makes existing bundles disappear.
     scanSkillsDir(skillPaths.project, 'project');
+    for (const legacyRoot of skillPaths.legacyProject) {
+        scanSkillsDir(legacyRoot, 'project');
+    }
 
-    // === User skills ===
-    // User-authored Skills have one canonical root: ~/.agents/skills/.
-    if (skillPaths.user) {
-        scanSkillsDir(skillPaths.user, 'user');
+    // User-authored Skills also prefer the canonical root, with the legacy root retained.
+    scanSkillsDir(skillPaths.user, 'user');
+    for (const legacyRoot of skillPaths.legacyUser) {
+        scanSkillsDir(legacyRoot, 'user');
     }
 
     return skills;
@@ -135,5 +146,10 @@ export function discoverStandaloneSkills(projectPath?: string): DiscoveredSkill[
  */
 export function getSkillSearchPaths(projectPath?: string): string[] {
     const skillPaths = getStandaloneSkillPaths(projectPath);
-    return [skillPaths.project, ...(skillPaths.user ? [skillPaths.user] : [])];
+    return [
+        skillPaths.project,
+        ...skillPaths.legacyProject,
+        skillPaths.user,
+        ...skillPaths.legacyUser,
+    ];
 }

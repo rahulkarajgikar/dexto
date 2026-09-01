@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import * as fs from 'fs';
+import * as path from 'path';
+import { homedir } from 'os';
 
 vi.mock('fs', async () => {
     const actual = await vi.importActual<typeof import('fs')>('fs');
@@ -100,24 +102,43 @@ describe('discoverStandaloneSkills', () => {
         });
     });
 
-    it('does not discover legacy project or user skill roots', () => {
+    it('preserves legacy project and user skill roots for compatibility', () => {
         vi.mocked(fs.existsSync).mockImplementation((entry) => {
             const value = String(entry);
             return (
                 value === '/test/project/skills' ||
+                value === '/test/project/skills/legacy-project/SKILL.md' ||
                 value === '/test/project/.dexto/skills' ||
-                value === '/home/user/.dexto/skills'
+                value === '/test/project/.dexto/skills/legacy-dexto/SKILL.md' ||
+                value === '/home/user/.dexto/skills' ||
+                value === '/home/user/.dexto/skills/legacy-user/SKILL.md'
             );
         });
-        vi.mocked(fs.readdirSync).mockReturnValue([
-            createDirent('legacy', true),
-        ] as unknown as ReturnType<typeof fs.readdirSync>);
+        vi.mocked(fs.readdirSync).mockImplementation((entry) => {
+            const value = String(entry);
+            if (value === '/test/project/skills') {
+                return [createDirent('legacy-project', true)] as unknown as ReturnType<
+                    typeof fs.readdirSync
+                >;
+            }
+            if (value === '/test/project/.dexto/skills') {
+                return [createDirent('legacy-dexto', true)] as unknown as ReturnType<
+                    typeof fs.readdirSync
+                >;
+            }
+            if (value === '/home/user/.dexto/skills') {
+                return [createDirent('legacy-user', true)] as unknown as ReturnType<
+                    typeof fs.readdirSync
+                >;
+            }
+            return [];
+        });
 
-        expect(discoverStandaloneSkills()).toEqual([]);
-        const checkedPaths = vi.mocked(fs.existsSync).mock.calls.map(([entry]) => String(entry));
-        expect(checkedPaths).not.toContain('/test/project/skills');
-        expect(checkedPaths).not.toContain('/test/project/.dexto/skills');
-        expect(checkedPaths).not.toContain('/home/user/.dexto/skills');
+        expect(discoverStandaloneSkills().map((skill) => skill.name)).toEqual([
+            'legacy-project',
+            'legacy-dexto',
+            'legacy-user',
+        ]);
     });
 
     it('skips incomplete and non-directory entries', () => {
@@ -163,6 +184,13 @@ describe('discoverStandaloneSkills', () => {
 
         expect(discoverStandaloneSkills()).toHaveLength(1);
     });
+
+    it('falls back to the operating-system home directory when env vars are unavailable', () => {
+        delete process.env.HOME;
+        delete process.env.USERPROFILE;
+
+        expect(getSkillSearchPaths()).toContain(path.join(homedir(), '.agents', 'skills'));
+    });
 });
 
 describe('getSkillSearchPaths', () => {
@@ -179,17 +207,23 @@ describe('getSkillSearchPaths', () => {
         process.env = { ...originalEnv };
     });
 
-    it('returns only the canonical roots in priority order', () => {
+    it('returns canonical and legacy roots in priority order', () => {
         expect(getSkillSearchPaths()).toEqual([
             '/test/project/.agents/skills',
+            '/test/project/skills',
+            '/test/project/.dexto/skills',
             '/home/user/.agents/skills',
+            '/home/user/.dexto/skills',
         ]);
     });
 
     it('uses an explicit project path for the project root', () => {
         expect(getSkillSearchPaths('/other/project')).toEqual([
             '/other/project/.agents/skills',
+            '/other/project/skills',
+            '/other/project/.dexto/skills',
             '/home/user/.agents/skills',
+            '/home/user/.dexto/skills',
         ]);
     });
 });

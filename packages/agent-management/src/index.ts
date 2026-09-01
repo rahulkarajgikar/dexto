@@ -283,6 +283,7 @@ export * from './tool-factories/creator-tools/index.js';
 export {
     // Discovery
     discoverClaudeCodePlugins,
+    discoverStandaloneSkills,
     getPluginSearchPaths,
     // Loading
     loadClaudeCodePlugin,

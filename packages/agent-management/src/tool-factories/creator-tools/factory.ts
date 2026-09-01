@@ -1,4 +1,3 @@
-import os from 'node:os';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import type { ToolFactory } from '@dexto/agent-config';
@@ -146,7 +145,7 @@ function resolveWorkspaceSkillsDirectory(context: ToolExecutionContext): string 
 }
 
 function resolveGlobalSkillsDirectory(): string {
-    return getStandaloneSkillPaths().user ?? path.join(os.homedir(), '.agents', 'skills');
+    return getStandaloneSkillPaths().user;
 }
 
 type SkillScope = 'global' | 'workspace';

@@ -3,6 +3,7 @@ import type { AgentConfig, ToolFactoryEntry } from '@dexto/agent-config';
 import {
     createDextoAgentFromConfig,
     deriveDisplayName,
+    discoverStandaloneSkills,
     findProjectRegistryPath as findSharedProjectRegistryPath,
     getPrimaryApiKeyEnvVar,
     getProjectRegistryPath as getCanonicalProjectRegistryPath,
@@ -49,6 +50,7 @@ This workspace can define project-specific agents and skills.
 ## Structure
 - Put custom agents and subagents in \`agents/\`
 - Put custom skills in \`.agents/skills/<skill-id>/\`
+- Existing \`skills/\` and \`.dexto/skills/\` bundles remain discoverable for compatibility; create new skills under \`.agents/skills/\`
 - Each skill bundle should keep \`SKILL.md\` plus optional \`handlers/\`, \`scripts/\`, \`mcps/\`, and \`references/\`
 - Use \`.dexto/\` only for Dexto-managed state and installed assets
 
@@ -1801,38 +1803,10 @@ function formatSkillPaths(result: WorkspaceSkillScaffoldResult): string[] {
 }
 
 async function listWorkspaceSkillIds(workspaceRoot: string): Promise<string[]> {
-    const skillsRoot = path.join(workspaceRoot, '.agents', 'skills');
-
-    try {
-        const entries = await fs.readdir(skillsRoot, { withFileTypes: true });
-        const skillIds: string[] = [];
-
-        for (const entry of entries) {
-            if (!entry.isDirectory()) {
-                continue;
-            }
-
-            const skillFilePath = path.join(skillsRoot, entry.name, 'SKILL.md');
-            try {
-                const stat = await fs.stat(skillFilePath);
-                if (stat.isFile()) {
-                    skillIds.push(entry.name);
-                }
-            } catch (error) {
-                if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
-                    continue;
-                }
-                throw error;
-            }
-        }
-
-        return skillIds.sort((left, right) => left.localeCompare(right));
-    } catch (error) {
-        if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
-            return [];
-        }
-        throw error;
-    }
+    return discoverStandaloneSkills(workspaceRoot)
+        .filter((skill) => skill.source === 'project')
+        .map((skill) => skill.name)
+        .sort((left, right) => left.localeCompare(right));
 }
 
 function describeEffectiveDeployAgent(input: {

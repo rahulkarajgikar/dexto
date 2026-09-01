@@ -14,22 +14,22 @@ The public contract in `@dexto/core/skills` is:
 
 ```typescript
 type SkillSummary = {
-  name: string;
-  description: string;
+    name: string;
+    description: string;
 };
 
 type LoadedSkill = {
-  name: string;
-  instructions: string;
-  supportingFiles: readonly string[];
-  filesLocation: 'hosted' | 'workspace';
-  baseDirectory: string | null;
+    name: string;
+    instructions: string;
+    supportingFiles: readonly string[];
+    filesLocation: 'hosted' | 'workspace';
+    baseDirectory: string | null;
 };
 
 interface Skills {
-  list(): Promise<readonly SkillSummary[]>;
-  load(name: string): Promise<LoadedSkill | null>;
-  readFile(name: string, path: string): Promise<string>;
+    list(): Promise<readonly SkillSummary[]>;
+    load(name: string): Promise<LoadedSkill | null>;
+    readFile(name: string, path: string): Promise<string>;
 }
 ```
 
@@ -54,8 +54,10 @@ Local images keep filesystem and plugin discovery in `@dexto/agent-management` a
 `LocalSkills`. The local implementation re-reads skill files for each operation, so local creator
 tools and ordinary edits are visible without a Core refresh API. The local harness discovers
 standalone skills from the canonical `<workspace>/.agents/skills/` and `~/.agents/skills/` roots,
-alongside Claude-compatible plugin skills. Those filesystem details remain host behavior; they are
-not part of the Core contract or a promise made by hosted images.
+retains the legacy `<workspace>/skills/`, `<workspace>/.dexto/skills/`, and `~/.dexto/skills/`
+roots for compatibility, and also discovers Claude-compatible plugin skills. New skills should use
+the canonical roots. Those filesystem details remain host behavior; they are not part of the Core
+contract or a promise made by hosted images.
 
 Skills remain separate from prompt-only slash commands. Enable the `skill_load` builtin when an
 agent should load skills, and use `/skills` or `GET /api/skills` to inspect the host catalog.

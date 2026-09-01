@@ -117,4 +117,41 @@ describe('createLocalSkills', () => {
         await expect(skills.list()).resolves.toEqual([]);
         await expect(skills.load('canonical')).resolves.toBeNull();
     });
+
+    it('derives descriptions after empty YAML frontmatter', async () => {
+        const workspaceRoot = path.join(tempDir, 'workspace');
+        const skillDir = path.join(workspaceRoot, '.agents', 'skills', 'empty-frontmatter');
+        await fs.mkdir(skillDir, { recursive: true });
+        await fs.writeFile(
+            path.join(skillDir, 'SKILL.md'),
+            ['---', '---', '', '# Empty Frontmatter', '', 'Description after metadata.'].join('\n'),
+            'utf8'
+        );
+
+        const skills = createLocalSkills({ workspaceRoot });
+
+        await expect(skills.list()).resolves.toEqual([
+            { name: 'empty-frontmatter', description: 'Description after metadata.' },
+        ]);
+    });
+
+    it.skipIf(process.platform === 'win32')(
+        'rejects supporting files whose symlink target escapes the skill directory',
+        async () => {
+            const workspaceRoot = path.join(tempDir, 'workspace');
+            const skillDir = path.join(workspaceRoot, '.agents', 'skills', 'safe');
+            const outsideFile = path.join(tempDir, 'outside.md');
+            const linkedFile = path.join(skillDir, 'references', 'outside.md');
+            await fs.mkdir(path.dirname(linkedFile), { recursive: true });
+            await fs.writeFile(path.join(skillDir, 'SKILL.md'), '# Safe\n', 'utf8');
+            await fs.writeFile(outsideFile, 'secret', 'utf8');
+            await fs.symlink(outsideFile, linkedFile);
+
+            const skills = createLocalSkills({ workspaceRoot });
+
+            await expect(skills.readFile('safe', 'references/outside.md')).rejects.toThrow(
+                'Skill file not found: safe/references/outside.md'
+            );
+        }
+    );
 });

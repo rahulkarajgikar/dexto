@@ -210,14 +210,18 @@ describe('skill_create tool', () => {
     it('re-reads one skill bundle so later file edits are visible in the current session', async () => {
         const logger = createMockLogger();
         const skillFile = path.join(tempDir, '.agents', 'skills', 'release-check', 'SKILL.md');
+        let loadedInstructions: string | undefined;
         const skills = {
-            load: vi.fn(async () => ({
-                name: 'release-check',
-                instructions: 'updated',
-                supportingFiles: [],
-                filesLocation: 'workspace' as const,
-                baseDirectory: tempDir,
-            })),
+            load: vi.fn(async () => {
+                loadedInstructions = await fs.readFile(skillFile, 'utf8');
+                return {
+                    name: 'release-check',
+                    instructions: loadedInstructions,
+                    supportingFiles: [],
+                    filesLocation: 'workspace' as const,
+                    baseDirectory: tempDir,
+                };
+            }),
             list: vi.fn(async () => []),
             readFile: vi.fn(async () => ''),
         };
@@ -235,8 +239,7 @@ describe('skill_create tool', () => {
                 '',
                 '# Release Check',
                 '',
-                '## Purpose',
-                'Validate release readiness.',
+                'Initial body.',
             ].join('\n'),
             'utf8'
         );
@@ -256,6 +259,7 @@ describe('skill_create tool', () => {
             ),
             'utf8'
         );
+        await fs.writeFile(skillFile, '---\nname: "release-check"\n---\n\nUpdated body.\n', 'utf8');
 
         const context = {
             logger,
@@ -284,5 +288,6 @@ describe('skill_create tool', () => {
             'Skills are read from their current files, so edits are visible to the next skill_load call.'
         );
         expect(skills.load).toHaveBeenCalledWith('release-check');
+        expect(loadedInstructions).toContain('Updated body.');
     });
 });
