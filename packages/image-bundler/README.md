@@ -39,7 +39,7 @@ The generated default export matches `@dexto/agent-config`’s `DextoImage` inte
 - `storage.createStores` inherited from the base image, or a generated placeholder for custom base images
 - `logger` factory
 - optional `workspace.create` for `WorkspaceHandleProvider`
-- optional `skills.create` for `SkillSource` instances consumed by `SkillManager`
+- optional `skills.create` for one `Skills` implementation consumed by `DextoAgent`
 
 ## Related
 

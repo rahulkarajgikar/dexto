@@ -2,9 +2,9 @@ import { promises as fs } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { createLocalSkillSources } from './local-skill-sources.js';
+import { createLocalSkills } from './local-skills.js';
 
-describe('createLocalSkillSources', () => {
+describe('createLocalSkills', () => {
     let tempDir: string;
     let previousHome: string | undefined;
     let previousUserProfile: string | undefined;
@@ -29,9 +29,9 @@ describe('createLocalSkillSources', () => {
         await fs.rm(tempDir, { recursive: true, force: true });
     });
 
-    it('discovers user-global and plugin skills through SkillSource', async () => {
+    it('discovers user-global and plugin skills through the Skills contract', async () => {
         const workspaceRoot = path.join(tempDir, 'workspace');
-        const userSkillDir = path.join(tempDir, 'home', '.dexto', 'skills', 'global-review');
+        const userSkillDir = path.join(tempDir, 'home', '.agents', 'skills', 'global-review');
         const pluginSkillDir = path.join(
             workspaceRoot,
             '.dexto',
@@ -69,14 +69,52 @@ describe('createLocalSkillSources', () => {
             '# Audit\n\nAudit through plugin skill.',
             'utf8'
         );
+        await fs.mkdir(path.join(pluginSkillDir, 'references'), { recursive: true });
+        await fs.writeFile(
+            path.join(pluginSkillDir, 'references', 'usage.md'),
+            'Plugin usage reference.',
+            'utf8'
+        );
 
-        const sources = createLocalSkillSources({ workspaceRoot });
-        const skills = await sources[0]!.list();
+        const skills = createLocalSkills({ workspaceRoot });
+        const summaries = await skills.list();
 
-        expect(skills.map((skill) => skill.id).sort()).toEqual(['global-review', 'review:audit']);
-        await expect(sources[0]!.get?.('review:audit')).resolves.toMatchObject({
-            id: 'review:audit',
+        expect(summaries.map((skill) => skill.name).sort()).toEqual([
+            'global-review',
+            'review:audit',
+        ]);
+        await expect(skills.load('review:audit')).resolves.toMatchObject({
+            name: 'review:audit',
             instructions: expect.stringContaining('Audit through plugin skill.'),
+            supportingFiles: ['references/usage.md'],
+            filesLocation: 'workspace',
+            baseDirectory: pluginSkillDir,
         });
+        await expect(skills.load('Audit')).resolves.toBeNull();
+        await expect(skills.readFile('review:audit', 'references/usage.md')).resolves.toBe(
+            'Plugin usage reference.'
+        );
+        await expect(skills.readFile('review:audit', '../SKILL.md')).rejects.toThrow(
+            'Skill file not found: review:audit/../SKILL.md'
+        );
+        await expect(skills.readFile('review:audit', String.raw`C:\tmp\file.md`)).rejects.toThrow(
+            'Skill file not found: review:audit/C:\\tmp\\file.md'
+        );
+    });
+
+    it('ignores a Skill whose frontmatter name disagrees with its canonical root name', async () => {
+        const workspaceRoot = path.join(tempDir, 'workspace');
+        const skillDir = path.join(workspaceRoot, '.agents', 'skills', 'canonical');
+        await fs.mkdir(skillDir, { recursive: true });
+        await fs.writeFile(
+            path.join(skillDir, 'SKILL.md'),
+            ['---', 'name: alias', 'description: Wrong name.', '---', '', '# Canonical'].join('\n'),
+            'utf8'
+        );
+
+        const skills = createLocalSkills({ workspaceRoot });
+
+        await expect(skills.list()).resolves.toEqual([]);
+        await expect(skills.load('canonical')).resolves.toBeNull();
     });
 });

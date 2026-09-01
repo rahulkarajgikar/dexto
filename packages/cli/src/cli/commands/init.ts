@@ -33,7 +33,7 @@ import {
 import { ensureImageImporterConfigured } from '../utils/image-importer.js';
 
 const AGENTS_FILENAME = 'AGENTS.md';
-const WORKSPACE_DIRECTORIES = ['agents', 'skills'] as const;
+const WORKSPACE_DIRECTORIES = ['agents', path.join('.agents', 'skills')] as const;
 const SKILL_RESOURCE_DIRECTORIES = ['handlers', 'scripts', 'mcps', 'references'] as const;
 const STARTER_SKILL_ID = 'create-skill';
 const STARTER_SKILL_IDS = [STARTER_SKILL_ID] as const;
@@ -48,7 +48,7 @@ This workspace can define project-specific agents and skills.
 
 ## Structure
 - Put custom agents and subagents in \`agents/\`
-- Put custom skills in \`skills/<skill-id>/\`
+- Put custom skills in \`.agents/skills/<skill-id>/\`
 - Each skill bundle should keep \`SKILL.md\` plus optional \`handlers/\`, \`scripts/\`, \`mcps/\`, and \`references/\`
 - Use \`.dexto/\` only for Dexto-managed state and installed assets
 
@@ -162,7 +162,7 @@ type AgentToolBundleDefinition = {
 const CORE_AGENT_TOOL_ENTRIES: ToolFactoryEntry[] = [
     {
         type: 'builtin-tools',
-        enabledTools: ['ask_user', 'invoke_skill', 'sleep'],
+        enabledTools: ['ask_user', 'skill_load', 'sleep'],
     },
 ];
 
@@ -1150,7 +1150,7 @@ async function resolveInitAgentInput(
             `${chalk.cyan('Workspace role:')} ${roleSummary}`,
             `${chalk.cyan('System prompt:')} ${promptResult.mode === 'generate' ? 'Generated from description' : 'Custom'}`,
             `${chalk.cyan('Tool bundles:')} ${formatBundleSelection(bundleIds)}`,
-            `${chalk.cyan('Core utilities:')} ask_user, invoke_skill, sleep`,
+            `${chalk.cyan('Core utilities:')} ask_user, skill_load, sleep`,
             `${chalk.cyan('Agent creation:')} enabled by default`,
         ].join('\n'),
         'Agent Summary'
@@ -1227,7 +1227,7 @@ description: "Create or update Dexto skill bundles with SKILL.md, handlers, scri
 
 # Create Skill
 
-Create or update standalone Dexto skill bundles. Treat \`skills/<id>/\` as the canonical workspace location unless the user explicitly asks for a global skill.
+Create or update standalone Dexto skill bundles. Treat \`.agents/skills/<id>/\` as the canonical workspace location unless the user explicitly asks for a global skill.
 
 ## Core Flow
 1. Search for overlap first with \`skill_list\` and \`skill_search\`.
@@ -1240,7 +1240,7 @@ Create or update standalone Dexto skill bundles. Treat \`skills/<id>/\` as the c
    - \`handlers/\` for reusable workflow logic or structured helper code
    - \`mcps/\` for inert MCP-related reference/config files
 6. Prefer extending existing skills or references over duplicating content.
-7. If you edit \`SKILL.md\` or bundled files with non-creator tools, run \`skill_refresh\` before relying on the skill in the current session.
+7. If you edit \`SKILL.md\` or bundled files with non-creator tools, use \`skill_load\` to reread the current Skill before relying on it in the current session.
 8. Creating \`mcps/*.json\` only creates inert bundled files. Configure runtime MCP servers through normal MCP configuration paths.
 
 ## Authoring Rules
@@ -1249,7 +1249,7 @@ Create or update standalone Dexto skill bundles. Treat \`skills/<id>/\` as the c
 - Use \`references/\` sparingly for larger copied docs, external references, schemas, examples, or policies.
 - Keep references one level deep from \`SKILL.md\` and link them explicitly.
 - Reuse language and conventions from nearby skills when possible.
-- If you update bundled resources outside creator tools, run \`skill_refresh\` so the current session reloads the latest skill content before invoking it.
+- If you update bundled resources outside creator tools, use \`skill_load\` so the current session reads the latest skill content before invoking it.
 
 ## SKILL.md Structure
 - \`# <Title>\`
@@ -1269,7 +1269,7 @@ function buildCreateSkillStarterReference(): string {
 
 ## Canonical Layout
 \`\`\`
-skills/<skill-id>/
+.agents/skills/<skill-id>/
 ├── SKILL.md
 ├── handlers/
 ├── scripts/
@@ -1296,7 +1296,7 @@ skills/<skill-id>/
 - Files under \`mcps/\` are bundled content only.
 - Skills do not register or connect MCP servers from \`mcps/\`.
 - Configure runtime MCP servers through normal agent MCP configuration paths.
-- Run \`skill_refresh\` after editing bundled files so the running session reloads the latest skill content.
+- The \`skill_load\` tool rereads the current skill files, so no refresh step is required after editing bundled files.
 `;
 }
 
@@ -1394,7 +1394,7 @@ await server.connect(transport);
 
 ## Verification Sequence
 1. Create or update \`SKILL.md\`, \`scripts/\`, and any inert \`mcps/\` reference files.
-2. Run \`skill_refresh\` after non-creator file edits.
+2. Use \`skill_load\` to reread the current Skill after non-creator file edits.
 3. Invoke the skill in the current session and confirm the updated instructions load.
 4. Configure and verify runtime MCP servers separately through normal MCP configuration paths.
 
@@ -1615,7 +1615,7 @@ export async function createWorkspaceSkillScaffold(
 ): Promise<WorkspaceSkillScaffoldResult> {
     const skillId = normalizeScaffoldId(skillIdInput, 'skill');
     const workspace = await createWorkspaceScaffold(workspaceRoot);
-    const skillDirPath = path.join(workspace.root, 'skills', skillId);
+    const skillDirPath = path.join(workspace.root, '.agents', 'skills', skillId);
     const skillFilePath = path.join(skillDirPath, 'SKILL.md');
 
     const resourceDirectories: WorkspaceSkillScaffoldResult['resourceDirectories'] = [];
@@ -1801,7 +1801,7 @@ function formatSkillPaths(result: WorkspaceSkillScaffoldResult): string[] {
 }
 
 async function listWorkspaceSkillIds(workspaceRoot: string): Promise<string[]> {
-    const skillsRoot = path.join(workspaceRoot, 'skills');
+    const skillsRoot = path.join(workspaceRoot, '.agents', 'skills');
 
     try {
         const entries = await fs.readdir(skillsRoot, { withFileTypes: true });
@@ -1865,7 +1865,7 @@ export async function inspectWorkspaceStatus(
     const agentsDirectoryPresent =
         (await getExistingEntryType(path.join(root, 'agents'))) === 'directory';
     const skillsDirectoryPresent =
-        (await getExistingEntryType(path.join(root, 'skills'))) === 'directory';
+        (await getExistingEntryType(path.join(root, '.agents', 'skills'))) === 'directory';
 
     const registryPath = await findSharedProjectRegistryPath(root);
     const registry = registryPath ? await readSharedProjectRegistry(registryPath) : null;
@@ -1909,7 +1909,7 @@ function formatWorkspaceStatus(result: WorkspaceStatusResult): string {
         `Workspace: ${result.workspaceRoot}`,
         `AGENTS.md: ${result.agentsFilePresent ? 'present' : 'missing'}`,
         `agents/: ${result.agentsDirectoryPresent ? 'present' : 'missing'}`,
-        `skills/: ${result.skillsDirectoryPresent ? 'present' : 'missing'}`,
+        `.agents/skills/: ${result.skillsDirectoryPresent ? 'present' : 'missing'}`,
         `Registry: ${result.registryPath ? path.relative(result.workspaceRoot, result.registryPath) : 'none'}`,
         `Primary agent: ${result.primaryAgentId ?? 'none (global default used locally)'}`,
         `Allow global agents: ${

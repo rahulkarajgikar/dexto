@@ -6,12 +6,7 @@ import { MCPManager } from '../mcp/manager.js';
 import { ToolManager } from '../tools/tool-manager.js';
 import { SystemPromptManager } from '../systemPrompt/manager.js';
 import { SkillsContributor } from '../systemPrompt/contributors.js';
-import {
-    CompositeSkillManager,
-    WorkspaceSkillSource,
-    type SkillManager,
-    type SkillSource,
-} from '../skills/index.js';
+import type { Skills } from '../skills/index.js';
 import { ResourceManager, expandMessageReferences } from '../resources/index.js';
 import { expandBlobReferences, fileTypesToMimePatterns } from '../context/utils.js';
 import type { ContentPart, InternalMessage } from '../context/types.js';
@@ -210,7 +205,7 @@ export class DextoAgent {
     public readonly systemPromptManager!: SystemPromptManager;
     private readonly agentEventBus: AgentEventBus;
     public readonly promptManager!: PromptManager;
-    public readonly skillManager!: SkillManager;
+    public readonly skills: Skills | undefined;
     public readonly stateManager!: AgentStateManager;
     public readonly sessionManager!: SessionManager;
     public readonly workspaceManager!: WorkspaceManager;
@@ -248,8 +243,6 @@ export class DextoAgent {
     private readonly toolkitLoader: ToolkitLoader | undefined;
     private readonly loadedToolkits: Set<string> = new Set();
     private readonly loadingToolkits: Set<string> = new Set();
-    private readonly skillSources: SkillSource[];
-
     // DI-provided local tools.
     private tools: Tool[];
     private readonly compactionStrategy: CompactionStrategy | null;
@@ -307,6 +300,7 @@ export class DextoAgent {
             hooks: hooksInput,
             compaction,
             overrides: overridesInput,
+            skills,
             ...runtimeSettings
         } = options;
 
@@ -333,7 +327,7 @@ export class DextoAgent {
 
         this.overrides = overrides;
         this.toolkitLoader = options.toolkitLoader;
-        this.skillSources = options.skillSources ?? [];
+        this.skills = skills;
 
         if (overrides.mcpAuthProviderFactory !== undefined) {
             this.mcpAuthProviderFactory = overrides.mcpAuthProviderFactory;
@@ -427,7 +421,7 @@ export class DextoAgent {
 
             // Initialize prompts manager (aggregates MCP, internal, starter prompts)
             // File prompts automatically resolve custom slash commands
-            // Must be initialized before toolManager so read_skill/invoke_skill can access skills.
+            // Must be initialized before toolManager so skill_load can access skills.
             const promptManager = new PromptManager(
                 this.mcpManager,
                 this.resourceManager,
@@ -437,11 +431,7 @@ export class DextoAgent {
                 this.logger
             );
             await promptManager.initialize();
-            const skillManager = new CompositeSkillManager([
-                ...this.skillSources,
-                new WorkspaceSkillSource(services.workspaceManager),
-            ]);
-            Object.assign(this, { promptManager, skillManager });
+            Object.assign(this, { promptManager });
 
             // Provide ToolExecutionContext to tools at runtime (late-binding to avoid init ordering cycles)
             const toolExecutionServices = {
@@ -449,7 +439,7 @@ export class DextoAgent {
                 search: services.searchService,
                 resources: services.resourceManager,
                 prompts: promptManager,
-                skills: skillManager,
+                skills: this.skills,
                 mcp: services.mcpManager,
                 taskForker: null,
                 workspaceManager: services.workspaceManager,
@@ -466,13 +456,13 @@ export class DextoAgent {
 
             const agentTools = this.tools;
 
-            // Add skills contributor to system prompt if invoke_skill is enabled.
+            // Add skills contributor to system prompt if skill_load is enabled.
             // This lists available skills so the LLM knows what it can invoke.
-            if (agentTools.some((t) => t.id === 'invoke_skill')) {
+            if (this.skills !== undefined && agentTools.some((t) => t.id === 'skill_load')) {
                 const skillsContributor = new SkillsContributor(
                     'skills',
                     50, // Priority after memories (40) but before most other content
-                    skillManager,
+                    this.skills,
                     this.logger
                 );
                 services.systemPromptManager.addContributor(skillsContributor);

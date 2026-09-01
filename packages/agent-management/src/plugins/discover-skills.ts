@@ -5,9 +5,8 @@
  * These are different from plugin skills - they're just directories containing a SKILL.md file.
  *
  * Structure:
- * skills/
+ * .agents/skills/
  * ~/.agents/skills/
- * ~/.dexto/skills/
  * └── skill-name/
  *     ├── SKILL.md          (required - skill instructions)
  *     ├── handlers/         (optional - workflow helper files)
@@ -39,15 +38,30 @@ export interface DiscoveredSkill {
     warnings?: string[] | undefined;
 }
 
+export interface StandaloneSkillPaths {
+    project: string;
+    user: string | undefined;
+}
+
+/**
+ * Resolves the canonical standalone Skill roots used by discovery and creator tools.
+ */
+export function getStandaloneSkillPaths(projectPath?: string): StandaloneSkillPaths {
+    const homeDir = process.env.HOME || process.env.USERPROFILE || '';
+    const cwd = projectPath || process.cwd();
+
+    return {
+        project: path.join(cwd, '.agents', 'skills'),
+        user: homeDir ? path.join(homeDir, '.agents', 'skills') : undefined,
+    };
+}
+
 /**
  * Discovers standalone skills from standard locations.
  *
  * Search Locations:
- * 1. <projectRoot>/skills/*          (project)
- * 2. <projectRoot>/.agents/skills/*  (project)
- * 3. <projectRoot>/.dexto/skills/*   (project)
- * 4. ~/.agents/skills/*              (user)
- * 5. ~/.dexto/skills/*               (user)
+ * 1. <projectRoot>/.agents/skills/*  (project)
+ * 2. ~/.agents/skills/*              (user)
  *
  * @param projectPath Optional project path (defaults to cwd)
  * @returns Array of discovered skills
@@ -55,8 +69,7 @@ export interface DiscoveredSkill {
 export function discoverStandaloneSkills(projectPath?: string): DiscoveredSkill[] {
     const skills: DiscoveredSkill[] = [];
     const seenNames = new Set<string>();
-    const homeDir = process.env.HOME || process.env.USERPROFILE || '';
-    const cwd = projectPath || process.cwd();
+    const skillPaths = getStandaloneSkillPaths(projectPath);
 
     /**
      * Adds a skill if not already seen (deduplication by name)
@@ -102,19 +115,13 @@ export function discoverStandaloneSkills(projectPath?: string): DiscoveredSkill[
     };
 
     // === Project skills ===
-    // 1. Top-level project skills: <projectRoot>/skills/
-    scanSkillsDir(path.join(cwd, 'skills'), 'project');
-    // 2. Agents project skills: <projectRoot>/.agents/skills/
-    scanSkillsDir(path.join(cwd, '.agents', 'skills'), 'project');
-    // 3. Dexto project skills: <projectRoot>/.dexto/skills/
-    scanSkillsDir(path.join(cwd, '.dexto', 'skills'), 'project');
+    // Project-authored Skills have one canonical root: <projectRoot>/.agents/skills/.
+    scanSkillsDir(skillPaths.project, 'project');
 
     // === User skills ===
-    // 4. Agents user skills: ~/.agents/skills/
-    // 5. Dexto user skills: ~/.dexto/skills/
-    if (homeDir) {
-        scanSkillsDir(path.join(homeDir, '.agents', 'skills'), 'user');
-        scanSkillsDir(path.join(homeDir, '.dexto', 'skills'), 'user');
+    // User-authored Skills have one canonical root: ~/.agents/skills/.
+    if (skillPaths.user) {
+        scanSkillsDir(skillPaths.user, 'user');
     }
 
     return skills;
@@ -126,15 +133,7 @@ export function discoverStandaloneSkills(projectPath?: string): DiscoveredSkill[
  *
  * @returns Array of skill search paths
  */
-export function getSkillSearchPaths(): string[] {
-    const homeDir = process.env.HOME || process.env.USERPROFILE || '';
-    const cwd = process.cwd();
-
-    return [
-        path.join(cwd, 'skills'),
-        path.join(cwd, '.agents', 'skills'),
-        path.join(cwd, '.dexto', 'skills'),
-        homeDir ? path.join(homeDir, '.agents', 'skills') : '',
-        homeDir ? path.join(homeDir, '.dexto', 'skills') : '',
-    ].filter(Boolean);
+export function getSkillSearchPaths(projectPath?: string): string[] {
+    const skillPaths = getStandaloneSkillPaths(projectPath);
+    return [skillPaths.project, ...(skillPaths.user ? [skillPaths.user] : [])];
 }

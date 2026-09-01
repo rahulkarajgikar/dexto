@@ -46,7 +46,7 @@ describe('skill_create tool', () => {
         await fs.rm(tempDir, { recursive: true, force: true });
     });
 
-    it('creates workspace skills under skills/ and scaffolds bundled resource directories', async () => {
+    it('creates workspace skills under .agents/skills/ and scaffolds bundled resource directories', async () => {
         const logger = createMockLogger();
         const context = {
             logger,
@@ -70,32 +70,37 @@ describe('skill_create tool', () => {
         };
 
         expect(result.scope).toBe('workspace');
-        expect(result.path).toBe(path.join(tempDir, 'skills', 'release-check', 'SKILL.md'));
+        expect(result.path).toBe(
+            path.join(tempDir, '.agents', 'skills', 'release-check', 'SKILL.md')
+        );
         expect(result.resourceDirectories).toEqual([
-            path.join(tempDir, 'skills', 'release-check', 'handlers'),
-            path.join(tempDir, 'skills', 'release-check', 'scripts'),
-            path.join(tempDir, 'skills', 'release-check', 'mcps'),
-            path.join(tempDir, 'skills', 'release-check', 'references'),
+            path.join(tempDir, '.agents', 'skills', 'release-check', 'handlers'),
+            path.join(tempDir, '.agents', 'skills', 'release-check', 'scripts'),
+            path.join(tempDir, '.agents', 'skills', 'release-check', 'mcps'),
+            path.join(tempDir, '.agents', 'skills', 'release-check', 'references'),
         ]);
         expect(result.notes).toContain(
             'Files under mcps/ are inert bundled files. Configure MCP servers through normal MCP configuration paths.'
         );
 
         await expect(
-            fs.readFile(path.join(tempDir, 'skills', 'release-check', 'SKILL.md'), 'utf8')
+            fs.readFile(
+                path.join(tempDir, '.agents', 'skills', 'release-check', 'SKILL.md'),
+                'utf8'
+            )
         ).resolves.toContain('name: "release-check"');
 
         await expect(
-            fs.stat(path.join(tempDir, 'skills', 'release-check', 'handlers'))
+            fs.stat(path.join(tempDir, '.agents', 'skills', 'release-check', 'handlers'))
         ).resolves.toMatchObject({ isDirectory: expect.any(Function) });
         await expect(
-            fs.stat(path.join(tempDir, 'skills', 'release-check', 'scripts'))
+            fs.stat(path.join(tempDir, '.agents', 'skills', 'release-check', 'scripts'))
         ).resolves.toMatchObject({ isDirectory: expect.any(Function) });
         await expect(
-            fs.stat(path.join(tempDir, 'skills', 'release-check', 'mcps'))
+            fs.stat(path.join(tempDir, '.agents', 'skills', 'release-check', 'mcps'))
         ).resolves.toMatchObject({ isDirectory: expect.any(Function) });
         await expect(
-            fs.stat(path.join(tempDir, 'skills', 'release-check', 'references'))
+            fs.stat(path.join(tempDir, '.agents', 'skills', 'release-check', 'references'))
         ).resolves.toMatchObject({ isDirectory: expect.any(Function) });
     });
 
@@ -123,7 +128,7 @@ describe('skill_create tool', () => {
         await tool.execute(input, context);
 
         const skillMarkdown = await fs.readFile(
-            path.join(tempDir, 'skills', 'roll-dice-mcp', 'SKILL.md'),
+            path.join(tempDir, '.agents', 'skills', 'roll-dice-mcp', 'SKILL.md'),
             'utf8'
         );
 
@@ -155,7 +160,7 @@ describe('skill_create tool', () => {
 
     it('does not preserve dead metadata when updating a skill', async () => {
         const logger = createMockLogger();
-        const skillFile = path.join(tempDir, 'skills', 'legacy-metadata', 'SKILL.md');
+        const skillFile = path.join(tempDir, '.agents', 'skills', 'legacy-metadata', 'SKILL.md');
         await fs.mkdir(path.dirname(skillFile), { recursive: true });
         await fs.writeFile(
             skillFile,
@@ -187,7 +192,13 @@ describe('skill_create tool', () => {
             {
                 logger,
                 workspace: { path: tempDir },
-                services: { skills: { refresh: vi.fn(async () => undefined) } },
+                services: {
+                    skills: {
+                        load: vi.fn(async () => null),
+                        list: vi.fn(async () => []),
+                        readFile: vi.fn(async () => ''),
+                    },
+                },
             } as unknown as ToolExecutionContext
         );
 
@@ -196,14 +207,24 @@ describe('skill_create tool', () => {
         expect(skillMarkdown).not.toContain('toolkits');
     });
 
-    it('refreshes one skill bundle so later bundled file edits are visible in the current session', async () => {
+    it('re-reads one skill bundle so later file edits are visible in the current session', async () => {
         const logger = createMockLogger();
-        const skillFile = path.join(tempDir, 'skills', 'release-check', 'SKILL.md');
-        const skillManager = {
-            refresh: vi.fn(async () => undefined),
+        const skillFile = path.join(tempDir, '.agents', 'skills', 'release-check', 'SKILL.md');
+        const skills = {
+            load: vi.fn(async () => ({
+                name: 'release-check',
+                instructions: 'updated',
+                supportingFiles: [],
+                filesLocation: 'workspace' as const,
+                baseDirectory: tempDir,
+            })),
+            list: vi.fn(async () => []),
+            readFile: vi.fn(async () => ''),
         };
 
-        await fs.mkdir(path.join(tempDir, 'skills', 'release-check', 'mcps'), { recursive: true });
+        await fs.mkdir(path.join(tempDir, '.agents', 'skills', 'release-check', 'mcps'), {
+            recursive: true,
+        });
         await fs.writeFile(
             skillFile,
             [
@@ -220,7 +241,7 @@ describe('skill_create tool', () => {
             'utf8'
         );
         await fs.writeFile(
-            path.join(tempDir, 'skills', 'release-check', 'mcps', 'release.json'),
+            path.join(tempDir, '.agents', 'skills', 'release-check', 'mcps', 'release.json'),
             JSON.stringify(
                 {
                     mcpServers: {
@@ -239,7 +260,7 @@ describe('skill_create tool', () => {
         const context = {
             logger,
             services: {
-                skills: skillManager,
+                skills,
             },
             workspace: {
                 path: tempDir,
@@ -253,15 +274,15 @@ describe('skill_create tool', () => {
 
         const result = (await tool.execute(input, context)) as {
             refreshed: boolean;
-            skillsRefreshed: boolean;
+            skillsAvailable: boolean;
             notes: string[];
         };
 
         expect(result.refreshed).toBe(true);
-        expect(result.skillsRefreshed).toBe(true);
+        expect(result.skillsAvailable).toBe(true);
         expect(result.notes).toContain(
-            'After editing SKILL.md or bundled files with non-creator tools, run skill_refresh so the current session sees the latest skill content.'
+            'Skills are read from their current files, so edits are visible to the next skill_load call.'
         );
-        expect(skillManager.refresh).toHaveBeenCalledTimes(1);
+        expect(skills.load).toHaveBeenCalledWith('release-check');
     });
 });
