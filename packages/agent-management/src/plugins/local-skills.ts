@@ -27,6 +27,10 @@ type SkillFile = {
     description: string;
 };
 
+type LocalSkillRootDiscovery = (
+    workspaceRoot: string | undefined
+) => readonly LocalSkillRoot[] | Promise<readonly LocalSkillRoot[]>;
+
 /**
  * Local host implementation of the Core `Skills` contract.
  *
@@ -34,15 +38,26 @@ type SkillFile = {
  * without a Core-level refresh/source abstraction.
  */
 export class LocalSkills implements Skills {
+    private activeWorkspaceRoot: string | undefined;
+    private hasActiveWorkspace = false;
+
     constructor(
-        private readonly discoverRoots: () =>
-            | readonly LocalSkillRoot[]
-            | Promise<readonly LocalSkillRoot[]>
+        private readonly discoverRoots: LocalSkillRootDiscovery,
+        private readonly initialWorkspaceRoot: string | undefined = undefined
     ) {}
+
+    /**
+     * Internal host lifecycle hook used by DextoAgent when the active workspace changes.
+     * This is deliberately outside the public Core Skills contract.
+     */
+    setWorkspaceRoot(workspaceRoot: string | undefined): void {
+        this.activeWorkspaceRoot = workspaceRoot;
+        this.hasActiveWorkspace = true;
+    }
 
     async list(): Promise<readonly SkillSummary[]> {
         const summaries: SkillSummary[] = [];
-        for (const root of await this.discoverRoots()) {
+        for (const root of await this.discoverRoots(this.getWorkspaceRoot())) {
             const skill = await this.readSkillFile(root);
             if (!skill) continue;
             summaries.push({ name: skill.root.name, description: skill.description });
@@ -103,7 +118,7 @@ export class LocalSkills implements Skills {
     }
 
     private async findSkill(name: string): Promise<SkillFile | null> {
-        for (const root of await this.discoverRoots()) {
+        for (const root of await this.discoverRoots(this.getWorkspaceRoot())) {
             if (root.name !== name) continue;
             const skill = await this.readSkillFile(root);
             if (skill) return skill;
@@ -120,7 +135,12 @@ export class LocalSkills implements Skills {
         }
 
         const frontmatter = getSkillFrontmatter(instructions);
-        if (frontmatter.name !== undefined && frontmatter.name !== root.name) {
+        const localSkillName = path.basename(path.dirname(root.skillFile));
+        if (
+            frontmatter.name !== undefined &&
+            frontmatter.name !== root.name &&
+            frontmatter.name !== localSkillName
+        ) {
             return null;
         }
 
@@ -131,10 +151,17 @@ export class LocalSkills implements Skills {
             description: description?.trim() || deriveDescription(instructions, root.name),
         };
     }
+
+    private getWorkspaceRoot(): string | undefined {
+        return this.hasActiveWorkspace ? this.activeWorkspaceRoot : this.initialWorkspaceRoot;
+    }
 }
 
 export function createLocalSkills(options: CreateLocalSkillsOptions = {}): LocalSkills {
-    return new LocalSkills(() => discoverLocalSkillRoots(options));
+    return new LocalSkills(
+        (workspaceRoot) => discoverLocalSkillRoots({ ...options, workspaceRoot }),
+        options.workspaceRoot
+    );
 }
 
 function discoverLocalSkillRoots(options: CreateLocalSkillsOptions): LocalSkillRoot[] {

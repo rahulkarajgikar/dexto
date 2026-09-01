@@ -108,6 +108,16 @@ const requiredServices: (keyof AgentServices)[] = [
     'memoryManager',
 ];
 
+type WorkspaceAwareSkills = Skills & {
+    setWorkspaceRoot(workspaceRoot: string | undefined): void;
+};
+
+function isWorkspaceAwareSkills(skills: Skills | undefined): skills is WorkspaceAwareSkills {
+    if (skills === undefined || typeof skills !== 'object') return false;
+    const candidate = skills as unknown as { setWorkspaceRoot?: unknown };
+    return typeof candidate.setWorkspaceRoot === 'function';
+}
+
 /**
  * Interface for objects that can subscribe to the agent's event bus.
  * Typically used by API layer subscribers (SSE, Webhooks, etc.)
@@ -344,6 +354,9 @@ export class DextoAgent {
 
         // Create event bus early so it's available for approval handler creation
         this.agentEventBus = new AgentEventBus();
+        this.agentEventBus.on('workspace:changed', ({ workspace }) => {
+            this.updateSkillsWorkspace(workspace?.path);
+        });
 
         // call start() to initialize services
         this.logger.info('DextoAgent created.');
@@ -429,6 +442,13 @@ export class DextoAgent {
                 services: services,
             });
 
+            // A host-owned local Skills implementation may need the persisted workspace before
+            // the first prompt or tool call. The event listener above handles later changes.
+            const currentWorkspace = await services.workspaceManager.getWorkspace();
+            if (currentWorkspace !== undefined) {
+                this.updateSkillsWorkspace(currentWorkspace.path);
+            }
+
             // Initialize prompts manager (aggregates MCP, internal, starter prompts)
             // File prompts automatically resolve custom slash commands
             // Must be initialized before toolManager so skill_load can access skills.
@@ -503,6 +523,12 @@ export class DextoAgent {
                 error: error instanceof Error ? error.message : String(error),
             });
             throw error;
+        }
+    }
+
+    private updateSkillsWorkspace(workspaceRoot: string | undefined): void {
+        if (isWorkspaceAwareSkills(this.skills)) {
+            this.skills.setWorkspaceRoot(workspaceRoot);
         }
     }
 

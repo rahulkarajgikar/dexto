@@ -148,6 +148,20 @@ function resolveGlobalSkillsDirectory(): string {
     return getStandaloneSkillPaths().user;
 }
 
+function resolveSkillSearchDirectories(
+    scope: SkillScope,
+    context: ToolExecutionContext
+): readonly string[] {
+    const paths =
+        scope === 'global'
+            ? getStandaloneSkillPaths()
+            : getStandaloneSkillPaths(resolveWorkspaceBasePath(context));
+
+    return scope === 'global'
+        ? [paths.user, ...paths.legacyUser]
+        : [paths.project, ...paths.legacyProject];
+}
+
 type SkillScope = 'global' | 'workspace';
 
 function resolveSkillBaseDirectory(
@@ -185,28 +199,43 @@ function resolveSkillUpdateDirectory(
     return resolveSkillBaseDirectory(input.scope, context);
 }
 
-function resolveExistingSkillLocation(
+async function resolveExistingSkillLocation(
     input: {
         id: string;
         scope?: 'global' | 'workspace' | undefined;
     },
     context: ToolExecutionContext,
     toolId: 'skill_update' | 'skill_refresh'
-): {
+): Promise<{
     baseDir: string;
     scope: 'global' | 'workspace';
     skillDir: string;
     skillFile: string;
-} {
+}> {
     const { baseDir, scope } = resolveSkillUpdateDirectory(input, context);
+    const searchDirectories = resolveSkillSearchDirectories(scope, context);
+
+    for (const searchDirectory of searchDirectories) {
+        const skillDir = path.join(searchDirectory, input.id.trim());
+        ensurePathWithinBase(searchDirectory, skillDir, toolId);
+        const skillFile = path.join(skillDir, 'SKILL.md');
+        if (await pathExists(skillFile)) {
+            return {
+                baseDir: searchDirectory,
+                scope,
+                skillDir,
+                skillFile,
+            };
+        }
+    }
+
     const skillDir = path.join(baseDir, input.id.trim());
     ensurePathWithinBase(baseDir, skillDir, toolId);
-    const skillFile = path.join(skillDir, 'SKILL.md');
     return {
         baseDir,
         scope,
         skillDir,
-        skillFile,
+        skillFile: path.join(skillDir, 'SKILL.md'),
     };
 }
 
@@ -393,7 +422,7 @@ export const creatorToolsFactory: ToolFactory<CreatorToolsConfig> = {
                     hint: 'Use kebab-case skill ids (e.g., release-notes)',
                 });
 
-                const { scope, skillFile } = resolveExistingSkillLocation(
+                const { scope, skillFile } = await resolveExistingSkillLocation(
                     input,
                     context,
                     'skill_update'
@@ -456,7 +485,7 @@ export const creatorToolsFactory: ToolFactory<CreatorToolsConfig> = {
                     );
                 }
 
-                const { scope, skillFile } = resolveExistingSkillLocation(
+                const { scope, skillFile } = await resolveExistingSkillLocation(
                     input,
                     context,
                     'skill_refresh'

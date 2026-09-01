@@ -52,6 +52,17 @@ describe('core execution context detection', () => {
         expect(findDextoProjectRoot(path.join(workspaceRoot, 'nested'))).toBe(workspaceRoot);
     });
 
+    it('keeps legacy skill roots as dexto-project markers during migration', () => {
+        const workspaceRoot = createTempDirStructure({
+            'AGENTS.md': '# Dexto Workspace',
+            'skills/.gitkeep': '',
+            '.dexto/skills/.gitkeep': '',
+        });
+
+        expect(getExecutionContext(workspaceRoot)).toBe('dexto-project');
+        expect(findDextoProjectRoot(path.join(workspaceRoot, 'nested'))).toBe(workspaceRoot);
+    });
+
     it('does not treat AGENTS.md alone as a dexto-project marker', () => {
         const workspaceRoot = createTempDirStructure({
             'AGENTS.md': '# Generic instructions',

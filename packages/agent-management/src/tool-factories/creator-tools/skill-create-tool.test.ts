@@ -23,7 +23,7 @@ function createMockLogger(): Logger {
     return logger;
 }
 
-function getCreatorTool(id: 'skill_create' | 'skill_refresh') {
+function getCreatorTool(id: 'skill_create' | 'skill_update' | 'skill_refresh') {
     const tools = creatorToolsFactory.create({
         type: 'creator-tools',
         enabledTools: [id],
@@ -205,6 +205,58 @@ describe('skill_create tool', () => {
         const skillMarkdown = await fs.readFile(skillFile, 'utf8');
         expect(skillMarkdown).not.toContain('allowed-tools');
         expect(skillMarkdown).not.toContain('toolkits');
+    });
+
+    it('updates and refreshes a skill in a retained legacy workspace root', async () => {
+        const logger = createMockLogger();
+        const skillFile = path.join(tempDir, 'skills', 'legacy-metadata', 'SKILL.md');
+        await fs.mkdir(path.dirname(skillFile), { recursive: true });
+        await fs.writeFile(
+            skillFile,
+            [
+                '---',
+                'name: "legacy-metadata"',
+                'description: "Legacy metadata should remain manageable."',
+                '---',
+                '',
+                '# Legacy Metadata',
+                '',
+                'Old body.',
+            ].join('\n'),
+            'utf8'
+        );
+
+        const context = {
+            logger,
+            workspace: { path: tempDir },
+            services: {
+                skills: {
+                    load: vi.fn().mockResolvedValue({ name: 'legacy-metadata' }),
+                    list: vi.fn().mockResolvedValue([]),
+                    readFile: vi.fn().mockResolvedValue(''),
+                },
+            },
+        } as unknown as ToolExecutionContext;
+
+        const updateTool = getCreatorTool('skill_update');
+        const updateResult = (await updateTool.execute(
+            updateTool.inputSchema.parse({
+                id: 'legacy-metadata',
+                content: 'Updated body.',
+            }),
+            context
+        )) as { path: string };
+
+        expect(updateResult.path).toBe(skillFile);
+        await expect(fs.readFile(skillFile, 'utf8')).resolves.toContain('Updated body.');
+
+        const refreshTool = getCreatorTool('skill_refresh');
+        const refreshResult = (await refreshTool.execute(
+            refreshTool.inputSchema.parse({ id: 'legacy-metadata' }),
+            context
+        )) as { path: string };
+
+        expect(refreshResult.path).toBe(skillFile);
     });
 
     it('re-reads one skill bundle so later file edits are visible in the current session', async () => {

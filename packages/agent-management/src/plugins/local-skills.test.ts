@@ -66,7 +66,14 @@ describe('createLocalSkills', () => {
         await fs.mkdir(pluginSkillDir, { recursive: true });
         await fs.writeFile(
             path.join(pluginSkillDir, 'SKILL.md'),
-            '# Audit\n\nAudit through plugin skill.',
+            [
+                '---',
+                'name: audit',
+                'description: Audit through plugin skill.',
+                '---',
+                '',
+                '# Audit',
+            ].join('\n'),
             'utf8'
         );
         await fs.mkdir(path.join(pluginSkillDir, 'references'), { recursive: true });
@@ -100,6 +107,40 @@ describe('createLocalSkills', () => {
         await expect(skills.readFile('review:audit', String.raw`C:\tmp\file.md`)).rejects.toThrow(
             'Skill file not found: review:audit/C:\\tmp\\file.md'
         );
+    });
+
+    it('discovers skills from the active workspace after rebinding', async () => {
+        const initialWorkspaceRoot = path.join(tempDir, 'initial-workspace');
+        const activeWorkspaceRoot = path.join(tempDir, 'active-workspace');
+        const initialSkillDir = path.join(initialWorkspaceRoot, '.agents', 'skills', 'initial');
+        const activeSkillDir = path.join(activeWorkspaceRoot, '.agents', 'skills', 'active');
+
+        await fs.mkdir(initialSkillDir, { recursive: true });
+        await fs.mkdir(activeSkillDir, { recursive: true });
+        await fs.writeFile(
+            path.join(initialSkillDir, 'SKILL.md'),
+            '# Initial\n\nInitial instructions.',
+            'utf8'
+        );
+        await fs.writeFile(
+            path.join(activeSkillDir, 'SKILL.md'),
+            '# Active\n\nActive instructions.',
+            'utf8'
+        );
+
+        const skills = createLocalSkills({ workspaceRoot: initialWorkspaceRoot });
+
+        await expect(skills.list()).resolves.toEqual([
+            { name: 'initial', description: 'Initial instructions.' },
+        ]);
+
+        skills.setWorkspaceRoot(activeWorkspaceRoot);
+
+        await expect(skills.list()).resolves.toEqual([
+            { name: 'active', description: 'Active instructions.' },
+        ]);
+        await expect(skills.load('initial')).resolves.toBeNull();
+        await expect(skills.load('active')).resolves.toMatchObject({ name: 'active' });
     });
 
     it('ignores a Skill whose frontmatter name disagrees with its canonical root name', async () => {

@@ -36,7 +36,7 @@ function getCaseInsensitiveRootFilename(dirPath: string, filename: string): stri
 
 function hasWorkspaceAuthoringDirectory(
     dirPath: string,
-    relativePath: 'agents' | '.agents/skills'
+    relativePath: 'agents' | '.agents/skills' | 'skills' | '.dexto/skills'
 ): boolean {
     try {
         return statSync(path.join(dirPath, relativePath)).isDirectory();
@@ -63,7 +63,9 @@ function hasWorkspaceScaffoldMarker(dirPath: string): boolean {
     return (
         hasDextoWorkspaceAgentsFile(dirPath) &&
         (hasWorkspaceAuthoringDirectory(dirPath, 'agents') ||
-            hasWorkspaceAuthoringDirectory(dirPath, '.agents/skills'))
+            hasWorkspaceAuthoringDirectory(dirPath, '.agents/skills') ||
+            hasWorkspaceAuthoringDirectory(dirPath, 'skills') ||
+            hasWorkspaceAuthoringDirectory(dirPath, '.dexto/skills'))
     );
 }
 
