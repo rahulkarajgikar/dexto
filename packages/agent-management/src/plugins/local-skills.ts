@@ -39,7 +39,6 @@ type LocalSkillRootDiscovery = (
  */
 export class LocalSkills implements Skills {
     private activeWorkspaceRoot: string | undefined;
-    private hasActiveWorkspace = false;
 
     constructor(
         private readonly discoverRoots: LocalSkillRootDiscovery,
@@ -52,7 +51,6 @@ export class LocalSkills implements Skills {
      */
     setWorkspaceRoot(workspaceRoot: string | undefined): void {
         this.activeWorkspaceRoot = workspaceRoot;
-        this.hasActiveWorkspace = true;
     }
 
     async list(): Promise<readonly SkillSummary[]> {
@@ -153,7 +151,7 @@ export class LocalSkills implements Skills {
     }
 
     private getWorkspaceRoot(): string | undefined {
-        return this.hasActiveWorkspace ? this.activeWorkspaceRoot : this.initialWorkspaceRoot;
+        return this.activeWorkspaceRoot ?? this.initialWorkspaceRoot;
     }
 }
 

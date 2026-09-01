@@ -141,6 +141,12 @@ describe('createLocalSkills', () => {
         ]);
         await expect(skills.load('initial')).resolves.toBeNull();
         await expect(skills.load('active')).resolves.toMatchObject({ name: 'active' });
+
+        skills.setWorkspaceRoot(undefined);
+
+        await expect(skills.list()).resolves.toEqual([
+            { name: 'initial', description: 'Initial instructions.' },
+        ]);
     });
 
     it('ignores a Skill whose frontmatter name disagrees with its canonical root name', async () => {
