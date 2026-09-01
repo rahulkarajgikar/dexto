@@ -184,9 +184,30 @@ function resolveSkillDirectory(
 
 async function pathExists(filePath: string): Promise<boolean> {
     return await fs
-        .stat(filePath)
+        .lstat(filePath)
         .then(() => true)
         .catch(() => false);
+}
+
+async function isSafeExistingSkillFile(baseDir: string, skillFile: string): Promise<boolean> {
+    try {
+        const [fileStat, physicalBaseDir, physicalSkillFile] = await Promise.all([
+            fs.lstat(skillFile),
+            fs.realpath(baseDir),
+            fs.realpath(skillFile),
+        ]);
+        if (!fileStat.isFile() || fileStat.isSymbolicLink()) return false;
+
+        const relativePath = path.relative(physicalBaseDir, physicalSkillFile);
+        return (
+            relativePath.length > 0 &&
+            relativePath !== '..' &&
+            !relativePath.startsWith(`..${path.sep}`) &&
+            !path.isAbsolute(relativePath)
+        );
+    } catch {
+        return false;
+    }
 }
 
 function resolveSkillUpdateDirectory(
@@ -219,7 +240,7 @@ async function resolveExistingSkillLocation(
         const skillDir = path.join(searchDirectory, input.id.trim());
         ensurePathWithinBase(searchDirectory, skillDir, toolId);
         const skillFile = path.join(skillDir, 'SKILL.md');
-        if (await pathExists(skillFile)) {
+        if (await isSafeExistingSkillFile(searchDirectory, skillFile)) {
             return {
                 baseDir: searchDirectory,
                 scope,

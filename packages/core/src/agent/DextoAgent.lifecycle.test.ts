@@ -409,6 +409,34 @@ describe('DextoAgent Lifecycle Management', () => {
             expect(setWorkspaceRoot).toHaveBeenNthCalledWith(3, undefined);
         });
 
+        test('should reset workspace-aware Skills when no workspace is persisted', async () => {
+            const setWorkspaceRoot = vi.fn();
+            const skills: Skills & { setWorkspaceRoot: typeof setWorkspaceRoot } = {
+                list: vi.fn().mockResolvedValue([]),
+                load: vi.fn().mockResolvedValue(null),
+                readFile: vi.fn().mockResolvedValue(''),
+                setWorkspaceRoot,
+            };
+            const agent = new DextoAgent({
+                ...mockValidatedConfig,
+                logger: createLogger({
+                    config: LoggerConfigSchema.parse({
+                        level: 'error',
+                        transports: [{ type: 'silent' }],
+                    }),
+                    agentId: mockValidatedConfig.agentId,
+                }),
+                stores: new InMemoryDextoStores(),
+                tools: [],
+                hooks: [],
+                skills,
+            });
+
+            await agent.start();
+
+            expect(setWorkspaceRoot).toHaveBeenCalledWith(undefined);
+        });
+
         test('should start with per-server connection modes in config', async () => {
             const validatedConfigWithServerModes: AgentRuntimeSettings = {
                 ...mockValidatedConfig,

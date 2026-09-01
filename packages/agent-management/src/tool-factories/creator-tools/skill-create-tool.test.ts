@@ -259,6 +259,41 @@ describe('skill_create tool', () => {
         expect(refreshResult.path).toBe(skillFile);
     });
 
+    it('does not update a legacy skill through an escaping SKILL.md symlink', async () => {
+        if (process.platform === 'win32') return;
+
+        const logger = createMockLogger();
+        const skillFile = path.join(tempDir, 'skills', 'legacy-link', 'SKILL.md');
+        const outsideFile = path.join(tempDir, 'outside-SKILL.md');
+        await fs.mkdir(path.dirname(skillFile), { recursive: true });
+        await fs.writeFile(outsideFile, '# Outside\n\nDo not overwrite.', 'utf8');
+        await fs.symlink(outsideFile, skillFile);
+
+        const tool = getCreatorTool('skill_update');
+        const context = {
+            logger,
+            workspace: { path: tempDir },
+            services: {
+                skills: {
+                    load: vi.fn().mockResolvedValue(null),
+                    list: vi.fn().mockResolvedValue([]),
+                    readFile: vi.fn().mockResolvedValue(''),
+                },
+            },
+        } as unknown as ToolExecutionContext;
+
+        await expect(
+            tool.execute(
+                tool.inputSchema.parse({
+                    id: 'legacy-link',
+                    content: 'Attempted update.',
+                }),
+                context
+            )
+        ).rejects.toThrow('Skill not found');
+        await expect(fs.readFile(outsideFile, 'utf8')).resolves.toContain('Do not overwrite.');
+    });
+
     it('re-reads one skill bundle so later file edits are visible in the current session', async () => {
         const logger = createMockLogger();
         const skillFile = path.join(tempDir, '.agents', 'skills', 'release-check', 'SKILL.md');

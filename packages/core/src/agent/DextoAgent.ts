@@ -445,9 +445,7 @@ export class DextoAgent {
             // A host-owned local Skills implementation may need the persisted workspace before
             // the first prompt or tool call. The event listener above handles later changes.
             const currentWorkspace = await services.workspaceManager.getWorkspace();
-            if (currentWorkspace !== undefined) {
-                this.updateSkillsWorkspace(currentWorkspace.path);
-            }
+            this.updateSkillsWorkspace(currentWorkspace?.path);
 
             // Initialize prompts manager (aggregates MCP, internal, starter prompts)
             // File prompts automatically resolve custom slash commands
