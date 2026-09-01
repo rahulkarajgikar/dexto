@@ -44,16 +44,19 @@ import type {
 } from '../mcp/schemas.js';
 import {
     getSupportedProviders,
-    getDefaultModelForProvider,
-    getProviderFromModel,
-    getSupportedFileTypesForModel,
     getModelDisplayName,
+    DEFAULT_MODEL_REGISTRY,
+    type ModelRegistry,
     type ModelInfo,
 } from '@dexto/llm';
-import { getAllModelsForProvider } from '../llm/registry/index.js';
+import {
+    getAllModelsForProvider,
+    getProviderFromModel,
+    getSupportedFileTypesForModel,
+} from '../llm/registry/index.js';
 import type { LLMProvider } from '@dexto/llm';
 import { createAgentServices } from '../utils/service-initializer.js';
-import { LLMConfigSchema, LLMUpdatesSchema } from '../llm/schemas.js';
+import { createLLMConfigSchema, createLLMUpdatesSchema } from '../llm/schemas.js';
 import type { LLMUpdates, ValidatedLLMConfig } from '../llm/schemas.js';
 import { summarizeAssistantUsage } from '../llm/usage-summary.js';
 import { ServersConfigSchema } from '../mcp/schemas.js';
@@ -249,6 +252,7 @@ export class DextoAgent {
 
     // Logger instance for this agent (dependency injection)
     public readonly logger: Logger;
+    public readonly llmRegistry: ModelRegistry;
 
     /**
      * Validate + normalize runtime settings.
@@ -257,10 +261,13 @@ export class DextoAgent {
      * Host layers may validate earlier (e.g. YAML parsing), but core always normalizes
      * runtime settings before use.
      */
-    public static validateConfig(options: DextoAgentConfigInput): AgentRuntimeSettings {
+    public static validateConfig(
+        options: DextoAgentConfigInput,
+        llmRegistry: ModelRegistry = DEFAULT_MODEL_REGISTRY
+    ): AgentRuntimeSettings {
         return {
             agentId: options.agentId,
-            llm: LLMConfigSchema.parse(options.llm),
+            llm: createLLMConfigSchema(llmRegistry).parse(options.llm),
             systemPrompt: SystemPromptConfigSchema.parse(options.systemPrompt),
             mcpServers: ServersConfigSchema.parse(options.mcpServers ?? {}),
             sessions: SessionConfigSchema.parse(options.sessions ?? {}),
@@ -299,6 +306,7 @@ export class DextoAgent {
             tools: toolsInput,
             hooks: hooksInput,
             compaction,
+            llmRegistry,
             overrides: overridesInput,
             skills,
             ...runtimeSettings
@@ -307,7 +315,8 @@ export class DextoAgent {
         const tools = toolsInput ?? [];
         const hooks = hooksInput ?? [];
 
-        this.config = DextoAgent.validateConfig(runtimeSettings);
+        this.llmRegistry = llmRegistry ?? DEFAULT_MODEL_REGISTRY;
+        this.config = DextoAgent.validateConfig(runtimeSettings, this.llmRegistry);
 
         // Agent logger is always provided by the host (typically created from config).
         this.logger = logger;
@@ -362,7 +371,8 @@ export class DextoAgent {
                 this.logger,
                 this.agentEventBus,
                 this.overrides,
-                this.compactionStrategy
+                this.compactionStrategy,
+                this.llmRegistry
             );
 
             if (this.mcpAuthProviderFactory) {
@@ -1202,7 +1212,8 @@ export class DextoAgent {
                         const textValidation = validateInputForLLM(
                             { text: currentText },
                             { provider: llmConfig.provider, model: llmConfig.model },
-                            this.logger
+                            this.logger,
+                            this.llmRegistry
                         );
                         ensureOk(textValidation, this.logger);
 
@@ -1218,7 +1229,8 @@ export class DextoAgent {
                                     },
                                 },
                                 { provider: llmConfig.provider, model: llmConfig.model },
-                                this.logger
+                                this.logger,
+                                this.llmRegistry
                             );
                             ensureOk(imageValidation, this.logger);
                         }
@@ -1235,7 +1247,8 @@ export class DextoAgent {
                                     },
                                 },
                                 { provider: llmConfig.provider, model: llmConfig.model },
-                                this.logger
+                                this.logger,
+                                this.llmRegistry
                             );
                             ensureOk(fileValidation, this.logger);
                         }
@@ -1244,7 +1257,12 @@ export class DextoAgent {
                     let allowedMediaTypes: string[] | undefined = llmConfig.allowedMediaTypes;
                     if (!allowedMediaTypes) {
                         allowedMediaTypes = fileTypesToMimePatterns(
-                            getSupportedFileTypesForModel(llmConfig.provider, llmConfig.model),
+                            getSupportedFileTypesForModel(
+                                llmConfig.provider,
+                                llmConfig.model,
+                                this.logger,
+                                this.llmRegistry
+                            ),
                             this.logger
                         );
                     }
@@ -1853,6 +1871,7 @@ export class DextoAgent {
         const result = await generateSessionTitle(llmConfig, userText, this.logger, {
             providerContext: {
                 sessionId,
+                llmRegistry: this.llmRegistry,
                 authResolver: this.overrides.authResolver ?? null,
             },
             ...(this.overrides.languageModelFactory !== undefined && {
@@ -2487,7 +2506,7 @@ export class DextoAgent {
 
         // Validate input using schema (single source of truth)
         this.logger.debug(`DextoAgent.switchLLM: llmUpdates: ${safeStringify(llmUpdates)}`);
-        const parseResult = LLMUpdatesSchema.safeParse(llmUpdates);
+        const parseResult = createLLMUpdatesSchema(this.llmRegistry).safeParse(llmUpdates);
         if (!parseResult.success) {
             const validation = fail(zodToIssues(parseResult.error, 'error'));
             ensureOk(validation, this.logger); // This will throw DextoValidationError
@@ -2511,7 +2530,8 @@ export class DextoAgent {
         const result = await resolveAndValidateLLMConfig(
             currentLLMConfig,
             validatedUpdates,
-            this.logger
+            this.logger,
+            this.llmRegistry
         );
         const validatedConfig = ensureOk(result, this.logger);
 
@@ -2635,13 +2655,15 @@ export class DextoAgent {
     public getSupportedModelsForProvider(
         provider: LLMProvider
     ): Array<ModelInfo & { isDefault: boolean; originalProvider?: LLMProvider }> {
-        const models = getAllModelsForProvider(provider);
+        const models = getAllModelsForProvider(provider, this.llmRegistry);
 
         return models.map((model) => {
             // For inherited models, get default from the original provider
             const originalProvider =
                 'originalProvider' in model ? model.originalProvider : provider;
-            const defaultModel = getDefaultModelForProvider(originalProvider ?? provider);
+            const defaultModel = this.llmRegistry.getDefaultModelForProvider(
+                originalProvider ?? provider
+            );
 
             return {
                 ...model,
@@ -2671,7 +2693,7 @@ export class DextoAgent {
      */
     public inferProviderFromModel(modelName: string): LLMProvider | null {
         try {
-            return getProviderFromModel(modelName) as LLMProvider;
+            return getProviderFromModel(modelName, this.llmRegistry);
         } catch {
             return null;
         }

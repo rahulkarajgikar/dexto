@@ -12,8 +12,12 @@ import {
 import { clonePromptContentPart } from './content-clone.js';
 import { isValidDisplayData, type ToolDisplayData } from '../tools/display-types.js';
 import type { Logger } from '../logger/v2/types.js';
-import { validateModelFileSupport } from '@dexto/llm';
-import type { LLMContext } from '@dexto/llm';
+import {
+    DEFAULT_MODEL_REGISTRY,
+    validateModelFileSupport,
+    type LLMContext,
+    type ModelRegistry,
+} from '@dexto/llm';
 import { safeStringify } from '../utils/safe-stringify.js';
 import { getFileMediaKind, getResourceKind } from './media-helpers.js';
 import type { ArtifactData } from '../storage/artifacts/types.js';
@@ -1004,7 +1008,8 @@ export async function expandBlobReferences(
 export function filterMessagesByLLMCapabilities(
     messages: InternalMessage[],
     config: LLMContext,
-    logger: Logger
+    logger: Logger,
+    registry: ModelRegistry = DEFAULT_MODEL_REGISTRY
 ): InternalMessage[] {
     try {
         let totalImagesFiltered = 0;
@@ -1029,11 +1034,15 @@ export function filterMessagesByLLMCapabilities(
                     // Filter/transform image parts based on LLM capabilities
                     if (part.type === 'image') {
                         const mimeType = part.mimeType ?? 'image/jpeg';
-                        const validation = validateModelFileSupport(
-                            config.provider,
-                            config.model,
-                            mimeType
-                        );
+                        const validation =
+                            registry === DEFAULT_MODEL_REGISTRY
+                                ? validateModelFileSupport(config.provider, config.model, mimeType)
+                                : validateModelFileSupport(
+                                      config.provider,
+                                      config.model,
+                                      mimeType,
+                                      registry
+                                  );
                         if (validation.isSupported) {
                             return [part];
                         }
@@ -1054,11 +1063,19 @@ export function filterMessagesByLLMCapabilities(
 
                     // Filter/transform file parts based on LLM capabilities
                     if (part.type === 'file' && part.mimeType) {
-                        const validation = validateModelFileSupport(
-                            config.provider,
-                            config.model,
-                            part.mimeType
-                        );
+                        const validation =
+                            registry === DEFAULT_MODEL_REGISTRY
+                                ? validateModelFileSupport(
+                                      config.provider,
+                                      config.model,
+                                      part.mimeType
+                                  )
+                                : validateModelFileSupport(
+                                      config.provider,
+                                      config.model,
+                                      part.mimeType,
+                                      registry
+                                  );
                         if (validation.isSupported) {
                             return [part];
                         }
@@ -1988,6 +2005,8 @@ export async function sanitizeToolResult(
     result: unknown,
     options: {
         artifactStore?: import('../storage/artifacts/types.js').ArtifactStore;
+        display?: ToolDisplayData;
+        resultPresentation?: import('../tools/types.js').ToolPresentationResultType;
         toolName: string;
         toolCallId: string;
         success: boolean;
@@ -1999,9 +2018,17 @@ export async function sanitizeToolResult(
     let display: ToolDisplayData | undefined;
     let resultForNormalization = result;
 
+    if (options.display !== undefined) {
+        if (isValidDisplayData(options.display)) {
+            display = options.display;
+        } else {
+            logger.debug(`sanitizeToolResult: ignoring invalid explicit display data`);
+        }
+    }
+
     if (result && typeof result === 'object' && '_display' in result) {
         const { _display: rawDisplay, ...rest } = result as Record<string, unknown>;
-        if (isValidDisplayData(rawDisplay)) {
+        if (display === undefined && isValidDisplayData(rawDisplay)) {
             display = rawDisplay;
             logger.debug(
                 `sanitizeToolResult: extracted display data (type=${display.type}) for ${options.toolName}`
@@ -2044,6 +2071,9 @@ export async function sanitizeToolResult(
             toolCallId: options.toolCallId,
             success: options.success,
             ...(display ? { display } : {}),
+            ...(options.resultPresentation
+                ? { resultPresentation: options.resultPresentation }
+                : {}),
         },
     };
 }

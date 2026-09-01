@@ -39,6 +39,7 @@ import type {
     LLMReasoningConfig,
     LLMContext,
     LLMProvider,
+    ModelRegistry,
     ReasoningVariant,
 } from '@dexto/llm';
 import type { Logger } from '../../logger/v2/types.js';
@@ -473,6 +474,7 @@ export class TurnExecutor {
             baseURL?: string | undefined;
             usageScopeId?: string | undefined;
             executionControl?: LLMExecutionControl | undefined;
+            llmRegistry?: ModelRegistry;
             // Provider-specific options
             reasoning?: LLMReasoningConfig | undefined;
         },
@@ -510,6 +512,9 @@ export class TurnExecutor {
             model: this.llmContext.model,
             ...(this.config.usageScopeId !== undefined && {
                 usageScopeId: this.config.usageScopeId,
+            }),
+            ...(this.config.llmRegistry !== undefined && {
+                llmRegistry: this.config.llmRegistry,
             }),
             ...(estimatedInputTokens !== undefined && { estimatedInputTokens }),
             ...(reasoning?.reasoningVariant !== undefined && {
@@ -1520,6 +1525,9 @@ export class TurnExecutor {
                     provider: this.llmContext.provider,
                     model: this.llmContext.model,
                     reasoning: this.config.reasoning,
+                    ...(this.config.llmRegistry !== undefined && {
+                        llmRegistry: this.config.llmRegistry,
+                    }),
                 }),
             this.logger
         );
@@ -2075,6 +2083,12 @@ export class TurnExecutor {
             executionResult.result,
             {
                 artifactStore: this.resourceManager.getArtifactStore(),
+                ...(executionResult.display !== undefined
+                    ? { display: executionResult.display }
+                    : {}),
+                ...(executionResult.resultPresentation !== undefined
+                    ? { resultPresentation: executionResult.resultPresentation }
+                    : {}),
                 toolName: toolCall.toolName,
                 toolCallId: toolCall.toolCallId,
                 success,
@@ -2116,10 +2130,7 @@ export class TurnExecutor {
 
     private emitToolCall(
         toolCall: ModelToolCall,
-        call: Pick<
-            ExecutableToolCall,
-            'callDescription' | 'input' | 'meta' | 'presentationSnapshot' | 'toolName'
-        >
+        call: Pick<ExecutableToolCall, 'input' | 'meta' | 'presentationSnapshot' | 'toolName'>
     ): void {
         this.eventBus.emit('llm:tool-call', {
             toolName: toolCall.toolName,
@@ -2128,7 +2139,6 @@ export class TurnExecutor {
             }),
             args: call.input,
             ...(call.meta !== undefined ? { meta: call.meta } : {}),
-            ...(call.callDescription !== undefined && { callDescription: call.callDescription }),
             callId: toolCall.toolCallId,
             ...(this.runContext?.hostRuntime !== undefined && {
                 hostRuntime: this.runContext.hostRuntime,

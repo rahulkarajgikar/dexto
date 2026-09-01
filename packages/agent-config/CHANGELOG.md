@@ -1,5 +1,23 @@
 # @dexto/agent-config
 
+## 1.10.4
+
+### Patch Changes
+
+- Updated dependencies [8d0d2d9]
+    - @dexto/core@1.10.4
+    - @dexto/storage@1.10.4
+
+## 1.10.3
+
+### Patch Changes
+
+- dd77b34: Add injectable model-registry support so hosts can validate and execute against an actively managed registry while preserving the bundled registry as the default.
+- Updated dependencies [cd4e593]
+- Updated dependencies [dd77b34]
+    - @dexto/core@1.10.3
+    - @dexto/storage@1.10.3
+
 ## 1.10.2
 
 ### Patch Changes

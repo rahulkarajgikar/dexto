@@ -21,12 +21,12 @@
  * and need discovery/selection capabilities.
  *
  * @see AgentManager for registry-based agent management
- * @see https://docs.dexto.ai/api/sdk/agent-factory for full documentation
+ * @see https://cli.dexto.ai/api/sdk/agent-factory for full documentation
  */
 
 import { promises as fs } from 'fs';
 import type { AgentConfig, DextoHostContext } from '@dexto/agent-config';
-import type { DextoAgent, DextoAgentConfigInput } from '@dexto/core';
+import type { DextoAgent, DextoAgentOptions } from '@dexto/core';
 import { getDextoGlobalPath } from './utils/path.js';
 import { deriveDisplayName } from './registry/types.js';
 import { getAgentRegistry, loadBundledRegistryAgents } from './registry/registry.js';
@@ -55,7 +55,7 @@ export interface CreateAgentOptions {
     /** Optional host-owned resolution context for hosted runtimes */
     hostContext?: DextoHostContext | undefined;
     /** Explicit runtime overrides applied outside the validated agent config */
-    runtimeOverrides?: Pick<DextoAgentConfigInput, 'usageScopeId'> | undefined;
+    runtimeOverrides?: Pick<DextoAgentOptions, 'usageScopeId' | 'llmRegistry'> | undefined;
 }
 
 /**

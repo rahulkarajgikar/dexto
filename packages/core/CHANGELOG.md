@@ -1,5 +1,22 @@
 # @dexto/core
 
+## 1.10.4
+
+### Patch Changes
+
+- 8d0d2d9: Add model-authored tool activity metadata plus explicit result presentation policies and reusable
+  structured display data while keeping legacy display metadata out of model-visible tool results.
+    - @dexto/llm@1.10.4
+
+## 1.10.3
+
+### Patch Changes
+
+- cd4e593: Route user-facing CLI and package documentation links through `cli.dexto.ai`.
+- dd77b34: Add injectable model-registry support so hosts can validate and execute against an actively managed registry while preserving the bundled registry as the default.
+- Updated dependencies [dd77b34]
+    - @dexto/llm@1.10.3
+
 ## 1.10.2
 
 ### Patch Changes
